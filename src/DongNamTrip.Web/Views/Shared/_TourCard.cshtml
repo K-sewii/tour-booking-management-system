@@ -1,0 +1,13 @@
+@model Tour
+<article class="tour-card">
+<a class="card-art" asp-controller="Tours" asp-action="Details" asp-route-id="@Model.Id">
+<img src="~/images/@(Model.Illustration).svg" alt="Minh họa @Model.Region" loading="lazy"/>
+<span class="badge">@Model.Category</span></a>
+<div class="card-body">
+<div class="eyebrow">@Model.Region <span>· @Model.Duration</span></div>
+<h3>
+<a asp-controller="Tours" asp-action="Details" asp-route-id="@Model.Id">@Model.Name</a></h3>
+<p>@Model.Summary</p>
+<div class="card-price">
+<div><small>Giá tham khảo / khách</small><strong>@Model.ReferencePrice.ToString("N0", CultureInfo.GetCultureInfo("vi-VN")) ₫</strong></div>
+<a class="circle-link" asp-controller="Tours" asp-action="Details" asp-route-id="@Model.Id" aria-label="Xem tour @Model.Name">↗</a></div></div></article>

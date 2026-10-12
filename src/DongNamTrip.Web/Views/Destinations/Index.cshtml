@@ -1,0 +1,21 @@
+@model DestinationListVm
+@{ ViewData["Title"] = "Điểm đến"; }
+<section class="page-intro">
+<div class="container">
+<div class="eyebrow">CÓ MỘT NƠI ĐANG ĐỢI BẠN</div>
+<h1>Điểm đến, nguồn cảm hứng.</h1>
+<p>Khám phá năm khu vực du lịch trong phạm vi Đông Nam Bộ của đề tài.</p></div></section>
+<div class="container section">
+<form class="inline-filters" method="get">
+<label>Tên địa điểm<input name="q" value="@Model.Query" placeholder="Bạn đang tìm nơi nào?"/></label>
+<label>Khu vực<select name="region">
+<option value="">Tất cả khu vực</option>@foreach(var r in CatalogOptions.Regions){<option selected="@(r==Model.Region)">@r</option>}</select></label>
+<label>Loại hình<select name="category">
+<option value="">Mọi loại hình</option>@foreach(var c in CatalogOptions.Categories){<option selected="@(c==Model.Category)">@c</option>}</select></label>
+<button class="btn">Tìm điểm đến</button>
+<a href="/Destinations">Xóa lọc</a></form>
+<div class="results-line"><b>@Model.Destinations.Count điểm đến</b>
+<span>Hình minh họa theo khu vực</span></div>
+<div class="card-grid">@foreach(var d in Model.Destinations){<partial name="_DestinationCard" model="d"/>}</div>@if(Model.Destinations.Count==0){<div class="empty">
+<h2>Chưa có điểm đến phù hợp.</h2>
+<a class="text-link" href="/Destinations">Xem tất cả điểm đến →</a></div>}</div>

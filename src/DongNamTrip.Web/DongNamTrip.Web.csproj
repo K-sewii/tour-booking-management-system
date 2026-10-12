@@ -1,0 +1,1 @@
+<Project Sdk="Microsoft.NET.Sdk.Web"><PropertyGroup><TargetFramework>net10.0</TargetFramework></PropertyGroup><ItemGroup><ProjectReference Include="../DongNamTrip.Contracts/DongNamTrip.Contracts.csproj" /><ProjectReference Include="../DongNamTrip.Client/DongNamTrip.Client.csproj" /></ItemGroup></Project>

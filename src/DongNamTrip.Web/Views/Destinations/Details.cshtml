@@ -1,0 +1,24 @@
+@model Destination
+@{ViewData["Title"]=Model.Name;}
+<div class="container section">
+<nav class="breadcrumbs">
+<a href="/Destinations">Điểm đến</a> / @Model.Region</nav>
+<div class="detail-heading">
+<span class="pill">@Model.Category</span>
+<h1>@Model.Name</h1>
+<p>@Model.Address</p></div>
+<img class="detail-hero" src="~/images/@(Model.Illustration).svg" alt="Minh họa @Model.Region"/>
+<div class="detail-layout">
+<article>
+<h2>Một chút về điểm đến</h2>
+<p>@Model.Description</p>
+<div class="facts">
+<div><small>Khu vực du lịch</small><b>@Model.Region</b></div>
+<div><small>Thời lượng dự kiến</small><b>@Model.VisitMinutes phút</b></div></div>
+<h2>Hoạt động & suất tổ chức</h2>
+<div class="notice">Chưa có lịch hoạt động được công bố. Mục này sẽ được bổ sung trong giai đoạn tiếp theo.</div></article>
+<aside class="booking-panel">
+<div class="eyebrow">THÊM MỘT ĐIỂM ĐÁNG NHỚ</div>
+<h2>Nơi này có trong chuyến đi của bạn?</h2>
+<p>Lưu vào lịch trình, chọn thêm điểm và sắp xếp theo ý thích.</p>
+<a class="btn full" asp-controller="Planner" asp-action="Index" asp-route-destinationId="@Model.Id">Thêm vào lịch trình ↗</a></aside></div></div>

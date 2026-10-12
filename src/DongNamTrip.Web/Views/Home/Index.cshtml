@@ -1,0 +1,68 @@
+@model HomeVm
+@{ ViewData["Title"] = "Đi gần, khám phá nhiều hơn"; }
+<section class="hero">
+<div class="hero-art" aria-hidden="true"></div>
+<div class="container hero-content">
+<div class="hero-kicker">
+<span></span> MỘT CHUYẾN ĐI, NHIỀU CÂU CHUYỆN</div>
+<h1>Đi gần thôi.<br/>Thấy <em>nhiều hơn.</em></h1>
+<p>Từ nhịp phố Sài Gòn đến những con đường ra biển.<br/>Khám phá Đông Nam Bộ theo cách của bạn.</p>
+<div class="hero-actions">
+<a class="btn" href="/Tours">Khám phá tour <span>↗</span></a>
+<a class="hero-secondary" href="/Planner">Tự tạo chuyến đi <span>→</span></a></div>
+<div class="hero-note">
+<span>05</span> khu vực khám phá <i></i>
+<span>∞</span> cảm hứng lên đường</div></div>
+<div class="hero-caption">MỘT GÓC ĐÔNG NAM BỘ <span>Hình minh họa</span></div></section>
+<div class="container">
+<form class="search-bar" method="get" action="/Tours">
+<label>
+<span>BẠN MUỐN ĐI ĐÂU?</span>
+<select name="region">
+<option value="">Tất cả khu vực</option>@foreach(var region in CatalogOptions.Regions){<option>@region</option>}</select></label>
+<label>
+<span>TRẢI NGHIỆM YÊU THÍCH</span>
+<select name="category">
+<option value="">Mọi trải nghiệm</option>@foreach(var category in CatalogOptions.Categories){<option>@category</option>}</select></label>
+<label>
+<span>TÌM THEO TÊN</span>
+<input name="q" placeholder="Một nơi bạn muốn đến…"/></label>
+<button class="btn">Tìm chuyến đi ↗</button></form></div>
+<section class="section container">
+<div class="section-heading">
+<div>
+<div class="eyebrow">CHẲNG CẦN ĐI THẬT XA</div>
+<h2>Mỗi vùng đất, một sắc màu.</h2></div>
+<a class="text-link" href="/Destinations">Tất cả điểm đến ↗</a></div>
+<div class="region-grid">@foreach(var region in CatalogOptions.Regions){<a class="region-tile" asp-controller="Destinations" asp-action="Index" asp-route-region="@region">
+<img src="~/images/@(CatalogOptions.IllustrationFor(region)).svg" alt=""/>
+<span>@region <b>↗</b></span></a>}</div></section>
+<section class="section soft">
+<div class="container">
+<div class="section-heading">
+<div>
+<div class="eyebrow">GỢI Ý CHO NGÀY NGHỈ TỚI</div>
+<h2>Xách balô, có lịch trình rồi.</h2></div>
+<a class="text-link" href="/Tours">Khám phá các tour ↗</a></div>
+<div class="card-grid">@foreach(var tour in Model.Tours.Take(3)){<partial name="_TourCard" model="tour"/>}</div></div></section>
+<section class="section container">
+<div class="planner-banner">
+<div>
+<div class="eyebrow">CHUYẾN ĐI MANG DẤU ẤN RIÊNG</div>
+<h2>Bạn chọn điểm đến.<br/>Hành trình là của bạn.</h2>
+<p>Gom những nơi bạn thích, sắp xếp thứ tự và lưu lại ý tưởng cho chuyến đi tiếp theo.</p>
+<a class="btn" href="/Planner">Bắt đầu lên lịch trình ↗</a></div>
+<div class="route-preview">
+<span class="route-label">MỘT NGÀY Ở SÀI GÒN</span>
+<div><b>01</b>
+<span>Bưu điện Trung tâm<small>Ngắm kiến trúc, gửi bưu thiếp</small></span></div>
+<div><b>02</b>
+<span>Chợ Bến Thành<small>Khám phá hương vị địa phương</small></span></div>
+<p>Đi chậm một chút, nhớ lâu một chút.</p></div></div></section>
+<section class="container principles">
+<div><b>01 / Chọn cách đi</b>
+<p>Theo tour có sẵn hoặc tự chọn điểm đến.</p></div>
+<div><b>02 / Xem thật rõ</b>
+<p>Lịch trình và giá tham khảo dễ theo dõi.</p></div>
+<div><b>03 / Giữ cảm hứng</b>
+<p>Lưu ý tưởng để tiếp tục hoàn thiện chuyến đi.</p></div></section>

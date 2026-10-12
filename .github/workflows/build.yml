@@ -1,0 +1,37 @@
+name: Build and smoke test
+on:
+  push:
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+      - run: dotnet build DongNamTrip.sln --configuration Release
+  web-api:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+      - run: dotnet build src/DongNamTrip.Api
+      - run: dotnet build src/DongNamTrip.Web
+      - run: python3 tests/smoke.py --start
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm install --no-save --package-lock=false playwright@1.56.1
+      - run: npx playwright install --with-deps chromium
+      - run: python3 tests/browser_runner.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: web-previews
+          path: artifacts/previews
+          if-no-files-found: ignore

@@ -1,0 +1,30 @@
+@model TourListVm
+@{ ViewData["Title"] = "Khám phá tour"; }
+<section class="page-intro">
+<div class="container">
+<div class="eyebrow">ĐÔNG NAM BỘ, THEO CÁCH CỦA BẠN</div>
+<h1>Tìm một hành trình đáng nhớ.</h1>
+<p>Biển xanh, phố thị hay một ngày giữa thiên nhiên?</p></div></section>
+<div class="container listing-layout section">
+<aside class="filter-panel">
+<h3>Chọn chuyến đi</h3>
+<form method="get">
+<label>Tìm kiếm<input name="q" value="@Model.Query" placeholder="Tên tour, trải nghiệm…"/></label>
+<label>Khu vực<select name="region">
+<option value="">Tất cả khu vực</option>@foreach(var r in CatalogOptions.Regions){<option selected="@(Model.Region==r)">@r</option>}</select></label>
+<label>Trải nghiệm<select name="category">
+<option value="">Tất cả trải nghiệm</option>@foreach(var c in CatalogOptions.Categories){<option selected="@(Model.Category==c)">@c</option>}</select></label>
+<label>Sắp xếp<select name="sort">
+<option value="">Gợi ý cho bạn</option>
+<option value="price-asc" selected="@(Model.Sort=="price-asc")">Giá tăng dần</option>
+<option value="price-desc" selected="@(Model.Sort=="price-desc")">Giá giảm dần</option></select></label>
+<button class="btn full">Áp dụng bộ lọc</button>
+<a class="reset-link" href="/Tours">Xóa bộ lọc</a></form>
+<div class="filter-tip">Muốn đi theo cách riêng?<a href="/Planner">Tự tạo chuyến đi →</a></div></aside>
+<section>
+<div class="results-line"><b>@Model.TotalCount hành trình</b>
+<span>Giá mẫu để trải nghiệm giao diện</span></div>
+<div class="card-grid two">@foreach(var t in Model.Tours){<partial name="_TourCard" model="t"/>}</div>@if(Model.TotalCount==0){<div class="empty">
+<h2>Chưa tìm thấy tour phù hợp.</h2>
+<p>Thử thay đổi từ khóa hoặc chọn khu vực khác.</p>
+<a class="btn" href="/Tours">Xem tất cả tour</a></div>}<nav class="pagination" aria-label="Phân trang">@for(var i=1;i<=Model.TotalPages;i++){<a class="@(i==Model.Page ? "current" : "")" asp-route-page="@i" asp-route-q="@Model.Query" asp-route-region="@Model.Region" asp-route-category="@Model.Category" asp-route-sort="@Model.Sort">@i</a>}</nav></section></div>
