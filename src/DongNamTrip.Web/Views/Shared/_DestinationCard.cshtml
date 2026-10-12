@@ -1,0 +1,8 @@
+@model Destination
+<article class="destination-card">
+<a asp-controller="Destinations" asp-action="Details" asp-route-id="@Model.Id">
+<img src="~/images/@(Model.Illustration).svg" alt="Minh họa @Model.Region" loading="lazy"/>
+<div>
+<span class="eyebrow">@Model.Region · @Model.Category</span>
+<h3>@Model.Name</h3>
+<p>@Model.VisitMinutes phút tham quan dự kiến <span>↗</span></p></div></a></article>

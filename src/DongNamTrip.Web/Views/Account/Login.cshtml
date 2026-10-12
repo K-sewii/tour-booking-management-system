@@ -1,0 +1,21 @@
+@model LoginRequest
+@{ ViewData["Title"] = "Đăng nhập"; }
+<div class="container section auth-layout">
+<div class="auth-art">
+<img src="~/images/mountain.svg" alt="Minh họa hành trình giữa núi xanh"/>
+<div>
+<div class="eyebrow">MỖI CHUYẾN ĐI LÀ MỘT KHỞI ĐẦU</div>
+<h1>Hẹn bạn,<br/>ở một nơi mới.</h1></div></div>
+<section class="auth-form">
+<span class="pill">DongNamTrip</span>
+<h1>Chào bạn trở lại.</h1>
+<p>Đăng nhập để lưu những hành trình bạn yêu thích.</p>
+<form method="post" asp-action="Login">
+<input type="hidden" name="returnUrl" value="@ViewBag.ReturnUrl"/>
+<div asp-validation-summary="All" class="validation"></div>
+<label>Email<input asp-for="Email" type="email" autocomplete="username" required placeholder="Email của bạn"/></label>
+<label>Mật khẩu<input asp-for="Password" type="password" autocomplete="current-password" required placeholder="Nhập mật khẩu"/></label>
+<button class="btn full">Đăng nhập ↗</button></form>
+<div class="demo-credentials"><b>Tài khoản trải nghiệm</b>
+<p>khach@@dongnamtrip.local<br/>Mật khẩu: <code>Demo@@123</code></p><small>Chỉ dùng dữ liệu thử nghiệm trên máy phát triển.</small></div>
+<p>Chưa có tài khoản? <a class="text-link" href="/Account/Register">Thông tin đăng ký</a></p></section></div>

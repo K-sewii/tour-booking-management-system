@@ -1,0 +1,13 @@
+bin/
+obj/
+.vs/
+.vscode/*.local.json
+*.user
+*.suo
+.env
+appsettings.Local.json
+TestResults/
+artifacts/
+node_modules/
+__pycache__/
+*.pyc

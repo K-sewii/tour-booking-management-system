@@ -1,0 +1,38 @@
+@model TourDetailVm
+@{ ViewData["Title"] = Model.Tour.Name; var t=Model.Tour; }
+<div class="container section">
+<nav class="breadcrumbs">
+<a href="/">Trang chủ</a> / <a href="/Tours">Tour</a> / @t.Region</nav>
+<div class="detail-heading">
+<span class="pill">@t.Category · @t.Duration</span>
+<h1>@t.Name</h1>
+<p>@t.Summary</p></div>
+<img class="detail-hero" src="~/images/@(t.Illustration).svg" alt="Minh họa @t.Region"/>
+<div class="detail-layout">
+<article>
+<div class="subnav">
+<a href="#overview">Tổng quan</a>
+<a href="#itinerary">Lịch trình</a>
+<a href="#notes">Lưu ý</a></div>
+<h2 id="overview">Một ngày, nhiều điều để nhớ.</h2>
+<p>@t.Summary</p>
+<div class="facts">
+<div><small>Thời lượng</small><b>@t.Duration</b></div>
+<div><small>Khu vực</small><b>@t.Region</b></div>
+<div><small>Điểm tham quan</small><b>@Model.Destinations.Count địa điểm</b></div></div>
+<h2 id="itinerary">Lịch trình gợi ý</h2>
+<ol class="timeline">@foreach(var d in Model.Destinations){<li>
+<h3>@d.Name</h3>
+<p>@d.Description</p>
+<a class="text-link" asp-controller="Destinations" asp-action="Details" asp-route-id="@d.Id">Khám phá địa điểm ↗</a></li>}</ol>
+<h2 id="notes">Trước khi bạn lên đường</h2>
+<p>Đây là tour mẫu phục vụ trải nghiệm giao diện. Ngày khởi hành, dịch vụ bao gồm, chính sách hủy và giá chính thức sẽ được cập nhật khi chức năng đặt tour hoàn thiện.</p></article>
+<aside class="booking-panel" data-unit-price="@t.ReferencePrice"><small>Giá tham khảo / khách</small>
+<h2>@t.ReferencePrice.ToString("N0", CultureInfo.GetCultureInfo("vi-VN")) ₫</h2>
+<label>Ngày dự kiến<input type="date" min="@DateTime.Today.ToString("yyyy-MM-dd")" aria-label="Ngày đi dự kiến"/></label>
+<label>Số khách<input id="guest-count" type="number" min="1" max="40" value="2"/></label>
+<div class="estimate">
+<span>Tạm tính minh họa</span><b id="estimate-value"></b></div>
+<button class="btn full" disabled>Đặt tour · Đang phát triển</button>
+<p class="hint">Chưa giữ chỗ hoặc tạo đơn. Bạn có thể dùng tour này làm ý tưởng cho lịch trình.</p>
+<a class="btn outline full" asp-controller="Planner" asp-action="Index" asp-route-tourId="@t.Id">Tùy chỉnh lịch trình ↗</a></aside></div></div>

@@ -1,0 +1,32 @@
+@model TripsVm
+@{ ViewData["Title"] = "Chuyến đi của tôi"; }
+<section class="page-intro">
+<div class="container">
+<div class="eyebrow">CHÀO @User.Identity?.Name</div>
+<h1>Những chuyến đi đang chờ.</h1>
+<p>Tiếp tục từ một ý tưởng bạn đã lưu.</p></div></section>
+<div class="container section">
+<div class="tabs" role="tablist">
+<button id="drafts-tab" class="current" data-tab="drafts" role="tab" aria-selected="true" aria-controls="drafts">Lịch trình nháp (@Model.Itineraries.Count)</button>
+<button id="bookings-tab" data-tab="bookings" role="tab" aria-selected="false" aria-controls="bookings">Tour đã đặt</button>
+<button id="quotes-tab" data-tab="quotes" role="tab" aria-selected="false" aria-controls="quotes">Yêu cầu & báo giá</button></div>
+<section id="drafts" role="tabpanel" aria-labelledby="drafts-tab">@if(Model.Itineraries.Count==0){<div class="empty">
+<span class="empty-icon">↗</span>
+<h2>Chuyến đi tiếp theo bắt đầu ở đây.</h2>
+<p>Bạn chưa lưu lịch trình nào. Hãy chọn vài điểm đến yêu thích.</p>
+<a class="btn" href="/Planner">Tạo lịch trình đầu tiên</a></div>}else{<div class="card-grid">@foreach(var trip in Model.Itineraries){<article class="saved-trip">
+<span class="pill">Lịch trình nháp #@trip.Id</span>
+<h2>@trip.Name</h2>
+<p>@trip.StartDate.ToString("dd/MM/yyyy") · @trip.Guests khách</p>
+<ol>@foreach(var id in trip.DestinationIds){<li>@Model.Destinations.FirstOrDefault(x=>x.Id==id)?.Name</li>}</ol><small>Đã lưu trong phiên chạy API demo.</small></article>}</div>}</section>
+<section id="bookings" role="tabpanel" aria-labelledby="bookings-tab" hidden>
+<div class="empty">
+<h2>Chưa có tour đã đặt.</h2>
+<p>Chức năng đặt tour và xử lý đơn đang được phát triển.</p>
+<a class="btn" href="/Tours">Khám phá tour</a></div></section>
+<section id="quotes" role="tabpanel" aria-labelledby="quotes-tab" hidden>
+<div class="empty">
+<h2>Ý tưởng hôm nay, hành trình ngày mai.</h2>
+<p>Chức năng gửi yêu cầu tour riêng và nhận báo giá sẽ được bổ sung sau.</p>
+<a class="btn" href="/Planner">Lên ý tưởng chuyến đi</a></div></section>
+<p class="hint">Bản demo giữ dữ liệu khi bạn đăng xuất và đăng nhập lại, nhưng dữ liệu sẽ mất khi API khởi động lại.</p></div>
