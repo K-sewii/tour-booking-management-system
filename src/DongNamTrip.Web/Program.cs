@@ -15,7 +15,7 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
     options.LoginPath = "/Account/Login";
     options.ExpireTimeSpan = TimeSpan.FromHours(4);
     options.SlidingExpiration = false;
-    options.Cookie.Name = "DongNamTrip.Demo";
+    options.Cookie.Name = "DongNamTrip.Auth";
     options.Cookie.HttpOnly = true;
     options.Cookie.SameSite = SameSiteMode.Lax;
 });

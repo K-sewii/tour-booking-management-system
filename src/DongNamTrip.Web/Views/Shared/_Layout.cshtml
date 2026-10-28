@@ -1,10 +1,14 @@
+@using System.Security.Claims
+@{
+    var roleNames = User.FindAll(ClaimTypes.Role).Select(claim => claim.Value).ToArray();
+}
 <!DOCTYPE html>
 <html lang="vi"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1"/><meta name="description" content="DongNamTrip — khám phá Đông Nam Bộ và tạo chuyến đi của riêng bạn."/><title>@ViewData["Title"] · DongNamTrip</title>
 <link rel="icon" href="~/images/mark.svg" type="image/svg+xml"/>
-<link rel="stylesheet" href="~/css/site.css" asp-append-version="true"/></head>
+<link rel="stylesheet" href="~/css/site.css" asp-append-version="true"/><link rel="stylesheet" href="~/css/auth.css" asp-append-version="true"/></head>
 <body>
 <a class="skip" href="#main">Đến nội dung chính</a>
-<div class="demo-bar">BẢN TRẢI NGHIỆM <span>•</span> Dữ liệu và giá minh họa, chưa nhận đặt tour</div>
+<div class="demo-bar">BẢN PHÁT TRIỂN <span>•</span> Danh mục và giá minh họa, chưa nhận đặt tour</div>
 <header class="header">
 <div class="container nav">
 <a class="brand" asp-controller="Home" asp-action="Index">
@@ -15,8 +19,16 @@
 <a class="@(ViewContext.RouteData.Values["controller"]?.ToString()=="Destinations" ? "active" : "")" asp-controller="Destinations" asp-action="Index">Điểm đến</a>
 <a class="@(ViewContext.RouteData.Values["controller"]?.ToString()=="Planner" ? "active" : "")" asp-controller="Planner" asp-action="Index">Tự tạo chuyến đi</a>
 <a asp-controller="Trips" asp-action="Index">Chuyến đi của tôi</a>
-@if(User.Identity?.IsAuthenticated == true){<form asp-controller="Account" asp-action="Logout" method="post">
-<button class="btn small outline" type="submit">@User.Identity.Name · Đăng xuất</button></form>}else{<a class="btn small" asp-controller="Account" asp-action="Login">Đăng nhập ↗</a>}
+@if (User.Identity?.IsAuthenticated == true)
+{
+    <a class="btn small outline" asp-controller="Account" asp-action="Profile">@User.Identity.Name · @string.Join(", ", roleNames) · Thông tin tài khoản</a>
+    <form asp-controller="Account" asp-action="Logout" method="post">
+    <button class="btn small outline" type="submit">Đăng xuất</button></form>
+}
+else
+{
+    <a class="btn small" asp-controller="Account" asp-action="Login">Đăng nhập →</a>
+}
 </nav></div></header>
 <main id="main">@RenderBody()</main>
 <footer>
@@ -30,7 +42,14 @@
 <a href="/Planner">Tự tạo chuyến đi</a></div>
 <div><b>Chuyến đi của bạn</b>
 <a href="/Trips">Lịch trình đã lưu</a>
-<a href="/Account/Login">Tài khoản trải nghiệm</a>
-<p>Dự án học tập của Đức · Kỳ · Nam · Vương</p></div></div>
+@if (User.Identity?.IsAuthenticated == true)
+{
+    <a asp-controller="Account" asp-action="Profile">Tài khoản</a>
+}
+else
+{
+    <a asp-controller="Account" asp-action="Login">Tài khoản</a>
+}
+<p>Dự án học tập của nhóm DongNamTrip</p></div></div>
 <div class="container footer-bottom">© 2026 DongNamTrip <span>Hình minh họa • Giá mẫu • Chưa giao dịch thực tế</span></div></footer>
 <script src="~/js/site.js" asp-append-version="true" defer></script>@await RenderSectionAsync("Scripts", required: false)</body></html>

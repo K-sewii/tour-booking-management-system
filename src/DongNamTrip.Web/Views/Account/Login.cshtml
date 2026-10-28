@@ -9,13 +9,14 @@
 <section class="auth-form">
 <span class="pill">DongNamTrip</span>
 <h1>Chào bạn trở lại.</h1>
-<p>Đăng nhập để lưu những hành trình bạn yêu thích.</p>
-<form method="post" asp-action="Login">
+<p>Đăng nhập để lưu những lịch trình bạn yêu thích.</p>
+<form method="post" asp-action="Login" class="auth-form-card" data-auth-form data-auth-mode="login" novalidate>
 <input type="hidden" name="returnUrl" value="@ViewBag.ReturnUrl"/>
-<div asp-validation-summary="All" class="validation"></div>
-<label>Email<input asp-for="Email" type="email" autocomplete="username" required placeholder="Email của bạn"/></label>
-<label>Mật khẩu<input asp-for="Password" type="password" autocomplete="current-password" required placeholder="Nhập mật khẩu"/></label>
-<button class="btn full">Đăng nhập ↗</button></form>
-<div class="demo-credentials"><b>Tài khoản trải nghiệm</b>
-<p>khach@@dongnamtrip.local<br/>Mật khẩu: <code>Demo@@123</code></p><small>Chỉ dùng dữ liệu thử nghiệm trên máy phát triển.</small></div>
-<p>Chưa có tài khoản? <a class="text-link" href="/Account/Register">Thông tin đăng ký</a></p></section></div>
+<div asp-validation-summary="All" class="validation validation-summary" role="alert" aria-live="assertive"></div>
+<label class="auth-field" for="Email"><span>Email <b aria-hidden="true">*</b></span><input asp-for="Email" type="email" autocomplete="username" autofocus required maxlength="254" aria-describedby="Email-error" placeholder="Email của bạn"/><span asp-validation-for="Email" id="Email-error" class="field-error" aria-live="polite"></span></label>
+<label class="auth-field" for="Password"><span>Mật khẩu <b aria-hidden="true">*</b></span><input asp-for="Password" type="password" autocomplete="current-password" required maxlength="128" aria-describedby="Password-error" placeholder="Nhập mật khẩu"/><span asp-validation-for="Password" id="Password-error" class="field-error" aria-live="polite"></span></label>
+<button class="btn full" type="submit" data-auth-submit data-default-label="Đăng nhập →" data-busy-label="Đang đăng nhập…">Đăng nhập →</button>
+<p class="auth-status" data-auth-status role="status" aria-live="polite"></p>
+</form>
+<p>Chưa có tài khoản? <a class="text-link" asp-action="Register" asp-route-returnUrl="@ViewBag.ReturnUrl">Đăng ký</a></p></section></div>
+@section Scripts { <script src="~/js/auth.js" asp-append-version="true" defer></script> }
