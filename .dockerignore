@@ -1,0 +1,11 @@
+.git
+.github
+.vscode
+**/bin
+**/obj
+.env
+artifacts
+node_modules
+tests
+README.md
+DongNamTrip_Full.sql

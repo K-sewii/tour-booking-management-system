@@ -2,6 +2,29 @@
 
 # DongNamTrip
 
+## Chạy bằng Docker
+
+Yêu cầu Docker Desktop đang chạy ở chế độ Linux containers. Tại thư mục gốc của dự án:
+
+```powershell
+if (-not (Test-Path .env)) { Copy-Item .env.example .env }
+# Nếu vừa tạo .env từ mẫu, đổi MSSQL_SA_PASSWORD thành mật khẩu mạnh của riêng bạn.
+docker compose up -d --build
+docker compose ps
+```
+
+Mở Web tại http://localhost:5081 và kiểm tra API tại http://localhost:5080/health. SQL Server có thể kết nối từ SSMS qua `localhost,14333`, tên đăng nhập `sa`, mật khẩu trong `.env`, database `DongNamTrip`. Lần chạy đầu sẽ tự nạp `DongNamTrip_Full.sql`; dữ liệu SQL được giữ trong Docker volume `dongnamtrip_sqlserver_data`. Để xem kết quả nạp:
+
+```powershell
+docker compose logs sql-init
+```
+
+File SQL đã có cơ chế bỏ qua khi bản `2026-10-28.full.1` đã được nạp. Nếu bạn cập nhật nội dung file với phiên bản mới, hãy dùng cách nâng cấp phù hợp; script sẽ dừng khi gặp database có schema cũ thay vì xóa dữ liệu. `docker compose down` dừng dịch vụ và giữ volume; `docker compose down -v` xóa cả dữ liệu SQL.
+
+**Lưu ý:** API/Web hiện vẫn dùng dữ liệu demo trong bộ nhớ. Việc nạp database chưa làm các màn hình lấy dữ liệu từ SQL. Tài khoản trên Web vẫn là `khach@dongnamtrip.local` / `Demo@123`; các tài khoản `@dongnamtrip.test` trong file SQL chỉ tồn tại ở database cho đến khi API được kết nối với SQL.
+
+Ứng dụng WinForms chạy trực tiếp trên Windows bằng `dotnet run --project src/DongNamTrip.Admin` và dùng API Docker tại `localhost:5080`.
+
 Dự án nhóm môn C# — Hệ thống quản lý đặt tour du lịch.
 
 ## 1. Chuẩn bị

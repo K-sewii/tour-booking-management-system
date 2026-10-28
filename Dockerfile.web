@@ -1,0 +1,17 @@
+FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
+WORKDIR /src
+COPY Directory.Build.props ./
+COPY src/DongNamTrip.Contracts/DongNamTrip.Contracts.csproj src/DongNamTrip.Contracts/
+COPY src/DongNamTrip.Client/DongNamTrip.Client.csproj src/DongNamTrip.Client/
+COPY src/DongNamTrip.Web/DongNamTrip.Web.csproj src/DongNamTrip.Web/
+RUN dotnet restore src/DongNamTrip.Web/DongNamTrip.Web.csproj
+COPY src/DongNamTrip.Contracts/ src/DongNamTrip.Contracts/
+COPY src/DongNamTrip.Client/ src/DongNamTrip.Client/
+COPY src/DongNamTrip.Web/ src/DongNamTrip.Web/
+RUN dotnet publish src/DongNamTrip.Web/DongNamTrip.Web.csproj -c Release -o /app/publish --no-restore /p:UseAppHost=false
+
+FROM mcr.microsoft.com/dotnet/aspnet:10.0
+WORKDIR /app
+COPY --from=build /app/publish .
+EXPOSE 8080
+ENTRYPOINT ["dotnet", "DongNamTrip.Web.dll"]
