@@ -52,7 +52,9 @@
     };
 
     const updateTerms = () => {
-      const terms = form.elements.TermsAccepted;
+      const terms = form.querySelector(
+        'input[type="checkbox"][name="TermsAccepted"]'
+      );
       if (terms && submit) submit.disabled = !terms.checked;
     };
 

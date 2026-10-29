@@ -10,6 +10,7 @@ import http.cookiejar
 import json
 import re
 import subprocess
+import sys
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -261,10 +262,18 @@ def run_web_checks():
     check(destination == WEB + "/", f"External returnUrl must redirect home, got {destination}.")
 
 
+def run():
+    run_api_checks()
+    run_web_checks()
+    print(f"PASS: {checks} SCR02/SCR03 HTTP and SQL assertions.")
+
+
 if __name__ == "__main__":
     try:
-        run_api_checks()
-        run_web_checks()
-        print(f"PASS: {checks} SCR02/SCR03 HTTP and SQL assertions.")
+        if "--start" in sys.argv:
+            with smoke.running_apps():
+                run()
+        else:
+            run()
     finally:
         smoke.cleanup_test_accounts()
