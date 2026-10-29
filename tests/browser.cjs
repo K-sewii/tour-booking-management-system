@@ -55,7 +55,7 @@ const fs = require('node:fs');
   await page.goto(root + '/Account/Register');
   assert.equal(await page.locator('[name=Name]').evaluate(element => document.activeElement === element), true, 'Register must focus Name.');
   assert.equal(await page.locator('[data-auth-submit]').isDisabled(), true, 'Register submit must be disabled until terms are accepted.');
-  await page.locator('[name=TermsAccepted]').check();
+  await page.locator('input[type="checkbox"][name="TermsAccepted"]').check();
   assert.equal(await page.locator('[data-auth-submit]').isDisabled(), false, 'Register submit must enable after accepting terms.');
   await page.locator('[name=PhoneNumber]').fill('090abc123456789012345');
   assert.equal(await page.locator('[name=PhoneNumber]').inputValue(), '090123456789012', 'Phone input must retain digits only and stop at 15 digits.');
