@@ -53,6 +53,9 @@ jobs:
       - name: Run HTTP and SQL smoke tests
         run: python tests/smoke.py --start
 
+      - name: Run SCR02/SCR03 authentication tests
+        run: python tests/auth_screens.py --start
+
       - uses: actions/setup-node@v4
         with:
           node-version: '22'

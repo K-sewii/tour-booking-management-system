@@ -2,6 +2,7 @@ using DongNamTrip.Client;
 using DongNamTrip.Contracts;
 
 namespace DongNamTrip.Admin;
+
 public sealed class MainForm : Form
 {
     private readonly Panel content = new()
@@ -12,6 +13,7 @@ public sealed class MainForm : Form
     };
     private readonly Label heading = Ui.Label("Tổng quan", 22, true);
     private readonly List<Button> navButtons = [];
+
     public MainForm(TripApiClient api, LoginResponse session)
     {
         Text = "DongNamTrip · Quản trị";
@@ -20,6 +22,10 @@ public sealed class MainForm : Form
         StartPosition = FormStartPosition.CenterScreen;
         Font = new Font("Segoe UI", 10);
         AutoScaleMode = AutoScaleMode.Dpi;
+
+        var roles = session.User.Roles;
+        bool Has(params string[] allowed) => AppRoles.HasAny(roles, allowed);
+
         var shell = new TableLayoutPanel
         {
             Dock = DockStyle.Fill,
@@ -46,6 +52,7 @@ public sealed class MainForm : Form
         caption.ForeColor = Color.FromArgb(178, 211, 190);
         caption.Margin = new Padding(0, 5, 0, 35);
         sidebar.Controls.Add(caption);
+
         var body = new TableLayoutPanel
         {
             Dock = DockStyle.Fill,
@@ -66,32 +73,33 @@ public sealed class MainForm : Form
         top.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 60));
         top.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 40));
         top.Controls.Add(heading);
-        var account = Ui.Label($"{session.User.Name} · Quản trị viên", 10);
+        var account = Ui.Label($"{session.User.Name} · {string.Join(", ", roles)}", 10);
         account.Anchor = AnchorStyles.Right;
         top.Controls.Add(account);
         body.Controls.Add(top, 0, 0);
         body.Controls.Add(content, 0, 1);
-        var status = Ui.Label("  DEMO · Dữ liệu trong bộ nhớ · Chưa kết nối SQL Server", 9);
+        var status = Ui.Label("  SQL Server · Xác thực và phân quyền theo vai trò · Danh mục hiện vẫn là dữ liệu demo", 9);
         status.Dock = DockStyle.Fill;
         body.Controls.Add(status, 0, 2);
         shell.Controls.Add(sidebar, 0, 0);
         shell.Controls.Add(body, 1, 0);
         Controls.Add(shell);
+
         void Nav(string title, Func<UserControl> factory)
         {
-            var b = Ui.Button(title);
-            b.AutoSize = false;
-            b.Width = 200;
-            b.Height = 46;
-            b.TextAlign = ContentAlignment.MiddleLeft;
-            b.BackColor = Ui.Ink;
-            b.ForeColor = Color.FromArgb(213, 232, 219);
-            b.FlatAppearance.BorderSize = 0;
-            b.Click += (_, _) =>
+            var button = Ui.Button(title);
+            button.AutoSize = false;
+            button.Width = 200;
+            button.Height = 46;
+            button.TextAlign = ContentAlignment.MiddleLeft;
+            button.BackColor = Ui.Ink;
+            button.ForeColor = Color.FromArgb(213, 232, 219);
+            button.FlatAppearance.BorderSize = 0;
+            button.Click += (_, _) =>
             {
-                foreach (var button in navButtons)
-                    button.BackColor = Ui.Ink;
-                b.BackColor = Ui.Green;
+                foreach (var navButton in navButtons)
+                    navButton.BackColor = Ui.Ink;
+                button.BackColor = Ui.Green;
                 heading.Text = title;
                 foreach (Control old in content.Controls.Cast<Control>().ToArray())
                 {
@@ -103,17 +111,27 @@ public sealed class MainForm : Form
                 screen.Dock = DockStyle.Fill;
                 content.Controls.Add(screen);
             };
-            navButtons.Add(b);
-            sidebar.Controls.Add(b);
+            navButtons.Add(button);
+            sidebar.Controls.Add(button);
         }
 
-        Nav("Tổng quan", () => new DashboardControl(api));
-        Nav("Địa điểm", () => new DestinationsControl(api, session.Token));
-        Nav("Hoạt động & suất", () => new ModuleControl("Hoạt động và suất tổ chức", "Vương", ["Hoạt động", "Địa điểm", "Ngày tổ chức", "Trạng thái"]));
-        Nav("Tour & khởi hành", () => new ToursControl(api));
-        Nav("Đơn đặt tour", () => new ModuleControl("Đơn đặt tour", "Kỳ", ["Mã đơn", "Khách hàng", "Tour", "Tổng tiền", "Trạng thái"]));
-        Nav("Tour riêng & báo giá", () => new ModuleControl("Yêu cầu tour riêng và báo giá", "Nam", ["Mã yêu cầu", "Khách hàng", "Ngày dự kiến", "Số khách", "Trạng thái"]));
-        Nav("Tài khoản", () => new ModuleControl("Tài khoản và phân quyền", "Đức", ["Họ tên", "Email", "Vai trò", "Trạng thái"]));
+        Nav("Tổng quan", () => new DashboardControl(api, session.User.Name));
+        if (Has(AppRoles.Admin, AppRoles.Editor))
+            Nav("Địa điểm", () => new DestinationsControl(api, session.Token));
+        if (Has(AppRoles.Admin, AppRoles.Operator))
+        {
+            Nav("Hoạt động & suất", () => new ModuleControl("Hoạt động và suất tổ chức", "Nhóm vận hành", ["Hoạt động", "Địa điểm", "Ngày tổ chức", "Trạng thái"]));
+            Nav("Tour & khởi hành", () => new ToursControl(api));
+            Nav("Đơn đặt tour", () => new ModuleControl("Đơn đặt tour", "Nhóm vận hành", ["Mã đơn", "Khách hàng", "Tour", "Tổng tiền", "Trạng thái"]));
+            Nav("Tour riêng & báo giá", () => new ModuleControl("Yêu cầu tour riêng và báo giá", "Nhóm vận hành", ["Mã yêu cầu", "Khách hàng", "Ngày dự kiến", "Số khách", "Trạng thái"]));
+        }
+        if (Has(AppRoles.Finance))
+            Nav("Tài chính", () => new ModuleControl("Thu, hoàn tiền và đối soát", "Nhóm tài chính", ["Mã giao dịch", "Đơn đặt", "Số tiền", "Trạng thái"]));
+        if (Has(AppRoles.Publisher))
+            Nav("Công bố nội dung", () => new ModuleControl("Duyệt và công bố nội dung", "Nhóm xuất bản", ["Nội dung", "Ngôn ngữ", "Trạng thái", "Người duyệt"]));
+        if (Has(AppRoles.Admin))
+            Nav("Tài khoản", () => new ModuleControl("Tài khoản và phân quyền", "Quản trị viên", ["Họ tên", "Email", "Vai trò", "Trạng thái"]));
+
         var logout = Ui.Button("Đăng xuất & đóng");
         logout.Margin = new Padding(0, 30, 0, 0);
         sidebar.Controls.Add(logout);

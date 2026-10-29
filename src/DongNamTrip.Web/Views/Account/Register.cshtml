@@ -1,7 +1,26 @@
-@{ViewData["Title"]="Đăng ký";}
-<div class="container section">
-<div class="empty">
-<span class="pill">Tài khoản</span>
-<h1>Đăng ký sẽ sớm có mặt.</h1>
-<p>Bản nền tảng hiện dùng tài khoản demo. Chức năng tạo tài khoản mới sẽ được Đức tích hợp ở bước tiếp theo.</p>
-<a class="btn" href="/Account/Login">Dùng tài khoản trải nghiệm ↗</a></div></div>
+@model RegisterRequest
+@{ ViewData["Title"] = "Đăng ký"; }
+<div class="container section auth-layout">
+<div class="auth-art">
+<img src="~/images/mountain.svg" alt="Minh họa hành trình giữa núi xanh"/>
+<div>
+<div class="eyebrow">BẮT ĐẦU HÀNH TRÌNH CỦA BẠN</div>
+<h1>Đi gần,<br/>khám phá nhiều hơn.</h1></div></div>
+<section class="auth-form">
+<span class="pill">Tài khoản khách hàng</span>
+<h1>Tạo tài khoản.</h1>
+<p>Tài khoản mới chỉ được cấp quyền khách hàng. Quyền nhân viên được quản trị viên phân công riêng.</p>
+<form method="post" asp-action="Register" class="auth-form-card" data-auth-form data-auth-mode="register" novalidate>
+<input type="hidden" name="returnUrl" value="@ViewBag.ReturnUrl"/>
+<div asp-validation-summary="All" class="validation validation-summary" role="alert" aria-live="assertive"></div>
+<label class="auth-field" for="Name"><span>Họ và tên <b aria-hidden="true">*</b></span><input asp-for="Name" autocomplete="name" autofocus required maxlength="100" aria-describedby="Name-error" placeholder="Họ và tên của bạn"/><span asp-validation-for="Name" id="Name-error" class="field-error" aria-live="polite"></span></label>
+<label class="auth-field" for="Email"><span>Email <b aria-hidden="true">*</b></span><input asp-for="Email" type="email" autocomplete="email" required maxlength="254" aria-describedby="Email-error" placeholder="Email của bạn"/><span asp-validation-for="Email" id="Email-error" class="field-error" aria-live="polite"></span></label>
+<label class="auth-field" for="PhoneNumber"><span>Số điện thoại</span><input asp-for="PhoneNumber" type="tel" autocomplete="tel" inputmode="numeric" maxlength="15" pattern="[0-9]*" aria-describedby="PhoneNumber-error" placeholder="Ví dụ: 0901234567"/><span asp-validation-for="PhoneNumber" id="PhoneNumber-error" class="field-error" aria-live="polite"></span></label>
+<label class="auth-field" for="Password"><span>Mật khẩu <b aria-hidden="true">*</b></span><input asp-for="Password" type="password" autocomplete="new-password" required minlength="8" maxlength="128" aria-describedby="Password-error" placeholder="Ít nhất 8 ký tự, có chữ và số"/><span asp-validation-for="Password" id="Password-error" class="field-error" aria-live="polite"></span></label>
+<label class="auth-field" for="ConfirmPassword"><span>Nhập lại mật khẩu <b aria-hidden="true">*</b></span><input asp-for="ConfirmPassword" type="password" autocomplete="new-password" required maxlength="128" aria-describedby="ConfirmPassword-error" placeholder="Nhập lại mật khẩu"/><span asp-validation-for="ConfirmPassword" id="ConfirmPassword-error" class="field-error" aria-live="polite"></span></label>
+<label class="terms-field" for="TermsAccepted"><input asp-for="TermsAccepted" type="checkbox" aria-describedby="TermsAccepted-error"/><span>Tôi đồng ý với điều khoản sử dụng <b aria-hidden="true">*</b></span></label><span asp-validation-for="TermsAccepted" id="TermsAccepted-error" class="field-error" aria-live="polite"></span>
+<button class="btn full" type="submit" data-auth-submit data-default-label="Đăng ký →" data-busy-label="Đang tạo tài khoản…" disabled>Đăng ký →</button>
+<p class="auth-status" data-auth-status role="status" aria-live="polite"></p>
+</form>
+<p>Đã có tài khoản? <a class="text-link" asp-action="Login" asp-route-returnUrl="@ViewBag.ReturnUrl">Đăng nhập</a></p></section></div>
+@section Scripts { <script src="~/js/auth.js" asp-append-version="true" defer></script> }

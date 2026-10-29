@@ -2,6 +2,7 @@ using DongNamTrip.Client;
 using DongNamTrip.Contracts;
 
 namespace DongNamTrip.Admin;
+
 public sealed class LoginForm : Form
 {
     public LoginResponse? Session { get; private set; }
@@ -9,7 +10,7 @@ public sealed class LoginForm : Form
     public LoginForm(TripApiClient api)
     {
         Text = "DongNamTrip · Đăng nhập quản trị";
-        ClientSize = new Size(455, 475);
+        ClientSize = new Size(455, 440);
         FormBorderStyle = FormBorderStyle.FixedDialog;
         MaximizeBox = false;
         StartPosition = FormStartPosition.CenterScreen;
@@ -21,13 +22,13 @@ public sealed class LoginForm : Form
             Dock = DockStyle.Fill,
             Padding = new Padding(34),
             ColumnCount = 1,
-            RowCount = 9
+            RowCount = 8
         };
         var email = new TextBox
         {
-            Text = "admin@dongnamtrip.local",
             Dock = DockStyle.Fill,
-            Margin = new Padding(0, 3, 0, 12)
+            Margin = new Padding(0, 3, 0, 12),
+            PlaceholderText = "name@example.com"
         };
         var password = new TextBox
         {
@@ -38,23 +39,22 @@ public sealed class LoginForm : Form
         var login = Ui.Button("Đăng nhập", true);
         login.Dock = DockStyle.Fill;
         layout.Controls.Add(Ui.Label("DongNamTrip", 24, true));
-        layout.Controls.Add(Ui.Label("KHÔNG GIAN QUẢN TRỊ · BẢN DEMO", 9));
-        layout.Controls.Add(Ui.Label("Email quản trị"));
+        layout.Controls.Add(Ui.Label("KHÔNG GIAN QUẢN TRỊ", 9));
+        layout.Controls.Add(Ui.Label("Email nhân viên"));
         layout.Controls.Add(email);
         layout.Controls.Add(Ui.Label("Mật khẩu"));
         layout.Controls.Add(password);
         layout.Controls.Add(login);
-        layout.Controls.Add(Ui.Label("Mật khẩu thử nghiệm: Demo@123", 10));
-        layout.Controls.Add(Ui.Label("Chạy API trước khi đăng nhập.\nDữ liệu mẫu sẽ mất khi API khởi động lại.", 9));
+        layout.Controls.Add(Ui.Label("Chỉ tài khoản được phân công ít nhất một vai trò nhân viên mới có thể mở ứng dụng này.", 9));
         Controls.Add(layout);
         AcceptButton = login;
         login.Click += async (_, _) => await Ui.RunAsync(this, async () =>
         {
             var session = await api.LoginAsync(new LoginRequest { Email = email.Text, Password = password.Text });
-            if (session.User.Role != "Admin")
+            if (!AppRoles.HasAny(session.User.Roles, AppRoles.Staff))
             {
                 await api.LogoutAsync(session.Token);
-                MessageBox.Show(this, "Cần tài khoản quản trị để mở WinForms.");
+                MessageBox.Show(this, "Tài khoản này không được phân công quyền nhân viên.", "Không có quyền", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
 

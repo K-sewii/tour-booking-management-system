@@ -1,0 +1,29 @@
+@model UpdateProfileRequest
+@{ ViewData["Title"] = "Thông tin tài khoản"; }
+<div class="container section auth-layout">
+<div class="auth-art">
+<img src="~/images/mountain.svg" alt="Minh họa hành trình giữa núi xanh"/>
+<div>
+<div class="eyebrow">TÀI KHOẢN CỦA BẠN</div>
+<h1>Thông tin<br/>liên hệ.</h1>
+</div></div>
+<section class="auth-form">
+<span class="pill">DongNamTrip</span>
+<h1>Cập nhật liên hệ</h1>
+<p>Email là định danh đăng nhập. Mọi thay đổi chỉ áp dụng cho chính tài khoản đang đăng nhập.</p>
+@if (TempData["ProfileSuccess"] is string success)
+{
+    <p class="validation" role="status">@success</p>
+}
+@if (TempData["ProfileError"] is string error)
+{
+    <p class="validation" role="alert">@error</p>
+}
+<form method="post" asp-action="Profile">
+<div asp-validation-summary="All" class="validation"></div>
+<label>Họ và tên<input asp-for="Name" autocomplete="name" required minlength="2" maxlength="100"/></label>
+<label>Email<input asp-for="Email" type="email" autocomplete="email" required maxlength="254"/></label>
+<label>Số điện thoại<input asp-for="PhoneNumber" type="tel" autocomplete="tel" inputmode="tel" maxlength="15" pattern="\+?[0-9]{9,14}" placeholder="Ví dụ: 0901234567"/></label>
+<button class="btn full">Lưu thông tin</button></form>
+<p>Vai trò, trạng thái tài khoản và mật khẩu không thể thay đổi tại đây.</p>
+</section></div>
