@@ -14,14 +14,15 @@ const fs = require('node:fs');
  await page.getByRole('link',{name:'Tùy chỉnh lịch trình'}).click(); assert.equal(await page.locator('#selected-places li').count(),2);
  await page.getByRole('button',{name:'Đưa Chợ Bến Thành lên',exact:true}).click(); assert.match(await page.locator('#selected-places li').first().innerText(),/Chợ Bến Thành/);
  await page.locator('input[name=Name]').fill('Cuối tuần của Đức'); await page.getByRole('button',{name:'Lưu lịch trình'}).click(); await page.getByRole('link',{name:'Đăng nhập để lưu'}).click();
- await page.locator('[name=Email]').fill('khach@dongnamtrip.local'); await page.locator('[name=Password]').fill('wrong'); await page.getByRole('button',{name:'Đăng nhập',exact:true}).click(); assert.match(await page.locator('.validation').innerText(),/đăng nhập/);
- await page.locator('[name=Password]').fill('Demo@123'); await page.getByRole('button',{name:'Đăng nhập',exact:true}).click();
+ const loginForm=page.locator('form[action="/Account/Login"]');
+ await page.locator('[name=Email]').fill('khach@dongnamtrip.local'); await page.locator('[name=Password]').fill('wrong'); await loginForm.getByRole('button',{name:'Đăng nhập ↗',exact:true}).click(); assert.match(await page.locator('.validation').innerText(),/đăng nhập/);
+ await page.locator('[name=Password]').fill('Demo@123'); await loginForm.getByRole('button',{name:'Đăng nhập ↗',exact:true}).click();
  await page.waitForURL('**/Planner'); assert.equal(await page.locator('input[name=Name]').inputValue(),'Cuối tuần của Đức'); assert.match(await page.locator('#selected-places li').first().innerText(),/Chợ Bến Thành/);
  await page.screenshot({path:screenshots+'/web-planner-desktop.png',fullPage:true});
  await page.getByRole('button',{name:'Lưu lịch trình'}).click(); await page.waitForURL('**/Trips'); assert.match(await page.locator('.saved-trip').last().innerText(),/Cuối tuần của Đức/);
  await page.getByRole('tab',{name:'Tour đã đặt',exact:true}).click(); assert.equal(await page.locator('#bookings').isVisible(),true);
  await page.getByRole('button',{name:/Đăng xuất/}).click(); await page.goto(root+'/Trips'); await page.waitForURL('**/Account/Login?**');
- await page.locator('[name=Email]').fill('khach2@dongnamtrip.local'); await page.locator('[name=Password]').fill('Demo@123'); await page.getByRole('button',{name:'Đăng nhập',exact:true}).click(); await page.waitForURL('**/Trips'); assert.equal(await page.locator('.saved-trip').count(),0);
+ await page.locator('[name=Email]').fill('khach2@dongnamtrip.local'); await page.locator('[name=Password]').fill('Demo@123'); await loginForm.getByRole('button',{name:'Đăng nhập ↗',exact:true}).click(); await page.waitForURL('**/Trips'); assert.equal(await page.locator('.saved-trip').count(),0);
  const mobile=await context.newPage(); await mobile.setViewportSize({width:390,height:844}); mobile.on('pageerror',e=>errors.push(e.message));
  for(const path of ['/','/Tours','/Tours/Details/1','/Destinations','/Destinations/Details/1','/Planner','/Trips','/Account/Login']){
    await mobile.goto(root+path); assert.equal(await mobile.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true,'horizontal overflow '+path);
