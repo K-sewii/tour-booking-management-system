@@ -8,7 +8,6 @@
 <link rel="stylesheet" href="~/css/site.css" asp-append-version="true"/><link rel="stylesheet" href="~/css/auth.css" asp-append-version="true"/></head>
 <body>
 <a class="skip" href="#main">Đến nội dung chính</a>
-<div class="demo-bar">BẢN PHÁT TRIỂN <span>•</span> Danh mục và giá minh họa, chưa nhận đặt tour</div>
 <header class="header">
 <div class="container nav">
 <a class="brand" asp-controller="Home" asp-action="Index">
@@ -18,10 +17,10 @@
 <a class="@(ViewContext.RouteData.Values["controller"]?.ToString()=="Tours" ? "active" : "")" asp-controller="Tours" asp-action="Index">Khám phá tour</a>
 <a class="@(ViewContext.RouteData.Values["controller"]?.ToString()=="Destinations" ? "active" : "")" asp-controller="Destinations" asp-action="Index">Điểm đến</a>
 <a class="@(ViewContext.RouteData.Values["controller"]?.ToString()=="Planner" ? "active" : "")" asp-controller="Planner" asp-action="Index">Tự tạo chuyến đi</a>
-<a asp-controller="Trips" asp-action="Index">Chuyến đi của tôi</a>
+<a class="@(ViewContext.RouteData.Values["controller"]?.ToString()=="Trips" ? "active" : "")" asp-controller="Trips" asp-action="Index">Chuyến đi của tôi</a>
 @if (User.Identity?.IsAuthenticated == true)
 {
-    <a class="btn small outline" asp-controller="Account" asp-action="Profile">@User.Identity.Name · @string.Join(", ", roleNames) · Thông tin tài khoản</a>
+    <a class="btn small outline @(ViewContext.RouteData.Values["action"]?.ToString()=="Profile" ? "active" : "")" asp-controller="Account" asp-action="Profile">@User.Identity.Name · @string.Join(", ", roleNames) · Thông tin tài khoản</a>
     <form asp-controller="Account" asp-action="Logout" method="post">
     <button class="btn small outline" type="submit">Đăng xuất</button></form>
 }

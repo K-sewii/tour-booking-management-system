@@ -133,21 +133,28 @@ DELETE FROM TAIKHOAN WHERE Email IN ({emails});
 
 
 @contextlib.contextmanager
-def running_apps():
-    assert API_EXE.exists() and WEB_EXE.exists(), 'Build the solution before running smoke.py --start.'
+def running_apps(session_lifetime_seconds=300, *, api_only=False):
+    if not isinstance(session_lifetime_seconds, int) or not 1 <= session_lifetime_seconds <= 86_400:
+        raise ValueError('Test session lifetime must be an integer between 1 and 86400 seconds.')
+    apps = [(API_EXE, API + '/health')]
+    if not api_only:
+        apps.append((WEB_EXE, WEB + '/Account/Login'))
+    assert all(executable.exists() for executable, _ in apps), 'Build the solution before running smoke.py --start.'
     environment = os.environ.copy()
     environment['ASPNETCORE_ENVIRONMENT'] = 'Development'
     environment['ASPNETCORE_URLS'] = 'http://localhost:5080'
-    environment['Authentication__SessionLifetimeSeconds'] = '10'
+    environment['Authentication__SessionLifetimeSeconds'] = str(session_lifetime_seconds)
+    environment['BootstrapAdmin__Enabled'] = 'false'
+    environment['DevelopmentTestAccounts__Enabled'] = 'false'
     processes, logs = [], []
     try:
-        for executable, working_directory in ((API_EXE, API_EXE.parent), (WEB_EXE, WEB_EXE.parent)):
+        for executable, _ in apps:
             log = tempfile.TemporaryFile()
             logs.append(log)
             process_environment = environment.copy()
             process_environment['ASPNETCORE_URLS'] = 'http://localhost:5080' if executable == API_EXE else 'http://localhost:5081'
-            processes.append(subprocess.Popen([str(executable)], cwd=working_directory, stdout=log, stderr=log, env=process_environment))
-        for url in (API + '/health', WEB + '/Account/Login'):
+            processes.append(subprocess.Popen([str(executable)], cwd=executable.parent, stdout=log, stderr=log, env=process_environment))
+        for _, url in apps:
             for _ in range(80):
                 try:
                     urllib.request.urlopen(url, timeout=1).close()
@@ -275,19 +282,36 @@ WHERE account.Email = {sql_literal(staff_email)} AND role.TenVaiTro IN ('Admin',
 
     request(API + '/api/auth/logout', 'POST', token=customer_token, expected=204)
     request(API + '/api/auth/me', token=customer_token, expected=401)
+    print(f'PASS: {checks} functional HTTP checks; SQL registration, duplicate email, password, dynamic roles, lock, logout, ownership and Web login.')
+
+
+def run_expiry_checks(session_lifetime_seconds):
+    initial_checks = checks
     expiring_email, _, expiring = registration('Tài khoản hết phiên')
-    time.sleep(11)
+    me = request(API + '/api/auth/me', token=expiring['token'])
+    assert me['email'] == expiring_email, 'The new token must be valid before expiry.'
+    time.sleep(session_lifetime_seconds + 1)
     request(API + '/api/auth/me', token=expiring['token'], expected=401)
     assert expiring_email in test_emails
-    print(f'PASS: {checks} HTTP checks; SQL registration, duplicate email, password, dynamic roles, lock, logout, expiry, ownership and Web login.')
+    print(f'PASS: {checks - initial_checks} expiry HTTP checks; the same SQL-account token returns 200 before expiry and 401 after expiry.')
 
 
 if __name__ == '__main__':
     try:
         if '--start' in sys.argv:
-            with running_apps():
-                run()
+            try:
+                with running_apps():
+                    run()
+            finally:
+                cleanup_test_accounts()
+                test_emails.clear()
+            # The functional fixture has stopped and released its ports before
+            # starting a fresh API process with a short-lived, newly issued token.
+            expiry_lifetime_seconds = 10
+            with running_apps(session_lifetime_seconds=expiry_lifetime_seconds, api_only=True):
+                run_expiry_checks(expiry_lifetime_seconds)
         else:
             run()
+            print('SKIP: isolated expiry fixture requires smoke.py --start.')
     finally:
         cleanup_test_accounts()
