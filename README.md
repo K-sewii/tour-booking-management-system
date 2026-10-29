@@ -1,3 +1,5 @@
+[![Build and smoke test](https://github.com/K-sewii/tour-booking-management-system/actions/workflows/build.yml/badge.svg?branch=main)](https://github.com/K-sewii/tour-booking-management-system/actions/workflows/build.yml)
+
 # DongNamTrip
 
 DongNamTrip là nền tảng minh họa quản lý và khám phá tour khu vực Đông Nam Bộ. Dự án hiện có hai giao diện sử dụng chung API:
