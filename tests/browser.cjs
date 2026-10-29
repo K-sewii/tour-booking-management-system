@@ -42,12 +42,17 @@ const fs = require("node:fs");
     await page.locator("input[name=Name]").fill("Cuối tuần của Đức");
     await page.getByRole("button", { name: "Lưu lịch trình" }).click();
     await page.getByRole("link", { name: "Đăng nhập để lưu" }).click();
+    const loginForm = page.locator('form[action="/Account/Login"]');
     await page.locator("[name=Email]").fill("khach@dongnamtrip.local");
     await page.locator("[name=Password]").fill("wrong");
-    await page.getByRole("button", { name: "Đăng nhập"}).click();
+    await loginForm
+        .getByRole("button", { name: "Đăng nhập ↗", exact: true })
+        .click();
     assert.match(await page.locator(".validation").innerText(), /đăng nhập/i);
     await page.locator("[name=Password]").fill("Demo@123");
-    await page.getByRole("button", { name: "Đăng nhập"}).click();
+    await loginForm
+        .getByRole("button", { name: "Đăng nhập ↗", exact: true })
+        .click();
     await page.waitForURL("**/Planner");
     assert.equal(
         await page.locator("input[name=Name]").inputValue(),
@@ -74,7 +79,9 @@ const fs = require("node:fs");
     await page.waitForURL("**/Account/Login?**");
     await page.locator("[name=Email]").fill("khach2@dongnamtrip.local");
     await page.locator("[name=Password]").fill("Demo@123");
-    await page.getByRole("button", { name: "Đăng nhập"}).click();
+    await loginForm
+        .getByRole("button", { name: "Đăng nhập ↗", exact: true })
+        .click();
     await page.waitForURL("**/Trips");
     assert.equal(await page.locator(".saved-trip").count(), 0);
     const mobile = await context.newPage();
