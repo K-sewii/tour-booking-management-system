@@ -1,3 +1,5 @@
+[![Build and smoke test](https://github.com/K-sewii/tour-booking-management-system/actions/workflows/build.yml/badge.svg?branch=main)](https://github.com/K-sewii/tour-booking-management-system/actions/workflows/build.yml)
+
 # DongNamTrip
 
 Dự án nhóm môn C# — Hệ thống quản lý đặt tour du lịch.
