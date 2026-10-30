@@ -87,6 +87,8 @@
         return;
       }
       if (submit) {
+        form.classList.add("is-submitting");
+        form.setAttribute("aria-busy", "true");
         submit.disabled = true;
         submit.textContent = submit.dataset.busyLabel || "Đang xử lý…";
       }

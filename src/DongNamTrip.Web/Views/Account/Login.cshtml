@@ -1,15 +1,15 @@
 @model LoginRequest
 @{ ViewData["Title"] = "Đăng nhập"; }
-<div class="container section auth-layout">
+<div class="container section auth-layout auth-page auth-page--login">
 <div class="auth-art">
-<img src="~/images/mountain.svg" alt="Minh họa hành trình giữa núi xanh"/>
+<img src="~/images/auth-saigon-night.png" alt="Sài Gòn về đêm với tòa nhà và vòng xoay rực sáng"/>
 <div>
 <div class="eyebrow">MỖI CHUYẾN ĐI LÀ MỘT KHỞI ĐẦU</div>
 <h1>Hẹn bạn,<br/>ở một nơi mới.</h1></div></div>
 <section class="auth-form">
 <span class="pill">DongNamTrip</span>
 <h1>Chào bạn trở lại.</h1>
-<p>Đăng nhập để lưu những lịch trình bạn yêu thích.</p>
+<p class="auth-page__description">Đăng nhập để lưu những lịch trình bạn yêu thích.</p>
 <form method="post" asp-action="Login" class="auth-form-card" data-auth-form data-auth-mode="login" novalidate>
 <input type="hidden" name="returnUrl" value="@ViewBag.ReturnUrl"/>
 <div asp-validation-summary="All" class="validation validation-summary" role="alert" aria-live="assertive"></div>
@@ -18,5 +18,5 @@
 <button class="btn full" type="submit" data-auth-submit data-default-label="Đăng nhập →" data-busy-label="Đang đăng nhập…">Đăng nhập →</button>
 <p class="auth-status" data-auth-status role="status" aria-live="polite"></p>
 </form>
-<p>Chưa có tài khoản? <a class="text-link" asp-action="Register" asp-route-returnUrl="@ViewBag.ReturnUrl">Đăng ký</a></p></section></div>
+<p class="auth-switch">Chưa có tài khoản? <a class="text-link" asp-action="Register" asp-route-returnUrl="@ViewBag.ReturnUrl">Đăng ký</a></p></section></div>
 @section Scripts { <script src="~/js/auth.js" asp-append-version="true" defer></script> }
