@@ -1,0 +1,20 @@
+.spa-state{padding:28px;min-height:120px;overflow-wrap:anywhere}
+.spa-state .btn{margin-left:12px}
+.spa-favorite{display:flex;align-items:center;gap:12px;margin:0 0 20px;flex-wrap:wrap}
+.spa-favorite p{margin:0;color:#922f26;font-size:13px}
+.account-page .account-filter select{min-width:0;flex:1}
+.account-page .account-filter .btn{flex-shrink:0;white-space:nowrap}
+.account-dialog{z-index:50}
+.auth-page .auth-form-card .field-error{min-height:19px}
+.auth-page .auth-form-card .validation-summary{margin-bottom:16px}
+.account-page .account-content{overflow-wrap:anywhere}
+.account-page .account-list li{min-width:0}
+.account-page .account-list a,.account-page .account-list button{flex-shrink:0}
+.account-page .account-trips .tabs{flex-wrap:wrap}
+.account-page .account-trips .tabs button{background:transparent;border:0;border-bottom:3px solid transparent;color:#62736f}
+.account-page .account-trips .tabs button.current{border-color:#087f6c;color:#087f6c}
+.header .nav nav .active:not(.btn){color:#fff;border-color:#fff}
+.header .nav nav .btn.outline{color:#fff;border-color:#ffffff80;background:transparent}
+.header .nav nav .btn.outline:hover{background:#ffffff20}
+@media(max-width:850px){.header .nav nav .btn{width:100%}}
+@media(max-width:640px){.account-page .account-filter select{flex-basis:100%}.spa-state .btn{margin:12px 0 0}.account-page .account-list a,.account-page .account-list button{max-width:100%}}

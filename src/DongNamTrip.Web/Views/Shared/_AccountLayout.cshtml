@@ -1,0 +1,24 @@
+@{ Layout = "_Layout"; }
+@section Styles {
+    <link rel="stylesheet" href="~/css/account.css" asp-append-version="true"/>
+}
+<div class="account-page">
+    <div class="container account-wrap">
+        <nav class="account-breadcrumb" aria-label="Đường dẫn"><a asp-controller="Home" asp-action="Index">Trang chủ</a><span aria-hidden="true">/</span><span>Tài khoản</span></nav>
+        <div class="account-layout">
+            <aside class="account-sidebar">
+                <div class="account-sidebar-heading"><span class="account-icon" aria-hidden="true">◎</span><div><strong>Tài khoản của bạn</strong><p>Đồng hành mỗi chuyến đi</p></div></div>
+                <nav aria-label="Quản lý tài khoản">
+                    <a asp-controller="Account" asp-action="Profile" aria-current="@(ViewContext.RouteData.Values["action"]?.ToString() == "Profile" ? "page" : null)">Hồ sơ tài khoản</a>
+                    <a asp-controller="Trips" asp-action="Index" aria-current="@(ViewContext.RouteData.Values["controller"]?.ToString() == "Trips" ? "page" : null)">Chuyến đi của tôi</a>
+                    <a href="/Account/Security" aria-current="@(ViewContext.RouteData.Values["action"]?.ToString() == "Security" ? "page" : null)">Bảo mật tài khoản</a>
+                    <a href="/Account/Payments" aria-current="@(ViewContext.RouteData.Values["action"]?.ToString() == "Payments" ? "page" : null)">Thanh toán và hoàn tiền</a>
+                    <a href="/Account/Favorites" aria-current="@(ViewContext.RouteData.Values["action"]?.ToString() == "Favorites" ? "page" : null)">Yêu thích và lịch sử</a>
+                    <a href="/Account/Notices" aria-current="@(ViewContext.RouteData.Values["action"]?.ToString() == "Notices" ? "page" : null)">Thông báo và tùy chọn</a>
+                </nav>
+            </aside>
+            <section class="account-content" aria-labelledby="account-title">@RenderBody()</section>
+        </div>
+    </div>
+</div>
+@section Scripts { <script src="~/js/account-sections.js" asp-append-version="true" defer></script>@await RenderSectionAsync("Scripts", required: false) }

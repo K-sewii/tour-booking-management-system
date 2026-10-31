@@ -1,0 +1,12 @@
+@model AccountNoticesPage
+@{ Layout = "_AccountLayout"; ViewData["Title"] = "Thông báo và tùy chọn"; }
+<div class="account-heading"><div class="eyebrow">CẬP NHẬT TÀI KHOẢN</div><h1 id="account-title">Thông báo và tùy chọn</h1><p>Thông báo trong ứng dụng được tạo từ sự kiện bảo mật thực tế.</p></div>
+@if (TempData["NoticeStatus"] is string status) { <p class="account-message account-message--success" role="status">@status</p> }
+@if (ViewBag.LoadError is string error) { <div class="account-card account-empty" role="alert">@error <a asp-action="Notices">Thử lại</a></div> }
+else {
+<div class="account-card"><div class="account-card-heading"><h2>Thông báo trong ứng dụng</h2><p>Thông báo email và SMS hiện chưa được tích hợp.</p></div>
+@if (Model.Notices.Count == 0) { <p class="account-empty">Hiện chưa có thông báo.</p> }
+else { <ul class="account-list">@foreach (var item in Model.Notices) { <li><div><strong>@item.Title <span class="account-badge">@(item.ReadAt is null ? "Chưa đọc" : "Đã đọc")</span></strong><p>@item.Body</p><small>@item.At.ToString("dd/MM/yyyy HH:mm") UTC</small></div>@if (item.ReadAt is null) { <form method="post" action="/Account/Notices/@item.Id/Read">@Html.AntiForgeryToken()<button class="btn outline" type="submit">Đánh dấu đã đọc</button></form> }</li> }</ul> }
+</div>
+<div class="account-card account-secondary"><div class="account-card-heading"><h2>Tùy chọn thông báo</h2><p>Tùy chọn này áp dụng khi đổi mật khẩu. Ngôn ngữ trang chưa có hệ thống bản địa hóa để thay đổi.</p></div><form method="post" action="/Account/Notices/Preferences">@Html.AntiForgeryToken()<div class="account-settings"><label><input type="checkbox" name="securityNotices" value="true" checked="@Model.Preference.SecurityNotices"/> Nhận thông báo bảo mật trong ứng dụng</label></div><div class="account-actions"><button class="btn" type="submit">Lưu tùy chọn</button></div></form></div>
+}
