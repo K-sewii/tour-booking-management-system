@@ -7,6 +7,11 @@
 <span class="pill">@Model.Category</span>
 <h1>@Model.Name</h1>
 <p>@Model.Address</p></div>
+@if (User.Identity?.IsAuthenticated == true)
+{
+    @if (ViewBag.FavoritesUnavailable == true) { <p class="notice">Chưa tải được yêu thích. Vui lòng thử lại sau.</p> }
+    else { <form method="post" action="/Account/Favorites/destination/@Model.Id">@Html.AntiForgeryToken()<input type="hidden" name="save" value="@(ViewBag.IsFavorite == true ? "false" : "true")"/><input type="hidden" name="returnUrl" value="@Context.Request.Path"/><button class="btn outline" type="submit">@(ViewBag.IsFavorite == true ? "Bỏ lưu địa điểm" : "Lưu địa điểm yêu thích")</button></form> }
+}
 <img class="detail-hero" src="~/images/@(Model.Illustration).svg" alt="Minh họa @Model.Region"/>
 <div class="detail-layout">
 <article>

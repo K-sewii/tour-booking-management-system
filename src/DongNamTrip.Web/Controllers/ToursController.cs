@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using DongNamTrip.Client;
+using DongNamTrip.Contracts;
 using DongNamTrip.Web.Models;
 
 namespace DongNamTrip.Web.Controllers;
@@ -7,6 +8,9 @@ public class ToursController(TripApiClient api) : Controller
 {
     public async Task<IActionResult> Index(string? q, string? region, string? category, string? sort, int page = 1)
     {
+        if (User.Identity?.IsAuthenticated == true && !string.IsNullOrWhiteSpace(q))
+            try { await api.RecordActivityAsync(new AccountActivityDraft("search", null, q.Trim()), User.FindFirst("api_token")!.Value); }
+            catch (Exception error) when (error is HttpRequestException or TaskCanceledException) { }
         var tours = (await api.ToursAsync()).Where(x => (string.IsNullOrWhiteSpace(q) || (x.Name + " " + x.Summary).Contains(q.Trim(), StringComparison.CurrentCultureIgnoreCase)) && (string.IsNullOrEmpty(region) || x.Region == region) && (string.IsNullOrEmpty(category) || x.Category == category));
         tours = sort switch
         {
@@ -25,6 +29,16 @@ public class ToursController(TripApiClient api) : Controller
         if (tour is null)
             return NotFound();
         var places = await api.DestinationsAsync();
+        if (User.Identity?.IsAuthenticated == true)
+        {
+            try
+            {
+                var token = User.FindFirst("api_token")!.Value;
+                await api.RecordActivityAsync(new AccountActivityDraft("tour", id, null), token);
+                ViewBag.IsFavorite = (await api.CollectionsAsync(token)).Favorites.Any(item => item.Kind == "tour" && item.ItemId == id);
+            }
+            catch (Exception error) when (error is HttpRequestException or TaskCanceledException) { ViewBag.FavoritesUnavailable = true; }
+        }
         return View(new TourDetailVm(tour, tour.DestinationIds.Select(key => places.Single(x => x.Id == key)).ToList()));
     }
 }

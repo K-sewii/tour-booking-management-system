@@ -1,281 +1,215 @@
-[![Build and smoke test](https://github.com/K-sewii/tour-booking-management-system/actions/workflows/build.yml/badge.svg?branch=main)](https://github.com/K-sewii/tour-booking-management-system/actions/workflows/build.yml)
-
 # DongNamTrip
 
-DongNamTrip là nền tảng minh họa quản lý và khám phá tour khu vực Đông Nam Bộ. Dự án hiện có hai giao diện sử dụng chung API:
+DongNamTrip là dự án học tập về khám phá tour và quản lý hành trình khu vực Đông Nam Bộ. Khách hàng sử dụng Web React SPA; nhân viên sử dụng ứng dụng quản trị Windows Forms. Hai ứng dụng gọi chung API ASP.NET Core, API kết nối SQL Server.
 
-- Web ASP.NET Core MVC cho khách hàng.
-- WinForms Admin cho nhân viên có vai trò phù hợp.
+> Dự án đang trong giai đoạn phát triển. Danh mục tour, điểm đến và lịch trình vẫn dùng dữ liệu minh họa trong bộ nhớ API; chưa có chức năng đặt tour hay cổng thanh toán thật.
 
-API ASP.NET Core kết nối SQL Server. Xác thực, tài khoản, vai trò và hồ sơ dùng SQL Server; một số danh mục và nghiệp vụ tour hiện vẫn là dữ liệu minh họa trong bộ nhớ. Xem [Phạm vi hiện tại](#phạm-vi-hiện-tại) trước khi dùng dữ liệu cho mục đích khác.
-
-## Kiến trúc và project
+## Kiến trúc
 
 | Project | Vai trò |
 | --- | --- |
-| `DongNamTrip.Api` | API, xác thực SQL Server, phân quyền API, health check và `DemoStore`. |
-| `DongNamTrip.Web` | Website MVC; gọi API qua `DongNamTrip.Client`, không kết nối SQL trực tiếp. |
-| `DongNamTrip.Admin` | Ứng dụng WinForms quản trị; gọi API, không kết nối SQL trực tiếp. |
-| `DongNamTrip.Client` | HTTP client và DTO client dùng chung cho Web/Admin. |
-| `DongNamTrip.Contracts` | Contract, DTO, role dùng chung. |
+| `src/DongNamTrip.Spa` | Giao diện React + TypeScript, Vite và React Router. |
+| `src/DongNamTrip.Web` | Phục vụ SPA, làm lớp trung gian BFF và giữ bản MVC cũ để đối chiếu. |
+| `src/DongNamTrip.Api` | API, xác thực, phân quyền, truy cập SQL Server và `DemoStore`. |
+| `src/DongNamTrip.Admin` | Ứng dụng WinForms cho nhân viên; gọi API. |
+| `src/DongNamTrip.Client` | HTTP client dùng chung cho Web và WinForms. |
+| `src/DongNamTrip.Contracts` | Các kiểu dữ liệu và hợp đồng dùng chung. |
+| `tests` | Các bộ kiểm thử API, Web, SQL và trình duyệt. |
 
-## Yêu cầu môi trường
+Frontend được tổ chức theo tính năng:
 
-- Windows để chạy toàn bộ solution, đặc biệt là `DongNamTrip.Admin` (Windows Forms).
-- [.NET SDK 10.0.100](global.json) hoặc feature band mới hơn theo `rollForward: latestFeature` trong `global.json`.
-- SQL Server có hỗ trợ Windows Authentication và một công cụ chạy script, ví dụ SQL Server Management Studio (SSMS).
-- Tài khoản Windows đang chạy API phải được SQL Server cho phép kết nối và có quyền phù hợp trên database `DongNamTrip`.
-- Python 3 chỉ cần khi chạy các smoke test hiện có.
-
-Kiểm tra SDK đang dùng:
-
-```powershell
-dotnet --version
-dotnet --info
+```text
+src/DongNamTrip.Spa/src/
+├── app/                  Khởi tạo ứng dụng và route
+├── api/                  Client, kiểu dữ liệu và trạng thái tải
+├── auth/                 Phiên người dùng dùng chung
+├── components/           Thành phần dùng chung
+├── layouts/              Bố cục Web, xác thực và tài khoản
+├── features/
+│   ├── auth/             Đăng nhập, đăng ký
+│   ├── account/          Hồ sơ, bảo mật, thanh toán, yêu thích, thông báo
+│   ├── home/             Trang chủ
+│   ├── tours/            Tour và chi tiết tour
+│   ├── destinations/     Điểm đến và chi tiết điểm đến
+│   └── trips/            Tạo lịch trình và chuyến đi của tôi
+└── styles/               CSS riêng của SPA
 ```
 
-## Lấy mã nguồn và chuẩn bị
+Web BFF sử dụng cookie HttpOnly cho phiên Web, bảo vệ các thao tác ghi bằng antiforgery và chuyển tiếp yêu cầu đến API. Frontend không lưu API token trong `localStorage` hoặc `sessionStorage`. API tiếp tục kiểm tra quyền và quyền sở hữu dữ liệu.
 
-Clone từ [repository DongNamTrip](https://github.com/K-sewii/tour-booking-management-system.git), sau đó chạy mọi lệnh dưới đây tại thư mục chứa `DongNamTrip.sln`.
+## Yêu cầu
+
+- Windows để chạy toàn bộ solution, bao gồm WinForms.
+- .NET SDK 10; xem `global.json` để biết phiên bản và chính sách roll-forward.
+- Node.js 22.12 trở lên và npm 10; bản frontend đã được kiểm tra với Node.js 22.19.0. Xem `package.json` và lockfile khi cài đặt.
+- SQL Server, SQL Server Management Studio (SSMS) hoặc công cụ chạy SQL tương đương.
+- Tài khoản Windows có quyền truy cập database phát triển `DongNamTrip`.
+- Python 3 và các phụ thuộc của từng bộ test nếu muốn chạy kiểm thử; kiểm tra thêm Playwright và trình duyệt theo cấu hình trong `tests`.
+
+## Lấy source và chuẩn bị database
 
 ```powershell
 git clone https://github.com/K-sewii/tour-booking-management-system.git
 Set-Location .\tour-booking-management-system
-Get-Item .\DongNamTrip.sln
-
-dotnet restore .\DongNamTrip.sln
-dotnet tool restore
-dotnet build .\DongNamTrip.sln --no-restore
 ```
 
-`dotnet-tools.json` ghim `dotnet-ef` phiên bản 10.0.12. Công cụ này phục vụ thao tác EF có chủ đích; dự án hiện dùng Database First, nên không chạy `database update`, `EnsureCreated`, `EnsureDeleted` hay migration để khởi tạo database đang dùng.
+Nếu thay đổi đang nằm trên nhánh riêng và chưa được merge vào `main`, liên hệ người phụ trách để biết tên nhánh rồi checkout nhánh đó sau khi đã được push.
 
-## Khởi tạo database
+Database sử dụng schema do nhóm cung cấp. Repository theo bản README được cung cấp chưa chứa script SQL khởi tạo đầy đủ; xin file SQL chính thức từ nhóm. Chỉ dùng script khởi tạo trên database mới theo hướng dẫn của người phụ trách; không chạy lại script tổng hợp trên database đã có dữ liệu.
 
-**Trạng thái hiện tại của repository:** không có thư mục `database/`, không có file `.sql`, và không có `DongNamTrip_Full.sql`. Vì vậy repository hiện chưa cung cấp script để một thành viên tự tạo database mới hoặc nhập dữ liệu mẫu.
+Các chức năng tài khoản bổ sung cần các script, chia sẻ riêng theo thỏa thuận của nhóm:
 
-Không tự suy ra schema từ các entity EF rồi tạo bảng tay. `DongNamTripDbContext` được scaffold theo Database First; nó ánh xạ database có sẵn, không phải cơ chế tạo schema của ứng dụng.
+1. `V001_account_area.sql` — các bảng cho yêu thích, lịch sử, thông báo và tùy chọn.
+2. `V002_payment_choice.sql` — lựa chọn phương thức thanh toán.
 
-### Database mới
+Chạy theo thứ tự V001 rồi V002 trên môi trường phát triển đã có schema nền, sau khi kiểm tra nội dung và sao lưu khi cần. Trong môi trường đã được báo cáo, hai file nằm tại `artifacts/sql/` và bị Git bỏ qua, vì vậy thành viên clone repository có thể không có chúng. Không tự tạo schema từ entity EF, không chạy lại script khởi tạo hay dùng các thao tác xóa/tạo lại database hiện hữu.
 
-1. Xin nhóm phụ trách database cung cấp script SQL đã được phê duyệt (schema, vai trò và dữ liệu khởi tạo nếu cần).
-2. Đọc hướng dẫn đi kèm script trước khi chạy. Chỉ chạy toàn bộ script một lần trên database mới, bằng SSMS hoặc công cụ SQL được nhóm thống nhất.
-3. Sau khi nhóm thêm script vào repo, tài liệu cần ghi chính xác tên file và thứ tự chạy. Nếu script là `database/DongNamTrip_Full.sql`, mở file đó trong SSMS, chọn đúng SQL Server đích, rồi chạy toàn bộ script trên **database mới**.
+## Cấu hình SQL Server
 
-Không chạy lại script tổng hợp lên database đang có dữ liệu. Không dùng lệnh `DROP`, migration, `database update`, `EnsureCreated` hoặc `EnsureDeleted` để “làm mới” database.
-
-### Database đã có dữ liệu
-
-Không chạy script khởi tạo. Chỉ xác nhận database đã có các bảng/role bắt buộc, cấu hình connection string riêng của máy, rồi chạy API. Endpoint `GET /health/db` giúp kiểm tra kết nối và đếm bảng/role mà không sửa dữ liệu.
-
-## Cấu hình kết nối SQL Server
-
-API đọc `ConnectionStrings:DongNamTrip` qua cơ chế cấu hình chuẩn của .NET. User Secrets là nơi được khuyến nghị cho Development; cấu hình chuẩn khác của .NET vẫn có thể tham gia theo thứ tự provider của ứng dụng. Không ghi connection string thật vào source hoặc Git.
-
-Project API đã có `UserSecretsId`, nên không cần chạy `dotnet user-secrets init`. Mỗi thành viên thay tên server bằng giá trị thấy trong SSMS của chính máy mình:
+Mỗi thành viên tự đặt connection string Development qua User Secrets cho project API. Thay tên server bằng instance SQL Server trên máy của mình:
 
 ```powershell
 dotnet user-secrets set "ConnectionStrings:DongNamTrip" "Server=.\SQLEXPRESS;Database=DongNamTrip;Integrated Security=True;Encrypt=True;TrustServerCertificate=True;" --project .\src\DongNamTrip.Api
 ```
 
-Ví dụ trên dùng Windows Authentication (`Integrated Security=True`), không chứa mật khẩu SQL. Nếu tên instance là `MAYCHU\SQL2022`, chỉ thay phần `Server`:
+Không đưa connection string thực, mật khẩu, token hoặc file User Secrets vào Git. Khi API đang chạy, mở `http://localhost:5080/health/db` để kiểm tra kết nối SQL. Nếu không dùng Windows Authentication, hãy trao đổi với người phụ trách database về cấu hình phù hợp.
 
-```text
-Server=MAYCHU\SQL2022;Database=DongNamTrip;Integrated Security=True;Encrypt=True;TrustServerCertificate=True;
-```
+## Build và chạy
 
-Không dùng User Secrets của người khác, không chia sẻ file secrets, token hoặc mật khẩu qua Git. API sẽ dừng khi không tìm thấy `ConnectionStrings:DongNamTrip`.
-
-Web có `ApiBaseUrl` mặc định là `http://localhost:5080/` trong `src/DongNamTrip.Web/appsettings.json`. Chỉ cần đổi khi API chạy cổng localhost khác:
+Chạy các lệnh tại thư mục chứa `DongNamTrip.sln`:
 
 ```powershell
-$env:ApiBaseUrl = "http://localhost:5080/"
+dotnet restore .\DongNamTrip.sln
+dotnet build .\DongNamTrip.sln --no-restore
 ```
 
-WinForms dùng `DONGNAMTRIP_API_URL`, mặc định cũng là `http://localhost:5080/` và chỉ chấp nhận địa chỉ loopback:
+Build SPA trước khi chạy Web, và build lại sau khi thay đổi source frontend:
 
 ```powershell
-$env:DONGNAMTRIP_API_URL = "http://localhost:5080/"
+Set-Location .\src\DongNamTrip.Spa
+npm ci
+npm run build
+Set-Location ..\..
 ```
 
-## Chạy ứng dụng
+Bản build SPA được tạo trong `src/DongNamTrip.Web/wwwroot/spa/`; đây là đầu ra sinh tự động, không phải mã nguồn cần commit.
 
-API phải chạy trước vì Web và WinForms đều gọi API. API và Web chỉ cho phép môi trường `Development` trong mã hiện tại. Launch profile `http` cấu hình lần lượt API ở cổng 5080 và Web ở cổng 5081.
+Mở các cửa sổ PowerShell riêng tại thư mục solution:
 
-Mở ba cửa sổ PowerShell riêng tại thư mục solution. Mỗi lệnh `dotnet run` chạy liên tục; dùng `Ctrl+C` trong đúng cửa sổ để dừng ứng dụng đó.
-
-### Terminal 1 — API
+**Terminal 1 — API**
 
 ```powershell
 $env:ASPNETCORE_ENVIRONMENT = "Development"
 dotnet run --project .\src\DongNamTrip.Api --launch-profile http
 ```
 
-- API: <http://localhost:5080>
-- Health cơ bản: <http://localhost:5080/health>
-- Health SQL Server: <http://localhost:5080/health/db>
+- API: http://localhost:5080
+- Kiểm tra API: http://localhost:5080/health
+- Kiểm tra database: http://localhost:5080/health/db
 
-### Terminal 2 — Web
-
-Chạy sau khi API trả health thành công.
+**Terminal 2 — Web**
 
 ```powershell
 $env:ASPNETCORE_ENVIRONMENT = "Development"
 dotnet run --project .\src\DongNamTrip.Web --launch-profile http
 ```
 
-Mở Web tại <http://localhost:5081>.
+Mở Web tại http://localhost:5081. Nếu Web báo thiếu bản build SPA, chạy lại `npm ci` và `npm run build` như hướng dẫn ở trên.
 
-### Terminal 3 — WinForms Admin
-
-Chạy sau khi API đã sẵn sàng.
+**Terminal 3 — WinForms Admin**
 
 ```powershell
 dotnet run --project .\src\DongNamTrip.Admin
 ```
 
-Nếu đã đặt biến `DONGNAMTRIP_API_URL` tạm thời cho cổng khác, đặt lại trước khi chạy Admin hoặc mở PowerShell mới.
+API cần chạy trước Web và WinForms. Cấu hình mặc định trỏ đến API tại `http://localhost:5080/`; xem `ApiBaseUrl` của Web và `DONGNAMTRIP_API_URL` của Admin nếu môi trường dùng cổng khác.
 
-### Sau khi sửa mã
+### Phát triển frontend với Vite
 
-1. Dừng đúng API, Web hoặc Admin bằng `Ctrl+C` trong terminal đang chạy.
-2. Build lại project bị ảnh hưởng hoặc cả solution.
-3. Khởi động lại theo ba terminal ở trên.
-
-Khi nghi có executable cũ hoặc DLL bị khóa, xác định **đúng** process trước:
+Giữ API và Web đang chạy, mở một terminal khác:
 
 ```powershell
-Get-NetTCPConnection -State Listen -LocalPort 5080,5081 | Select-Object LocalPort, OwningProcess
-$dongNamTripPid = 1234 # thay 1234 bằng OwningProcess vừa tìm được
-Get-Process -Id $dongNamTripPid | Select-Object Id, ProcessName, Path
+Set-Location .\src\DongNamTrip.Spa
+npm run dev
 ```
 
-Chỉ sau khi đã xác nhận đó là process DongNamTrip cần dừng:
+Mở http://127.0.0.1:5173. Vite proxy các yêu cầu cần thiết sang Web trên cổng 5081. Bản MVC cũ còn được giữ để đối chiếu qua `?legacy=1` hoặc cấu hình `Spa__Enabled=false`.
 
-```powershell
-Stop-Process -Id $dongNamTripPid
-```
+## Các màn hình chính
 
-Không dừng hàng loạt mọi process `dotnet` vì có thể làm gián đoạn ứng dụng khác.
+| Đường dẫn | Chức năng |
+| --- | --- |
+| `/` | Trang chủ |
+| `/Tours`, `/Tours/Details/{id}` | Danh sách và chi tiết tour |
+| `/Destinations`, `/Destinations/Details/{id}` | Danh sách và chi tiết điểm đến |
+| `/Planner`, `/Trips` | Tạo lịch trình và xem chuyến đi |
+| `/Account/Login`, `/Account/Register` | SCR02 đăng nhập và SCR03 đăng ký |
+| `/Account/Profile` | SCR21: hồ sơ tài khoản |
+| `/Account/Security` | SCR22: mật khẩu và phiên |
+| `/Account/Payments`, `/Account/Payments/{id}` | SCR23: thanh toán và hoàn tiền |
+| `/Account/Favorites` | SCR24: yêu thích và lịch sử |
+| `/Account/Notices` | SCR25: thông báo và tùy chọn |
 
-## Tài khoản và phân quyền
+## Tài khoản và phạm vi dữ liệu
 
-### Đăng ký công khai
+- Đăng ký công khai tạo tài khoản `Customer`. Mật khẩu được hash trước khi lưu; khách không tự chọn vai trò nhân viên.
+- Các vai trò hiện có gồm `Admin`, `Operator`, `Editor`, `Finance`, `Publisher` và `Customer`. WinForms dành cho tài khoản nhân viên có vai trò phù hợp. API kiểm tra quyền đối với các thao tác được bảo vệ.
+- Tài khoản, vai trò, hồ sơ, mật khẩu và dữ liệu khu vực tài khoản sử dụng SQL Server, với điều kiện database đã được chuẩn bị đủ schema và script bổ sung.
+- Danh mục tour, điểm đến và lịch trình vẫn dùng `DemoStore`. Các thay đổi trong bộ nhớ này mất khi API khởi động lại; không mặc định rằng danh mục SQL đã xuất hiện trên Web.
+- Màn hình thanh toán đọc đơn/giao dịch thuộc tài khoản khi có dữ liệu và lưu lựa chọn ưu tiên. Chưa có cổng thanh toán, quy trình đặt tour thật hay liên kết ngân hàng; không lưu số thẻ hoặc CVV.
+- Phiên API hiện ở trong bộ nhớ. Đăng xuất thu hồi phiên; khởi động lại API làm người dùng phải đăng nhập lại. Một số mục WinForms còn là khung giao diện chờ nghiệp vụ.
 
-Đăng ký trên Web luôn tạo tài khoản `Customer` đang hoạt động. Request công khai không thể tự gán role, trạng thái hoặc hash mật khẩu. Mật khẩu được hash bằng ASP.NET Core `PasswordHasher` trước khi lưu SQL Server.
+### Tạo tài khoản Development tùy chọn
 
-`Customer` dùng Web, có thể đăng nhập/đăng xuất, cập nhật hồ sơ liên hệ và lưu lịch trình minh họa của mình trong phiên API. Customer không được mở WinForms Admin; form Admin chỉ chấp nhận tài khoản có ít nhất một role nhân viên.
-
-### Vai trò hiện có
-
-Mã hiện có hỗ trợ sáu role: `Admin`, `Customer`, `Operator`, `Editor`, `Finance`, `Publisher`. Một tài khoản có thể có nhiều role.
-
-- `Admin`, `Operator`, `Editor`, `Finance`, `Publisher` là nhóm nhân viên mà WinForms cho phép đăng nhập.
-- Menu WinForms được ẩn/hiện theo role: Admin toàn bộ menu hiện có; Editor có Địa điểm; Operator có các mục vận hành; Finance có Tài chính; Publisher có Công bố nội dung.
-- Việc thấy menu không thay thế kiểm tra ở API. Endpoint thêm/sửa địa điểm hiện yêu cầu `Admin` hoặc `Editor`; các màn hình nghiệp vụ khác chưa đồng nghĩa đã có API/SQL triển khai.
-
-### Bootstrap Admin (Development)
-
-Bootstrap Admin chỉ chạy khi môi trường là `Development` **và** `BootstrapAdmin:Enabled=true`. Nó chỉ tạo Admin nếu email chưa tồn tại; không đổi mật khẩu hoặc nâng quyền cho tài khoản đã có.
-
-Thiết lập giá trị riêng, mạnh và không đưa vào README/Git:
+Chỉ sử dụng trong môi trường Development. Bootstrap chỉ tạo Admin mới nếu email chưa tồn tại; không thay đổi tài khoản có sẵn. Thay toàn bộ giá trị ví dụ và không chia sẻ mật khẩu:
 
 ```powershell
 dotnet user-secrets set "BootstrapAdmin:Enabled" "true" --project .\src\DongNamTrip.Api
-dotnet user-secrets set "BootstrapAdmin:Name" "Tên quản trị Development" --project .\src\DongNamTrip.Api
-dotnet user-secrets set "BootstrapAdmin:Email" "admin-dev@example.test" --project .\src\DongNamTrip.Api
-dotnet user-secrets set "BootstrapAdmin:Password" "<mật-khẩu-mạnh-từ-8-ký-tự>" --project .\src\DongNamTrip.Api
+dotnet user-secrets set "BootstrapAdmin:Name" "<tên quản trị viên>" --project .\src\DongNamTrip.Api
+dotnet user-secrets set "BootstrapAdmin:Email" "<email quản trị viên>" --project .\src\DongNamTrip.Api
+dotnet user-secrets set "BootstrapAdmin:Password" "<mật khẩu mạnh>" --project .\src\DongNamTrip.Api
 ```
 
-Sau khi API đã tạo tài khoản, có thể tắt bootstrap để tránh chạy kiểm tra không cần thiết:
-
-```powershell
-dotnet user-secrets set "BootstrapAdmin:Enabled" "false" --project .\src\DongNamTrip.Api
-```
-
-### Seed bảy tài khoản Development
-
-Chỉ bật seed khi database có đủ sáu role và bạn cần tạo các tài khoản Development bị thiếu:
+Sau khi tạo xong, có thể tắt bằng cách đặt `BootstrapAdmin:Enabled` thành `false`. Project cũng có seed bảy tài khoản Development tùy chọn; chỉ bật theo thống nhất của nhóm và trên database phát triển. Seed không thay đổi tài khoản trùng email.
 
 ```powershell
 dotnet user-secrets set "DevelopmentTestAccounts:Enabled" "true" --project .\src\DongNamTrip.Api
 ```
 
-Lần chạy API kế tiếp, seed kiểm tra bảy email sau và chỉ tạo email chưa tồn tại:
-
-| Email | Role |
-| --- | --- |
-| `admin@dongnamtrip.test` | Admin |
-| `operator@dongnamtrip.test` | Operator |
-| `editor@dongnamtrip.test` | Editor |
-| `finance@dongnamtrip.test` | Finance |
-| `publisher@dongnamtrip.test` | Publisher |
-| `customer1@dongnamtrip.test` | Customer |
-| `customer2@dongnamtrip.test` | Customer |
-
-Nếu chưa cấu hình mật khẩu riêng, ứng dụng sinh mật khẩu ngẫu nhiên cho từng tài khoản mới và lưu vào User Secrets của máy đó. Xem **chỉ** các mật khẩu seed trong terminal riêng tư:
+Mật khẩu được tạo riêng khi cần có thể xem trong terminal riêng tư:
 
 ```powershell
 dotnet user-secrets list --project .\src\DongNamTrip.Api | Select-String '^DevelopmentTestAccounts:Passwords:'
 ```
 
-Seed không đổi mật khẩu, role hay trạng thái của email đã có. Vì repository hiện không có SQL tổng hợp, không có cơ sở để khẳng định database do script tạo đã có sẵn tài khoản kiểm thử hay mật khẩu ban đầu nào. Nếu sau này script SQL tổng hợp có các tài khoản này, không bật seed để cố thay đổi chúng; dùng tài liệu mật khẩu do nhóm database cung cấp.
-
-## Phạm vi hiện tại
-
-### Đã đọc/ghi SQL Server
-
-- Xác thực: đăng ký, đăng nhập, logout, token phiên và kiểm tra trạng thái tài khoản.
-- Bảng tài khoản/role: `TAIKHOAN`, `VAITRO`, `TAIKHOAN_VAITRO`.
-- Hồ sơ Web: họ tên, email và số điện thoại.
-- `/health/db`: kiểm tra kết nối, số bảng, `VAITRO` và `NGONNGU`.
-
-### Vẫn là dữ liệu trong bộ nhớ (`DemoStore`)
-
-- Danh mục địa điểm, tour hiển thị trên Web.
-- Thêm/sửa địa điểm qua API và WinForms Admin.
-- Lịch trình nháp/lịch trình lưu từ Planner và danh sách chuyến đi của khách.
-
-Các dữ liệu trên mất khi API khởi động lại. Chúng không đọc/ghi các bảng SQL tour, địa điểm, lịch trình, đơn đặt, thanh toán, hoạt động hoặc suất; các bảng có trong DbContext không có nghĩa nghiệp vụ tương ứng đã được tích hợp.
-
-Token phiên là chuỗi ngẫu nhiên được giữ trong bộ nhớ của API, mặc định sống 14.400 giây (4 giờ; cấu hình `Authentication:SessionLifetimeSeconds`). Logout xóa token phía API. Khởi động lại API làm mất toàn bộ token nên người dùng phải đăng nhập lại, kể cả cookie Web còn thời hạn. Cookie Web được đặt 4 giờ và không sliding.
-
-Vì vậy, chưa xem dự án là đã hoàn thành toàn bộ use case đặt tour, đơn đặt, thanh toán, lịch khởi hành, quản trị tài khoản/quyền hoặc audio. Một số menu WinForms mới là khung giao diện chờ nghiệp vụ/API tương ứng.
+Không gửi mật khẩu qua Git hoặc công khai ảnh chụp terminal có chứa secrets.
 
 ## Kiểm thử
 
-Sau khi `dotnet build` thành công, có hai script Python liên quan đến API/Web:
+Chạy tại thư mục solution sau khi đã build và chuẩn bị SQL Server Development. Các test có thể tạo tài khoản tạm và dọn dữ liệu tương ứng; không chạy trên database sản xuất. Đọc hướng dẫn từng script và đảm bảo các cổng yêu cầu không bị tiến trình khác chiếm.
 
 ```powershell
-# Chỉ chạy khi không có API/Web khác chiếm 5080 và 5081.
-# Script tự khởi động executable Debug, đặt token lifetime 10 giây và dừng chúng khi kết thúc.
 python .\tests\smoke.py --start
+python .\tests\auth_screens.py --start
+python .\tests\browser_runner.py
+python .\tests\spa_runner.py
+python .\tests\vite_hmr_runner.py
 ```
 
-`smoke.py` yêu cầu User Secrets có connection string, database có 25 bảng, sáu role và ít nhất một ngôn ngữ. Script tạo tài khoản có tiền tố `auth-test-`, kiểm tra đăng ký/đăng nhập/phân quyền/khóa tài khoản/logout/hết hạn token và luồng Web, rồi xóa chính các tài khoản test đó. Không chạy song song với API/Web đang dùng các cổng này.
+Các test trình duyệt cần môi trường và phụ thuộc phù hợp với cấu hình của repository. Kết quả gần nhất được báo cáo: build solution, SPA, smoke, SCR02/SCR03, browser, SPA và Vite HMR đều đạt. WinForms đã build nhưng chưa được kiểm tra GUI trực tiếp trong lượt đó.
 
-Kiểm tra riêng màn hình đăng nhập/đăng ký khi API/Web đã chạy tại 5080/5081:
+## Xử lý lỗi thường gặp
 
-```powershell
-python .\tests\auth_screens.py
-```
-
-Script này tạo rồi xóa các email `scr02scr03-*`, kiểm tra validation, email trùng, đăng ký đồng thời, role injection, hash mật khẩu, trạng thái khóa, logout và luồng form. Các script test có thao tác SQL để dọn dữ liệu test; chỉ chạy trên database Development được phép kiểm thử.
-
-## Lỗi thường gặp
-
-| Hiện tượng | Cách kiểm tra/xử lý |
+| Hiện tượng | Cách kiểm tra |
 | --- | --- |
-| API báo thiếu `ConnectionStrings:DongNamTrip` | Đặt User Secret cho đúng project API; kiểm tra tên server và database của máy mình. |
-| `/health/db` trả 503 | Kiểm tra SQL Server đang chạy, Windows account có quyền, tên instance/database và firewall cục bộ. Không tạo lại database tự động. |
-| Web/Admin báo không kết nối API | Khởi động API trước; xác nhận `http://localhost:5080/health`; kiểm tra `ApiBaseUrl` của Web hoặc `DONGNAMTRIP_API_URL` của Admin. |
-| Web mở nhưng không đúng bản mới | Dừng đúng process đang nghe 5081, build lại Web rồi chạy lại. |
-| Build lỗi DLL/EXE đang bị khóa | Dùng `Get-NetTCPConnection` và `Get-Process` để xác định PID DongNamTrip cụ thể, đóng đúng ứng dụng rồi build lại. |
-| WinForms từ chối đăng nhập Customer | Đây là thiết kế hiện tại: chỉ role nhân viên mới mở Admin. |
-| Không có script tạo database | Đây là thiếu sót hiện tại của repository; xin script đã duyệt từ nhóm database, không tự tạo schema từ DbContext. |
+| API báo thiếu connection string | Kiểm tra User Secrets của đúng project API, tên instance và database. |
+| `/health/db` lỗi | Kiểm tra SQL Server đang chạy, tên instance/database và quyền truy cập của Windows account. |
+| Web/Admin không kết nối API | Chạy API trước; kiểm tra `/health` và cấu hình địa chỉ API. |
+| Web báo thiếu SPA | Chạy `npm ci` và `npm run build` trong `src/DongNamTrip.Spa`. |
+| Build báo DLL/EXE bị khóa | Dừng đúng tiến trình ứng dụng đang chạy rồi build lại. |
+| Customer không vào được WinForms | WinForms dành cho các vai trò nhân viên phù hợp. |
+| Thiếu file SQL bổ sung | Xin V001 và V002 từ nhóm; các file cục bộ dưới `artifacts` có thể không được đưa lên Git. |
 
-## Thông tin nhóm cần bổ sung
+## Docker
 
-- Script SQL khởi tạo được phê duyệt, vị trí trong repo, thứ tự chạy và dữ liệu seed chính thức.
-- Nếu có script SQL tổng hợp: danh sách tài khoản ban đầu, cách phân phối mật khẩu an toàn và việc có cần bật seed ứng dụng hay không.
-- Quy ước môi trường ngoài Development, cấu hình triển khai và nơi lưu secrets trong CI/CD.
+Docker do thành viên khác phụ trách. Tại thời điểm bàn giao này, hướng dẫn chạy hoặc kiểm thử Docker cho tổ hợp SPA, Web, API và SQL Server chưa được xác nhận; cập nhật mục này sau khi cấu hình được bổ sung và kiểm tra.

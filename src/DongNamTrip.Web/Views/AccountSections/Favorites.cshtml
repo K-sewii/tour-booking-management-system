@@ -1,0 +1,17 @@
+@model AccountCollections
+@{ Layout = "_AccountLayout"; ViewData["Title"] = "Yêu thích và lịch sử tra cứu"; string tab = ViewBag.Tab ?? "favorites"; }
+<div class="account-heading"><div class="eyebrow">KHÁM PHÁ CỦA BẠN</div><h1 id="account-title">Yêu thích và lịch sử tra cứu</h1><p>Xem lại tour, địa điểm đã lưu và hoạt động gần đây.</p></div>
+@if (TempData["CollectionStatus"] is string status) { <p class="account-message account-message--success" role="status">@status</p> }
+@if (ViewBag.LoadError is string error) { <div class="account-card account-empty" role="alert">@error <a asp-action="Favorites">Thử lại</a></div> }
+else {
+<div class="account-card"><nav class="account-tabs" aria-label="Yêu thích và lịch sử"><a href="/Account/Favorites" aria-current="@(tab == "favorites" ? "page" : null)">Yêu thích</a><a href="/Account/Favorites?tab=search" aria-current="@(tab == "search" ? "page" : null)">Tìm kiếm gần đây</a><a href="/Account/Favorites?tab=viewed" aria-current="@(tab == "viewed" ? "page" : null)">Đã xem gần đây</a></nav>
+@if (tab == "favorites") {
+    @if (Model.Favorites.Count == 0) { <p class="account-empty">Bạn chưa lưu tour hoặc địa điểm nào. Hãy mở một tour hoặc địa điểm để lưu.</p> }
+    else { <ul class="account-list">@foreach (var item in Model.Favorites) { <li><div><strong>@(item.Missing ? "Mục không còn hiển thị" : item.Name)</strong><p>@(item.Kind == "tour" ? "Tour" : "Địa điểm") · Lưu @item.At.ToString("dd/MM/yyyy")</p></div>@if (!item.Missing) { <a class="account-text-link" href="/@(item.Kind == "tour" ? "Tours" : "Destinations")/Details/@item.ItemId">Xem lại</a> }<form method="post" action="/Account/Favorites/@item.Kind/@item.ItemId">@Html.AntiForgeryToken()<input type="hidden" name="save" value="false"/><button class="btn outline" type="submit">Bỏ lưu</button></form></li> }</ul> }
+} else {
+    var entries = tab == "search" ? Model.Searches : Model.Viewed;
+    @if (entries.Count == 0) { <p class="account-empty">Chưa có lịch sử ở mục này.</p> }
+    else { <form method="post" action="/Account/Favorites/Clear" class="account-clear">@Html.AntiForgeryToken()<input type="hidden" name="tab" value="@tab"/><button class="btn outline" type="submit">Xóa toàn bộ lịch sử mục này</button></form><ul class="account-list">@foreach (var item in entries) { <li><div><strong>@(tab == "search" ? item.Query : item.Missing ? "Mục không còn hiển thị" : item.Name)</strong><p>@item.At.ToString("dd/MM/yyyy HH:mm") UTC</p></div>@if (tab == "search") { <a class="account-text-link" asp-controller="Tours" asp-action="Index" asp-route-q="@item.Query">Tìm lại</a> } else if (!item.Missing) { <a class="account-text-link" href="/@(item.Kind == "tour" ? "Tours" : "Destinations")/Details/@item.ItemId">Xem lại</a> }<form method="post" action="/Account/Favorites/Activity/@item.Id">@Html.AntiForgeryToken()<input type="hidden" name="tab" value="@tab"/><button class="btn outline" type="submit">Xóa</button></form></li> }</ul> }
+}
+</div>
+}

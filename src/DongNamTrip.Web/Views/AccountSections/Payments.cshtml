@@ -1,0 +1,24 @@
+@model List<PaymentEntry>
+@{ Layout = "_AccountLayout"; ViewData["Title"] = "Thanh toán và hoàn tiền"; var selected = ViewBag.Selected as PaymentEntry; var choice = ViewBag.Choice as PaymentChoiceDto; }
+<div class="account-heading"><div class="eyebrow">ĐƠN VÀ GIAO DỊCH</div><h1 id="account-title">Thanh toán và hoàn tiền</h1><p>Đơn, khoản thu và hoàn tiền thực được ghi nhận cho tài khoản của bạn.</p></div>
+@if (ViewBag.LoadError is string error) { <div class="account-card account-empty" role="alert">@error <a asp-action="Payments">Thử lại</a></div> }
+else {
+<p id="payment-choice-status" class="account-message account-message--success" role="status" aria-live="polite" hidden></p>
+<div class="account-card account-payment-choice"><div class="account-card-heading"><h2>Phương thức thanh toán</h2><p>Chỉ lưu lựa chọn ưu tiên của bạn. Chưa liên kết ngân hàng, chưa lưu thẻ và chưa thực hiện thanh toán.</p></div>
+<div class="account-payment-summary"><div><strong data-payment-label>@(choice?.MethodCode is null ? "Chưa có lựa chọn ưu tiên" : choice.MethodCode == "bank_transfer" ? "Ưu tiên chuyển khoản ngân hàng" : "Ưu tiên trao đổi về tiền mặt")</strong><p>Lựa chọn này không tạo đơn hoặc giao dịch.</p></div><button class="btn outline" type="button" data-payment-open>@(choice?.MethodCode is null ? "Thêm phương thức" : "Đổi")</button></div></div>
+<dialog class="account-dialog" id="payment-choice-dialog" aria-labelledby="payment-dialog-title" aria-describedby="payment-dialog-description">
+<div class="account-dialog-head"><h2 id="payment-dialog-title">Phương thức thanh toán ưu tiên</h2><button class="account-dialog-close" type="button" aria-label="Đóng hộp thoại" data-payment-close>×</button></div>
+<form method="post" action="/Account/Payments/Choice" data-payment-choice-form novalidate>@Html.AntiForgeryToken()
+<div class="account-dialog-body"><label for="methodCode">Phương thức ưu tiên <span class="account-required" aria-hidden="true">*</span></label><select id="methodCode" name="methodCode" required><option value="">Chọn phương thức</option><option value="bank_transfer" selected="@(choice?.MethodCode == "bank_transfer")">Chuyển khoản ngân hàng</option><option value="cash" selected="@(choice?.MethodCode == "cash")">Trao đổi về tiền mặt</option></select><p id="payment-dialog-description">Đây là lựa chọn để trao đổi khi có nghiệp vụ đặt tour. Hệ thống chưa nhận hoặc xử lý thanh toán.</p><p id="payment-dialog-error" class="account-message account-message--error account-long-message" role="alert" tabindex="-1" hidden></p></div>
+<div class="account-actions"><button class="btn outline" type="button" data-payment-close>Hủy</button><button class="btn" type="submit" data-payment-save>Lưu</button></div></form></dialog>
+<div class="account-card"><div class="account-card-heading"><h2>Đơn đặt của bạn</h2><p>Giá tham khảo ở trang tour không phải khoản đã thanh toán.</p></div>
+<form method="get" action="/Account/Payments" class="account-filter"><label for="status">Lọc trạng thái</label><select id="status" name="status"><option value="">Tất cả</option>@foreach (var item in Model.Select(x => x.Status).Distinct()) { <option value="@item" selected="@(item == (string?)ViewBag.Status)">@item</option> }</select><button class="btn" type="submit">Lọc</button></form>
+@if (Model.Count == 0) { <p class="account-empty">Không có đơn hoặc giao dịch phù hợp.</p> }
+else { <ul class="account-list">@foreach (var item in Model) { <li><div><strong>Đơn #@item.Id · @item.Status</strong><p>Ngày đặt @item.PlacedAt.ToString("dd/MM/yyyy HH:mm") UTC · @item.Guests khách · Giá chốt @item.AgreedPrice.ToString("N0") ₫</p></div><a class="btn outline" asp-action="Payments" asp-route-id="@item.Id">Chi tiết</a></li> }</ul> }
+</div>
+@if (selected is not null) { <div class="account-card account-secondary"><div class="account-card-heading"><h2>Chi tiết đơn #@selected.Id</h2><p>Trạng thái: @selected.Status · Giá chốt @selected.AgreedPrice.ToString("N0") ₫</p></div>
+@if (selected.Transactions.Count == 0) { <p class="account-empty">Đơn này chưa có khoản thu hoặc hoàn tiền được ghi nhận.</p> }
+else { <ul class="account-list">@foreach (var transaction in selected.Transactions) { <li><div><strong>@transaction.Kind · @transaction.Amount.ToString("N0") ₫</strong><p>@transaction.At.ToString("dd/MM/yyyy HH:mm") UTC · Mã tham chiếu @transaction.Reference</p></div></li> }</ul> }
+</div> }
+}
+@section Scripts { <script src="~/js/payment-choice.js" asp-append-version="true" defer></script> }

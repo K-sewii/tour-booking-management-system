@@ -62,23 +62,4 @@ public sealed class DemoStore
         }
     }
 
-    public void MoveItineraries(string previousOwnerKey, string currentOwnerKey)
-    {
-        if (string.Equals(previousOwnerKey, currentOwnerKey, StringComparison.Ordinal))
-            return;
-
-        lock (gate)
-        {
-            if (!itinerariesByOwner.Remove(previousOwnerKey, out var itineraries))
-                return;
-
-            if (!itinerariesByOwner.TryGetValue(currentOwnerKey, out var destination))
-            {
-                itinerariesByOwner[currentOwnerKey] = itineraries;
-                return;
-            }
-
-            destination.AddRange(itineraries);
-        }
-    }
 }
