@@ -159,6 +159,25 @@ jobs:
               $connection.Dispose()
           }
 
+      - name: Apply catalog seed
+        shell: powershell
+        run: |
+          $ErrorActionPreference = 'Stop'
+          Add-Type -AssemblyName System.Data
+          $connection = [System.Data.SqlClient.SqlConnection]::new('Server=(localdb)\DongNamTripCI;Database=DongNamTrip;Integrated Security=True;Encrypt=False;Connect Timeout=30;')
+          try {
+              $connection.Open()
+              foreach ($file in Get-ChildItem db/seed -Filter *.sql | Sort-Object Name) {
+                  $command = $connection.CreateCommand()
+                  $command.CommandText = Get-Content -Raw -Encoding UTF8 $file.FullName
+                  [void]$command.ExecuteNonQuery()
+                  Write-Host "Applied $($file.Name)"
+              }
+          }
+          finally {
+              $connection.Dispose()
+          }
+
       - name: Run HTTP and SQL smoke tests
         run: python tests/api/smoke.py --start
 
