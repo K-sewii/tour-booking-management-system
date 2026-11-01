@@ -10,7 +10,7 @@ TestResults/
 artifacts/
 node_modules/
 *.tsbuildinfo
-src/DongNamTrip.Web/wwwroot/spa/
+src/Frontend/DongNamTrip.Web/wwwroot/spa/
 __pycache__/
 *.pyc
 

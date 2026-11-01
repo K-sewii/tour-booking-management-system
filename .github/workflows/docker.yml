@@ -35,9 +35,9 @@ jobs:
       matrix:
         include:
           - name: api
-            dockerfile: src/DongNamTrip.Api/Dockerfile
+            dockerfile: src/Backend/DongNamTrip.Api/Dockerfile
           - name: web
-            dockerfile: src/DongNamTrip.Web/Dockerfile
+            dockerfile: src/Frontend/DongNamTrip.Web/Dockerfile
     steps:
       - uses: actions/checkout@v4
 

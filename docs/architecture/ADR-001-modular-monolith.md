@@ -46,31 +46,34 @@ Ghi chú gán bảng (cần nhóm xác nhận): `QUYENNGHE` (quyền nghe, gắn
 
 ### 2. Cấu trúc thư mục
 
-Một deployable duy nhất; module là thư mục trong `DongNamTrip.Api`, không thêm project:
+Ba thư mục cấp cao theo sơ đồ (Frontend → Backend, dùng chung Shared); mỗi module chia 3 lớp UI / Business Logic / Data Access:
 
 ```text
 src/
-├── DongNamTrip.Spa/           React SPA (không đổi)
-├── DongNamTrip.Web/           BFF (không đổi)
-├── DongNamTrip.Admin/         WinForms (không đổi)
-├── DongNamTrip.Client/        HTTP client dùng chung (không đổi)
-├── DongNamTrip.Contracts/     DTO dùng chung (không đổi)
-└── DongNamTrip.Api/
-    ├── Program.cs             host mỏng (~65 dòng): cấu hình, rate limit, health, đăng ký + map module
-    ├── Persistence/           DongNamTripDbContext + Entities scaffold (dùng chung — nợ, xem Consequences)
-    └── Modules/
-        ├── IModule.cs, ModuleHttp.cs
-        ├── Catalog/           ICatalogApi (cổng công khai), CatalogStore, CatalogModule
-        ├── Itinerary/         ItineraryStore (gọi ICatalogApi), ItineraryModule
-        ├── Booking/           BookingModule (/api/account/payments, payment-choice)
-        ├── Administration/    AdministrationModule, Infrastructure/ (SqlAuthentication, AccountArea)
-        ├── Quotation/         chỉ có QuotationModule rỗng
-        └── Narration/         chỉ có NarrationModule rỗng
+├── Frontend/
+│   ├── DongNamTrip.Spa/        React SPA
+│   ├── DongNamTrip.Web/        BFF
+│   ├── DongNamTrip.Admin/      WinForms
+│   └── DongNamTrip.Client/     HTTP client gọi API (dùng bởi Web, Admin)
+├── Backend/
+│   ├── DongNamTrip.Api/        Host mỏng: Program.cs (cấu hình, rate limit, health, đăng ký + map module)
+│   └── DongNamTrip.Modules/    1 project, mỗi module một thư mục
+│       ├── IModule.cs, ModuleHttp.cs
+│       ├── Persistence/        DongNamTripDbContext + Entities scaffold (dùng chung — nợ)
+│       └── <Module>/           Catalog, Itinerary, Booking, Quotation, Narration, Administration
+│           ├── <Module>Module.cs      điểm vào (DI), gọi Presentation
+│           ├── Presentation/          UI: HTTP endpoint
+│           ├── BusinessLogic/         nghiệp vụ, cổng công khai I*Api
+│           └── DataAccess/            truy cập dữ liệu (EF mapping, repository)
+└── Shared/
+    └── DongNamTrip.Contracts/  DTO dùng chung
 ```
+
+Các lớp trong một module dùng chung namespace `DongNamTrip.Modules.<Module>`; ranh giới lớp được kiểm bằng `tests/architecture/rules.py`, không bằng project riêng. Hiện chỉ Catalog, Itinerary có `BusinessLogic` thật; Booking và Administration còn để logic/truy cập dữ liệu ngay trong `Presentation` (nợ: tách dần); Quotation, Narration mới có `<Module>Module.cs`.
 
 ### 3. Quy tắc phụ thuộc (kiểm bằng architecture test ở bước sau)
 
-1. `Domain` ← `Application` ← `Infrastructure`/`Api` (phụ thuộc chỉ hướng vào trong).
+1. `Presentation` → `BusinessLogic` → `DataAccess` (chỉ đi xuống; `BusinessLogic`/`DataAccess` không dùng `*Endpoints`).
 2. Module **không** tham chiếu project của module khác. Cần dữ liệu thì gọi một **port công khai** (`ICatalogApi.GetDestinationAsync(id)`) đặt trong `Contracts`/`BuildingBlocks`, hoặc nghe sự kiện nội bộ.
 3. Entity của module khác chỉ được tham chiếu **bằng ID** (không navigation property xuyên module); xóa navigation `Dondat.MaTkNavigation → Taikhoan` v.v. khi chuyển từng module.
 4. Mỗi module có `DbContext` riêng chỉ map bảng của mình; không `JOIN` xuyên module trong code — ghép dữ liệu ở lớp Application (hoặc read model).
@@ -90,13 +93,17 @@ flowchart LR
     Itinerary --> Administration
 ```
 
+### 3b. Frontend chỉ gọi API
+
+Backend sở hữu số liệu và luật; Frontend không khai báo danh mục hay giới hạn. Catalog và Itinerary đọc/ghi SQL (`DIADIEM`, `TOUR`, `TOUR_DIADIEM`, `LICHTRINH*`); `GET /api/meta` công bố khu vực, thể loại, cỡ trang và giới hạn nhập liệu (nguồn: `CatalogOptions` và `Limits` trong Contracts); tìm kiếm/phân trang/tổng/tạm tính tính ở API. `tests/architecture/rules.py` chặn tên khu vực gõ cứng và filter/sort/slice dữ liệu tour/điểm đến trong SPA. Còn lại: Admin (form điểm đến, dashboard) và trang chủ còn vài số liệu cứng (làm sau).
+
 ### 4. Mức độ DDD theo module (tránh over-engineering)
 
 | Module | Mô hình | Lý do |
 | --- | --- | --- |
 | `Booking`, `Quotation` | Domain model giàu (aggregate `Dondat`, `Baogia`, state machine, giữ chỗ/hoàn tiền) | Có bất biến: sức chứa, hạn giữ chỗ, điều kiện hủy, trạng thái — xem `DongNamTrip_StateMachine.drawio` |
 | `Itinerary` | Domain model vừa (phiên bản lịch trình) | Có versioning nhưng ít quy tắc |
-| `Catalog`, `Narration`, `Administration` | Layered/CRUD đơn giản (Application + Infrastructure), `Domain` mỏng | Chủ yếu nhập liệu, ít bất biến; DDD ở đây là ceremony |
+| `Catalog`, `Narration`, `Administration` | Layered/CRUD đơn giản (Application + Infrastructure), `BusinessLogic` mỏng | Chủ yếu nhập liệu, ít bất biến; DDD ở đây là ceremony |
 
 ### 5. Dữ liệu: giữ một database, **chưa** tách schema
 
@@ -108,7 +115,7 @@ Sơ đồ tham khảo tách schema theo module (`product.`, `order.`). Với Don
 
 ## Options considered
 
-| | A. Thư mục module trong Api (chọn) | B. 3–4 project/module như repo kgrzybek | C. Giữ nguyên, không chia |
+| | A. Một project Modules, thư mục theo module (chọn) | B. 3–4 project/module như repo kgrzybek | C. Giữ nguyên, không chia |
 | --- | --- | --- | --- |
 | Ranh giới | Thư mục + architecture test | Compiler cấm Domain tham chiếu Infrastructure | Chỉ quy ước |
 | Số project thêm | 0 | ~18–24 | 0 |
@@ -116,7 +123,7 @@ Sơ đồ tham khảo tách schema theo module (`product.`, `order.`). Với Don
 | Rủi ro | Domain có thể lỡ `using EF` → cần architecture test | Thấp | Ranh giới mất dần theo thời gian |
 | Đảo ngược | Dễ tách thêm project khi cần | Khó gộp lại | Dễ |
 
-Chọn A vì ít thư mục nhất mà vẫn có ranh giới module; ranh giới được bảo vệ bằng architecture test thay vì project riêng. Khi cần, module có thể tách thành project mà không đổi API. Nếu một module (khả năng cao là `Booking`) phình to, nâng riêng module đó lên mô hình B.
+Chọn A (một project `DongNamTrip.Modules`) vì ít thư mục nhất mà vẫn có ranh giới module; ranh giới được bảo vệ bằng architecture test thay vì project riêng. Khi cần, module có thể tách thành project mà không đổi API. Nếu một module (khả năng cao là `Booking`) phình to, nâng riêng module đó lên mô hình B.
 
 ## Consequences
 

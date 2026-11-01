@@ -1,0 +1,25 @@
+export type User = { id: number; name: string; email: string; roles: string[] };
+export type Destination = { id: number; name: string; region: string; category: string; address: string; description: string; visitMinutes: number; illustration: string; status?: string };
+export type Tour = { id: number; name: string; region: string; category: string; duration: string; referencePrice: number; summary: string; illustration: string; destinationIds: number[] };
+export type Itinerary = { id: number; userId: number; name: string; startDate: string; guests: number; destinationIds: number[]; destinationNames: string[]; totalVisitMinutes: number };
+export type Paged<T> = { items: T[]; total: number; page: number; pageSize: number };
+export type TourDetail = { tour: Tour; places: Destination[] };
+export type TourEstimate = { guests: number; total: number };
+export type ItineraryPreview = { places: Destination[]; totalVisitMinutes: number };
+export type Meta = {
+  regions: { name: string; illustration: string }[]; categories: string[];
+  tourPageSize: number; destinationPageSize: number; plannerListSize: number;
+  itineraryNameMax: number; guestsMin: number; guestsMax: number; maxPlaces: number;
+  nameMin: number; nameMax: number; passwordMin: number; passwordMax: number; phoneMax: number;
+};
+export type Profile = { id: number; name: string; email: string; phoneNumber: string | null };
+export type Session = { id: string; createdAt: string; expiresAt: string; isCurrent: boolean };
+export type Money = { id: number; kind: string; amount: number; at: string; reference: string };
+export type Payment = { id: number; placedAt: string; status: string; agreedPrice: number; guests: number; quoteId: number | null; departureId: number | null; transactions: Money[] };
+export type PaymentChoice = { methodCode: string | null; updatedAt: string | null };
+export type CollectionItem = { kind: string; itemId: number; name: string | null; at: string; missing: boolean };
+export type Activity = { id: number; kind: string; itemId: number | null; query: string | null; name: string | null; at: string; missing: boolean };
+export type Collections = { favorites: CollectionItem[]; searches: Activity[]; viewed: Activity[] };
+export type Notice = { id: number; title: string; body: string; at: string; readAt: string | null };
+export type Preference = { securityNotices: boolean };
+export type FieldErrors = Record<string, string[]>;

@@ -31,13 +31,14 @@ services:
     volumes:
       - ./db/init.sh:/init.sh:ro
       - ./db/init:/init:ro
+      - ./db/seed:/seed:ro
     entrypoint: ["/bin/bash", "/init.sh"]
     restart: "no"
 
   api:
     build:
       context: .
-      dockerfile: src/DongNamTrip.Api/Dockerfile
+      dockerfile: src/Backend/DongNamTrip.Api/Dockerfile
     depends_on:
       db-init:
         condition: service_completed_successfully
@@ -63,7 +64,7 @@ services:
   web:
     build:
       context: .
-      dockerfile: src/DongNamTrip.Web/Dockerfile
+      dockerfile: src/Frontend/DongNamTrip.Web/Dockerfile
     depends_on:
       api:
         condition: service_healthy

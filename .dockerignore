@@ -11,5 +11,5 @@ tests/
 db/
 *.md
 .env
-src/DongNamTrip.Admin/
-src/DongNamTrip.Web/wwwroot/spa/
+src/Frontend/DongNamTrip.Admin/
+src/Frontend/DongNamTrip.Web/wwwroot/spa/

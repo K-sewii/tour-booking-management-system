@@ -9,7 +9,7 @@
 
 DongNamTrip is a university project. Customers use a React single-page app; staff use a Windows Forms admin tool. Both talk to one ASP.NET Core API backed by SQL Server.
 
-> **Status: under development.** The tour, destination and itinerary catalogs are still served from in-memory demo data in the API. There is no real booking flow or payment gateway yet. Only the `Development` environment is supported.
+> **Status: under development.** Tours, destinations and itineraries are read from and written to SQL Server by the API; the database needs seed data (published rows) before the catalog shows anything. The frontends only call the API: search, paging, totals, estimates and validation limits (`GET /api/meta`) all come from the backend. There is no real booking flow or payment gateway yet. Only the `Development` environment is supported.
 
 ## Table of contents
 
@@ -38,7 +38,7 @@ flowchart TD
     MOD --> DB[(SQL Server)]
 ```
 
-The API is a **modular monolith**: one deployable, six business modules that own their endpoints and, over time, their data (see [ADR-001](docs/architecture/ADR-001-modular-monolith.md)).
+The API is a **modular monolith**: one deployable, six business modules, each split into Presentation (UI), BusinessLogic and DataAccess layers, that own their endpoints and, over time, their data (see [ADR-001](docs/architecture/ADR-001-modular-monolith.md)).
 
 | Module | Subsystem | Responsibility |
 | --- | --- | --- |
@@ -105,8 +105,8 @@ docker compose up --build
 How it works:
 
 - `db` is SQL Server 2022 with a persistent volume.
-- `db-init` creates the `DongNamTrip` database from `db/init/*.sql` only if it does not exist, then exits. To start over: `docker compose down -v`.
-- `api` and `web` are built from `src/DongNamTrip.Api/Dockerfile` and `src/DongNamTrip.Web/Dockerfile` (multi-stage, non-root; the Web image also builds the SPA).
+- `db-init` creates the `DongNamTrip` database from `db/init/*.sql`, then loads the sample catalog in `db/seed/*.sql`, only if the database does not exist, then exits. Replace the seed with real data when ready; rows must have `TrangThai = 'Published'` (statuses: `Draft`, `Published`, `Inactive`). To start over: `docker compose down -v`.
+- `api` and `web` are built from `src/Backend/DongNamTrip.Api/Dockerfile` and `src/Frontend/DongNamTrip.Web/Dockerfile` (multi-stage, non-root; the Web image also builds the SPA).
 - Without any `.sql` file in `db/init/`, the stack starts but anything needing SQL fails.
 - The WinForms Admin runs on the Windows host and points at `http://localhost:5080/` (`DONGNAMTRIP_API_URL` to override).
 
@@ -118,23 +118,23 @@ How it works:
 dotnet restore .\DongNamTrip.sln
 dotnet build .\DongNamTrip.sln --no-restore
 
-# SPA (output goes to src/DongNamTrip.Web/wwwroot/spa, not committed)
-cd .\src\DongNamTrip.Spa; npm ci; npm run build; cd ..\..
+# SPA (output goes to src/Frontend/DongNamTrip.Web/wwwroot/spa, not committed)
+cd .\src\Frontend\DongNamTrip.Spa; npm ci; npm run build; cd ..\..
 
 # Connection string, once per machine
-dotnet user-secrets set "ConnectionStrings:DongNamTrip" "Server=.\SQLEXPRESS;Database=DongNamTrip;Integrated Security=True;Encrypt=True;TrustServerCertificate=True;" --project .\src\DongNamTrip.Api
+dotnet user-secrets set "ConnectionStrings:DongNamTrip" "Server=.\SQLEXPRESS;Database=DongNamTrip;Integrated Security=True;Encrypt=True;TrustServerCertificate=True;" --project .\src\Backend\DongNamTrip.Api
 ```
 
 Start each in its own terminal, API first:
 
 ```powershell
 $env:ASPNETCORE_ENVIRONMENT = "Development"
-dotnet run --project .\src\DongNamTrip.Api --launch-profile http   # http://localhost:5080
-dotnet run --project .\src\DongNamTrip.Web --launch-profile http   # http://localhost:5081
-dotnet run --project .\src\DongNamTrip.Admin                       # WinForms
+dotnet run --project .\src\Backend\DongNamTrip.Api --launch-profile http   # http://localhost:5080
+dotnet run --project .\src\Frontend\DongNamTrip.Web --launch-profile http   # http://localhost:5081
+dotnet run --project .\src\Frontend\DongNamTrip.Admin                       # WinForms
 ```
 
-For frontend work with hot reload, keep API and Web running and run `npm run dev` in `src/DongNamTrip.Spa`, then open http://127.0.0.1:5173. The legacy MVC pages stay available with `?legacy=1` or `Spa__Enabled=false`.
+For frontend work with hot reload, keep API and Web running and run `npm run dev` in `src/Frontend/DongNamTrip.Spa`, then open http://127.0.0.1:5173. The legacy MVC pages stay available with `?legacy=1` or `Spa__Enabled=false`.
 
 ## Configuration
 
@@ -155,11 +155,12 @@ Never commit connection strings, passwords, tokens or `.env`. Public registratio
 Tests run against a real API and SQL Server **development** database and may create and clean up temporary accounts. Do not run them against production data.
 
 ```powershell
-python .\tests\smoke.py --start
-python .\tests\auth_screens.py --start
-python .\tests\browser_runner.py
-python .\tests\spa_runner.py
-python .\tests\vite_hmr_runner.py
+python tests/architecture/rules.py   # module/layer rules, no database needed
+python .\tests\api\smoke.py --start
+python .\tests\api\auth_screens.py --start
+python .\tests\e2e\browser_runner.py
+python .\tests\spa\spa_runner.py
+python .\tests\spa\vite_hmr_runner.py
 ```
 
 Browser tests need Playwright and Chromium. The WinForms GUI is built in CI but not covered by automated GUI tests.
@@ -179,14 +180,24 @@ Published images: `ghcr.io/k-sewii/tour-booking-management-system-api` and `...-
 ```text
 .
 ├── src/
-│   ├── DongNamTrip.Spa/        React + TypeScript SPA (feature folders)
-│   ├── DongNamTrip.Web/        BFF: serves SPA, cookie session, proxies to API; legacy MVC views
-│   ├── DongNamTrip.Api/        Host + Modules/ (Catalog, Itinerary, Booking, Quotation, Narration, Administration) + Persistence/
-│   ├── DongNamTrip.Admin/      WinForms admin
-│   ├── DongNamTrip.Client/     Shared HTTP client for Web and Admin
-│   └── DongNamTrip.Contracts/  Shared DTOs
-├── tests/                      API, SQL, browser and SPA tests
-├── db/                         Docker DB init (init.sh; init/*.sql is git-ignored)
+│   ├── Frontend/
+│   │   ├── DongNamTrip.Spa/        React + TypeScript SPA (feature folders)
+│   │   ├── DongNamTrip.Web/        BFF: serves SPA, cookie session, proxies to API; legacy MVC views
+│   │   ├── DongNamTrip.Admin/      WinForms admin
+│   │   └── DongNamTrip.Client/     HTTP client for the API (used by Web and Admin)
+│   ├── Backend/
+│   │   ├── DongNamTrip.Api/        Thin host (Program.cs)
+│   │   └── DongNamTrip.Modules/    Catalog, Itinerary, Booking, Quotation, Narration, Administration
+│   │       └── <Module>/           Presentation (UI) / BusinessLogic / DataAccess
+│   └── Shared/
+│       └── DongNamTrip.Contracts/  Shared DTOs
+├── tests/
+│   ├── architecture/           module and layer rules (no database)
+│   ├── api/                    HTTP + SQL integration tests and shared harness
+│   ├── e2e/                    Playwright browser tests
+│   ├── spa/                    SPA, fault-injection and Vite HMR tests
+│   └── ci/                     CI helper scripts
+├── db/                         Docker DB init (init.sh; init/*.sql git-ignored; seed/ = sample catalog)
 ├── docs/                       Design diagrams, ADRs (docs/architecture)
 ├── docker-compose.yml
 └── .github/                    Workflows, Dependabot
@@ -213,7 +224,7 @@ Published images: `ghcr.io/k-sewii/tour-booking-management-system-api` and `...-
 | --- | --- |
 | API: "ConnectionStrings:DongNamTrip must be configured" | User Secrets of the API project, or `.env` in Docker |
 | `/health/db` fails | SQL Server running, instance/database name, credentials |
-| Web says SPA build is missing | Run `npm ci && npm run build` in `src/DongNamTrip.Spa` |
+| Web says SPA build is missing | Run `npm ci && npm run build` in `src/Frontend/DongNamTrip.Spa` |
 | Web or Admin cannot reach the API | Start the API first; check `/health` and `ApiBaseUrl` |
 | `db-init` skipped | No `.sql` files in `db/init/` |
 | DLL/EXE locked on build | Stop the running app, then rebuild |

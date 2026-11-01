@@ -10,19 +10,19 @@ DongNamTrip là dự án học tập về khám phá tour và quản lý hành t
 
 | Project | Vai trò |
 | --- | --- |
-| `src/DongNamTrip.Spa` | Giao diện React + TypeScript, Vite và React Router. |
-| `src/DongNamTrip.Web` | Phục vụ SPA, làm lớp trung gian BFF và giữ bản MVC cũ để đối chiếu. |
-| `src/DongNamTrip.Api` | API, xác thực, phân quyền, truy cập SQL Server và `DemoStore`. |
-| `src/DongNamTrip.Admin` | Ứng dụng WinForms cho nhân viên; gọi API. |
-| `src/DongNamTrip.Client` | HTTP client dùng chung cho Web và WinForms. |
-| `src/DongNamTrip.Contracts` | Các kiểu dữ liệu và hợp đồng dùng chung. |
-| `src/DongNamTrip.Api/Modules` | 6 module nghiệp vụ (Catalog, Itinerary, Booking, Quotation, Narration, Administration); `Program.cs` chỉ là host mỏng, bảng SQL còn nằm chung trong `Persistence`; xem `docs/architecture/ADR-001-modular-monolith.md`. |
+| `src/Frontend/DongNamTrip.Spa` | Giao diện React + TypeScript, Vite và React Router. |
+| `src/Frontend/DongNamTrip.Web` | Phục vụ SPA, làm lớp trung gian BFF và giữ bản MVC cũ để đối chiếu. |
+| `src/Backend/DongNamTrip.Api` | API, xác thực, phân quyền, host mỏng cho các module. |
+| `src/Frontend/DongNamTrip.Admin` | Ứng dụng WinForms cho nhân viên; gọi API. |
+| `src/Frontend/DongNamTrip.Client` | HTTP client dùng chung cho Web và WinForms. |
+| `src/Shared/DongNamTrip.Contracts` | Các kiểu dữ liệu và hợp đồng dùng chung. |
+| `src/Backend/DongNamTrip.Modules` | 6 module nghiệp vụ (Catalog, Itinerary, Booking, Quotation, Narration, Administration; mỗi module có 3 lớp Presentation/BusinessLogic/DataAccess); `Program.cs` chỉ là host mỏng, bảng SQL còn nằm chung trong `Persistence`; xem `docs/architecture/ADR-001-modular-monolith.md`. |
 | `tests` | Các bộ kiểm thử API, Web, SQL và trình duyệt. |
 
 Frontend được tổ chức theo tính năng:
 
 ```text
-src/DongNamTrip.Spa/src/
+src/Frontend/DongNamTrip.Spa/src/
 ├── app/                  Khởi tạo ứng dụng và route
 ├── api/                  Client, kiểu dữ liệu và trạng thái tải
 ├── auth/                 Phiên người dùng dùng chung
@@ -72,7 +72,7 @@ Chạy theo thứ tự V001 rồi V002 trên môi trường phát triển đã c
 Mỗi thành viên tự đặt connection string Development qua User Secrets cho project API. Thay tên server bằng instance SQL Server trên máy của mình:
 
 ```powershell
-dotnet user-secrets set "ConnectionStrings:DongNamTrip" "Server=.\SQLEXPRESS;Database=DongNamTrip;Integrated Security=True;Encrypt=True;TrustServerCertificate=True;" --project .\src\DongNamTrip.Api
+dotnet user-secrets set "ConnectionStrings:DongNamTrip" "Server=.\SQLEXPRESS;Database=DongNamTrip;Integrated Security=True;Encrypt=True;TrustServerCertificate=True;" --project .\src\Backend\DongNamTrip.Api
 ```
 
 Không đưa connection string thực, mật khẩu, token hoặc file User Secrets vào Git. Khi API đang chạy, mở `http://localhost:5080/health/db` để kiểm tra kết nối SQL. Nếu không dùng Windows Authentication, hãy trao đổi với người phụ trách database về cấu hình phù hợp.
@@ -89,13 +89,13 @@ dotnet build .\DongNamTrip.sln --no-restore
 Build SPA trước khi chạy Web, và build lại sau khi thay đổi source frontend:
 
 ```powershell
-Set-Location .\src\DongNamTrip.Spa
+Set-Location .\src\Frontend\DongNamTrip.Spa
 npm ci
 npm run build
 Set-Location ..\..
 ```
 
-Bản build SPA được tạo trong `src/DongNamTrip.Web/wwwroot/spa/`; đây là đầu ra sinh tự động, không phải mã nguồn cần commit.
+Bản build SPA được tạo trong `src/Frontend/DongNamTrip.Web/wwwroot/spa/`; đây là đầu ra sinh tự động, không phải mã nguồn cần commit.
 
 Mở các cửa sổ PowerShell riêng tại thư mục solution:
 
@@ -103,7 +103,7 @@ Mở các cửa sổ PowerShell riêng tại thư mục solution:
 
 ```powershell
 $env:ASPNETCORE_ENVIRONMENT = "Development"
-dotnet run --project .\src\DongNamTrip.Api --launch-profile http
+dotnet run --project .\src\Backend\DongNamTrip.Api --launch-profile http
 ```
 
 - API: http://localhost:5080
@@ -114,7 +114,7 @@ dotnet run --project .\src\DongNamTrip.Api --launch-profile http
 
 ```powershell
 $env:ASPNETCORE_ENVIRONMENT = "Development"
-dotnet run --project .\src\DongNamTrip.Web --launch-profile http
+dotnet run --project .\src\Frontend\DongNamTrip.Web --launch-profile http
 ```
 
 Mở Web tại http://localhost:5081. Nếu Web báo thiếu bản build SPA, chạy lại `npm ci` và `npm run build` như hướng dẫn ở trên.
@@ -122,7 +122,7 @@ Mở Web tại http://localhost:5081. Nếu Web báo thiếu bản build SPA, ch
 **Terminal 3 — WinForms Admin**
 
 ```powershell
-dotnet run --project .\src\DongNamTrip.Admin
+dotnet run --project .\src\Frontend\DongNamTrip.Admin
 ```
 
 API cần chạy trước Web và WinForms. Cấu hình mặc định trỏ đến API tại `http://localhost:5080/`; xem `ApiBaseUrl` của Web và `DONGNAMTRIP_API_URL` của Admin nếu môi trường dùng cổng khác.
@@ -132,7 +132,7 @@ API cần chạy trước Web và WinForms. Cấu hình mặc định trỏ đ�
 Giữ API và Web đang chạy, mở một terminal khác:
 
 ```powershell
-Set-Location .\src\DongNamTrip.Spa
+Set-Location .\src\Frontend\DongNamTrip.Spa
 npm run dev
 ```
 
@@ -158,7 +158,7 @@ Mở http://127.0.0.1:5173. Vite proxy các yêu cầu cần thiết sang Web tr
 - Đăng ký công khai tạo tài khoản `Customer`. Mật khẩu được hash trước khi lưu; khách không tự chọn vai trò nhân viên.
 - Các vai trò hiện có gồm `Admin`, `Operator`, `Editor`, `Finance`, `Publisher` và `Customer`. WinForms dành cho tài khoản nhân viên có vai trò phù hợp. API kiểm tra quyền đối với các thao tác được bảo vệ.
 - Tài khoản, vai trò, hồ sơ, mật khẩu và dữ liệu khu vực tài khoản sử dụng SQL Server, với điều kiện database đã được chuẩn bị đủ schema và script bổ sung.
-- Danh mục tour, điểm đến và lịch trình vẫn dùng `DemoStore`. Các thay đổi trong bộ nhớ này mất khi API khởi động lại; không mặc định rằng danh mục SQL đã xuất hiện trên Web.
+- Danh mục tour, điểm đến và lịch trình đọc/ghi SQL Server qua API; cần dữ liệu mẫu (bản ghi trạng thái `Published`) thì trang mới có nội dung. Frontend chỉ gọi API: tìm kiếm, phân trang, tổng, tạm tính và giới hạn nhập liệu (`GET /api/meta`) đều do Backend trả.
 - Màn hình thanh toán đọc đơn/giao dịch thuộc tài khoản khi có dữ liệu và lưu lựa chọn ưu tiên. Chưa có cổng thanh toán, quy trình đặt tour thật hay liên kết ngân hàng; không lưu số thẻ hoặc CVV.
 - Phiên API hiện ở trong bộ nhớ. Đăng xuất thu hồi phiên; khởi động lại API làm người dùng phải đăng nhập lại. Một số mục WinForms còn là khung giao diện chờ nghiệp vụ.
 
@@ -167,22 +167,22 @@ Mở http://127.0.0.1:5173. Vite proxy các yêu cầu cần thiết sang Web tr
 Chỉ sử dụng trong môi trường Development. Bootstrap chỉ tạo Admin mới nếu email chưa tồn tại; không thay đổi tài khoản có sẵn. Thay toàn bộ giá trị ví dụ và không chia sẻ mật khẩu:
 
 ```powershell
-dotnet user-secrets set "BootstrapAdmin:Enabled" "true" --project .\src\DongNamTrip.Api
-dotnet user-secrets set "BootstrapAdmin:Name" "<tên quản trị viên>" --project .\src\DongNamTrip.Api
-dotnet user-secrets set "BootstrapAdmin:Email" "<email quản trị viên>" --project .\src\DongNamTrip.Api
-dotnet user-secrets set "BootstrapAdmin:Password" "<mật khẩu mạnh>" --project .\src\DongNamTrip.Api
+dotnet user-secrets set "BootstrapAdmin:Enabled" "true" --project .\src\Backend\DongNamTrip.Api
+dotnet user-secrets set "BootstrapAdmin:Name" "<tên quản trị viên>" --project .\src\Backend\DongNamTrip.Api
+dotnet user-secrets set "BootstrapAdmin:Email" "<email quản trị viên>" --project .\src\Backend\DongNamTrip.Api
+dotnet user-secrets set "BootstrapAdmin:Password" "<mật khẩu mạnh>" --project .\src\Backend\DongNamTrip.Api
 ```
 
 Sau khi tạo xong, có thể tắt bằng cách đặt `BootstrapAdmin:Enabled` thành `false`. Project cũng có seed bảy tài khoản Development tùy chọn; chỉ bật theo thống nhất của nhóm và trên database phát triển. Seed không thay đổi tài khoản trùng email.
 
 ```powershell
-dotnet user-secrets set "DevelopmentTestAccounts:Enabled" "true" --project .\src\DongNamTrip.Api
+dotnet user-secrets set "DevelopmentTestAccounts:Enabled" "true" --project .\src\Backend\DongNamTrip.Api
 ```
 
 Mật khẩu được tạo riêng khi cần có thể xem trong terminal riêng tư:
 
 ```powershell
-dotnet user-secrets list --project .\src\DongNamTrip.Api | Select-String '^DevelopmentTestAccounts:Passwords:'
+dotnet user-secrets list --project .\src\Backend\DongNamTrip.Api | Select-String '^DevelopmentTestAccounts:Passwords:'
 ```
 
 Không gửi mật khẩu qua Git hoặc công khai ảnh chụp terminal có chứa secrets.
@@ -192,11 +192,11 @@ Không gửi mật khẩu qua Git hoặc công khai ảnh chụp terminal có ch
 Chạy tại thư mục solution sau khi đã build và chuẩn bị SQL Server Development. Các test có thể tạo tài khoản tạm và dọn dữ liệu tương ứng; không chạy trên database sản xuất. Đọc hướng dẫn từng script và đảm bảo các cổng yêu cầu không bị tiến trình khác chiếm.
 
 ```powershell
-python .\tests\smoke.py --start
-python .\tests\auth_screens.py --start
-python .\tests\browser_runner.py
-python .\tests\spa_runner.py
-python .\tests\vite_hmr_runner.py
+python .\tests\api\smoke.py --start
+python .\tests\api\auth_screens.py --start
+python .\tests\e2e\browser_runner.py
+python .\tests\spa\spa_runner.py
+python .\tests\spa\vite_hmr_runner.py
 ```
 
 Các test trình duyệt cần môi trường và phụ thuộc phù hợp với cấu hình của repository. Kết quả gần nhất được báo cáo: build solution, SPA, smoke, SCR02/SCR03, browser, SPA và Vite HMR đều đạt. WinForms đã build nhưng chưa được kiểm tra GUI trực tiếp trong lượt đó.
@@ -208,7 +208,7 @@ Các test trình duyệt cần môi trường và phụ thuộc phù hợp với
 | API báo thiếu connection string | Kiểm tra User Secrets của đúng project API, tên instance và database. |
 | `/health/db` lỗi | Kiểm tra SQL Server đang chạy, tên instance/database và quyền truy cập của Windows account. |
 | Web/Admin không kết nối API | Chạy API trước; kiểm tra `/health` và cấu hình địa chỉ API. |
-| Web báo thiếu SPA | Chạy `npm ci` và `npm run build` trong `src/DongNamTrip.Spa`. |
+| Web báo thiếu SPA | Chạy `npm ci` và `npm run build` trong `src/Frontend/DongNamTrip.Spa`. |
 | Build báo DLL/EXE bị khóa | Dừng đúng tiến trình ứng dụng đang chạy rồi build lại. |
 | Customer không vào được WinForms | WinForms dành cho các vai trò nhân viên phù hợp. |
 | Thiếu file SQL bổ sung | Xin V001 và V002 từ nhóm; các file cục bộ dưới `artifacts` có thể không được đưa lên Git. |

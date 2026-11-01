@@ -22,10 +22,10 @@ jobs:
         with:
           node-version: '22'
           cache: npm
-          cache-dependency-path: src/DongNamTrip.Spa/package-lock.json
+          cache-dependency-path: src/Frontend/DongNamTrip.Spa/package-lock.json
 
       - name: Install, type-check and build SPA
-        working-directory: src/DongNamTrip.Spa
+        working-directory: src/Frontend/DongNamTrip.Spa
         run: |
           npm ci
           npm audit --audit-level=high --omit=dev
@@ -43,6 +43,9 @@ jobs:
 
       - name: Build solution
         run: dotnet build DongNamTrip.sln --configuration Release
+
+      - name: Check architecture rules
+        run: python tests/architecture/rules.py
 
   web-api:
     runs-on: windows-2022
@@ -67,17 +70,17 @@ jobs:
       - name: Build API and Web in Debug
         shell: powershell
         run: |
-          dotnet build src/DongNamTrip.Api --configuration Debug
+          dotnet build src/Backend/DongNamTrip.Api --configuration Debug
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
-          dotnet build src/DongNamTrip.Web --configuration Debug
+          dotnet build src/Frontend/DongNamTrip.Web --configuration Debug
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
       - name: Prepare isolated SQL Server LocalDB
         shell: powershell
         env:
           DONGNAMTRIP_CI_SQL_GZIP_BASE64: ${{ secrets.DONGNAMTRIP_CI_SQL_GZIP_BASE64 }}
-        run: .\tests\prepare_ci_database.ps1
+        run: .\tests\ci\prepare_ci_database.ps1
 
       - name: Apply account area SQL
         shell: powershell
@@ -157,10 +160,10 @@ jobs:
           }
 
       - name: Run HTTP and SQL smoke tests
-        run: python tests/smoke.py --start
+        run: python tests/api/smoke.py --start
 
       - name: Run SCR02/SCR03 authentication tests
-        run: python tests/auth_screens.py --start
+        run: python tests/api/auth_screens.py --start
 
       - uses: actions/setup-node@v4
         with:
@@ -173,7 +176,7 @@ jobs:
         run: npx playwright install chromium
 
       - name: Run browser tests
-        run: python tests/browser_runner.py
+        run: python tests/e2e/browser_runner.py
 
       - uses: actions/upload-artifact@v4
         if: always()
