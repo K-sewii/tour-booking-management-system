@@ -47,7 +47,7 @@ public class RegisterRequest : IValidatableObject
     [Required(ErrorMessage = "Vui lòng nhập email"), EmailAddress(ErrorMessage = "Email không đúng định dạng."), StringLength(254, ErrorMessage = "Email tối đa 254 ký tự.")]
     public string Email { get; set; } = "";
 
-    [StringLength(15, ErrorMessage = "Số điện thoại tối đa 15 chữ số."), RegularExpression(@"^\d+$", ErrorMessage = "Số điện thoại chỉ gồm chữ số.")]
+    [StringLength(15, ErrorMessage = "Số điện thoại tối đa 15 chữ số."), RegularExpression(@"^[0-9]+$", ErrorMessage = "Số điện thoại chỉ gồm chữ số.")]
     public string? PhoneNumber { get; set; }
 
     [Required(ErrorMessage = "Vui lòng nhập mật khẩu"), StringLength(128, MinimumLength = 8, ErrorMessage = "Mật khẩu phải có ít nhất 8 ký tự.")]
@@ -72,16 +72,75 @@ public class RegisterRequest : IValidatableObject
 
 public record AccountProfile(int Id, string Name, string Email, string? PhoneNumber);
 
-public class UpdateProfileRequest
+public class ChangePasswordRequest : IValidatableObject
 {
-    [Required, StringLength(100, MinimumLength = 2)]
+    [Required(ErrorMessage = "Vui lòng nhập mật khẩu hiện tại.")]
+    public string CurrentPassword { get; set; } = "";
+    [Required(ErrorMessage = "Vui lòng nhập mật khẩu mới."), StringLength(128, MinimumLength = 8, ErrorMessage = "Mật khẩu mới cần từ 8 đến 128 ký tự.")]
+    public string NewPassword { get; set; } = "";
+    [Required(ErrorMessage = "Vui lòng xác nhận mật khẩu mới."), Compare(nameof(NewPassword), ErrorMessage = "Xác nhận mật khẩu mới chưa khớp.")]
+    public string ConfirmNewPassword { get; set; } = "";
+
+    public IEnumerable<ValidationResult> Validate(ValidationContext context)
+    {
+        if (!string.IsNullOrEmpty(NewPassword) && (!NewPassword.Any(char.IsLetter) || !NewPassword.Any(char.IsDigit)))
+            yield return new ValidationResult("Mật khẩu mới cần ít nhất một chữ và một số.", [nameof(NewPassword)]);
+        if (!string.IsNullOrEmpty(NewPassword) && CurrentPassword == NewPassword)
+            yield return new ValidationResult("Mật khẩu mới cần khác mật khẩu hiện tại.", [nameof(NewPassword)]);
+    }
+}
+
+public record AccountSession(string Id, DateTimeOffset CreatedAt, DateTimeOffset ExpiresAt, bool IsCurrent);
+public record PaymentEntry(int Id, DateTime PlacedAt, string Status, decimal AgreedPrice, int Guests, int? QuoteId, int? DepartureId, IReadOnlyList<MoneyEntry> Transactions);
+public record PaymentChoiceDto(string? MethodCode, DateTime? UpdatedAt);
+public record PaymentChoiceRequest(string MethodCode);
+public record MoneyEntry(int Id, string Kind, decimal Amount, DateTime At, string Reference);
+public record AccountCollectionItem(string Kind, int ItemId, string? Name, DateTime At, bool Missing);
+public record AccountActivityEntry(long Id, string Kind, int? ItemId, string? Query, string? Name, DateTime At, bool Missing);
+public record AccountCollections(IReadOnlyList<AccountCollectionItem> Favorites, IReadOnlyList<AccountActivityEntry> Searches, IReadOnlyList<AccountActivityEntry> Viewed);
+public record AccountActivityDraft(string Kind, int? ItemId, string? Query);
+public record AccountNoticeEntry(long Id, string Title, string Body, DateTime At, DateTime? ReadAt);
+public record AccountPreferenceDto(bool SecurityNotices);
+public record AccountNoticesPage(IReadOnlyList<AccountNoticeEntry> Notices, AccountPreferenceDto Preference);
+
+public class UpdateProfileRequest : IValidatableObject
+{
+    [Required(ErrorMessage = "Vui lòng nhập họ tên."), StringLength(100, MinimumLength = 2, ErrorMessage = "Họ tên cần có từ 2 đến 100 ký tự.")]
     public string Name { get; set; } = "";
 
-    [Required, EmailAddress, StringLength(254)]
+    [Required(ErrorMessage = "Vui lòng nhập email."), EmailAddress(ErrorMessage = "Email không đúng định dạng."), StringLength(254, ErrorMessage = "Email tối đa 254 ký tự.")]
     public string Email { get; set; } = "";
 
-    [StringLength(15), RegularExpression(@"^\+?[0-9]{9,14}$", ErrorMessage = "Số điện thoại cần có 9–14 chữ số, có thể bắt đầu bằng dấu +.")]
+    [StringLength(15, ErrorMessage = "Số điện thoại tối đa 15 chữ số."), RegularExpression(@"^[0-9]+$", ErrorMessage = "Số điện thoại chỉ gồm chữ số.")]
     public string? PhoneNumber { get; set; }
+
+    public void Normalize()
+    {
+        Name = Name?.Trim() ?? "";
+        Email = Email?.Trim().ToLowerInvariant() ?? "";
+        PhoneNumber = string.IsNullOrWhiteSpace(PhoneNumber) ? null : PhoneNumber.Trim();
+    }
+
+    public IReadOnlyList<ValidationResult> ValidateForExistingPhone(string? existingPhone)
+    {
+        var results = new List<ValidationResult>();
+        var submittedPhone = PhoneNumber;
+        // Existing formatted numbers can remain unchanged; every newly entered number follows SCR03.
+        PhoneNumber = null;
+        try { Validator.TryValidateObject(this, new ValidationContext(this), results, true); }
+        finally { PhoneNumber = submittedPhone; }
+        if (submittedPhone is not null
+            && !string.Equals(submittedPhone, existingPhone?.Trim(), StringComparison.Ordinal)
+            && (submittedPhone.Length > 15 || !submittedPhone.All(character => character is >= '0' and <= '9')))
+            results.Add(new ValidationResult(submittedPhone.Length > 15 ? "Số điện thoại tối đa 15 chữ số." : "Số điện thoại chỉ gồm chữ số.", [nameof(PhoneNumber)]));
+        return results;
+    }
+
+    public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
+    {
+        if (Email.Any(character => character > 127))
+            yield return new ValidationResult("Email không đúng định dạng.", [nameof(Email)]);
+    }
 }
 
 public class ItineraryDraft

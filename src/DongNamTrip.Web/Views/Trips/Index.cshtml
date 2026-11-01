@@ -1,11 +1,7 @@
 @model TripsVm
-@{ ViewData["Title"] = "Chuyến đi của tôi"; }
-<section class="page-intro">
-<div class="container">
-<div class="eyebrow">CHÀO @User.Identity?.Name</div>
-<h1>Những chuyến đi đang chờ.</h1>
-<p>Tiếp tục từ một ý tưởng bạn đã lưu.</p></div></section>
-<div class="container section">
+@{ Layout = "_AccountLayout"; ViewData["Title"] = "Chuyến đi của tôi"; }
+<div class="account-heading"><div class="eyebrow">CHÀO @User.Identity?.Name</div><h1 id="account-title">Chuyến đi của tôi</h1><p>Tiếp tục từ một ý tưởng bạn đã lưu.</p></div>
+<div class="account-trips">
 <div class="tabs" role="tablist">
 <button id="drafts-tab" class="current" data-tab="drafts" role="tab" aria-selected="true" aria-controls="drafts">Lịch trình nháp (@Model.Itineraries.Count)</button>
 <button id="bookings-tab" data-tab="bookings" role="tab" aria-selected="false" aria-controls="bookings">Tour đã đặt</button>

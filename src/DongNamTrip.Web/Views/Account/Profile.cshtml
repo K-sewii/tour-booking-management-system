@@ -1,29 +1,37 @@
 @model UpdateProfileRequest
-@{ ViewData["Title"] = "Thông tin tài khoản"; }
-<div class="container section auth-layout">
-<div class="auth-art">
-<img src="~/images/mountain.svg" alt="Minh họa hành trình giữa núi xanh"/>
-<div>
-<div class="eyebrow">TÀI KHOẢN CỦA BẠN</div>
-<h1>Thông tin<br/>liên hệ.</h1>
-</div></div>
-<section class="auth-form">
-<span class="pill">DongNamTrip</span>
-<h1>Cập nhật liên hệ</h1>
-<p>Email là định danh đăng nhập. Mọi thay đổi chỉ áp dụng cho chính tài khoản đang đăng nhập.</p>
+@{
+    Layout = "_AccountLayout";
+    ViewData["Title"] = "Hồ sơ tài khoản";
+    var loaded = ViewBag.ProfileLoadToken is string;
+}
+<div class="account-heading"><div class="eyebrow">THÔNG TIN CÁ NHÂN</div><h1 id="account-title">Hồ sơ tài khoản</h1><p>Quản lý thông tin liên hệ cho những hành trình của bạn.</p></div>
 @if (TempData["ProfileSuccess"] is string success)
 {
-    <p class="validation" role="status">@success</p>
+    <div class="account-message account-message--success" role="status" aria-live="polite" tabindex="-1" data-profile-result><strong>Thay đổi đã được lưu</strong><p>@success</p></div>
 }
-@if (TempData["ProfileError"] is string error)
+@if (!loaded)
 {
-    <p class="validation" role="alert">@error</p>
+    <div class="account-card account-load-error" role="alert"><h2>Chưa tải được hồ sơ</h2><p>@ViewBag.ProfileError</p><p>Vui lòng tải lại hồ sơ trước khi chỉnh sửa thông tin.</p><a class="btn" asp-action="Profile">Thử tải lại</a></div>
 }
-<form method="post" asp-action="Profile">
-<div asp-validation-summary="All" class="validation"></div>
-<label>Họ và tên<input asp-for="Name" autocomplete="name" required minlength="2" maxlength="100"/></label>
-<label>Email<input asp-for="Email" type="email" autocomplete="email" required maxlength="254"/></label>
-<label>Số điện thoại<input asp-for="PhoneNumber" type="tel" autocomplete="tel" inputmode="tel" maxlength="15" pattern="\+?[0-9]{9,14}" placeholder="Ví dụ: 0901234567"/></label>
-<button class="btn full">Lưu thông tin</button></form>
-<p>Vai trò, trạng thái tài khoản và mật khẩu không thể thay đổi tại đây.</p>
-</section></div>
+else
+{
+    <div class="account-card">
+        <div class="account-card-heading"><h2>Thông tin liên hệ</h2><p>Các trường có dấu <span class="account-required">*</span> là bắt buộc.</p></div>
+        <form method="post" asp-action="Profile" data-profile-form novalidate>
+            <input type="hidden" name="profileLoadToken" value="@ViewBag.ProfileLoadToken"/>
+            <div asp-validation-summary="All" class="account-message account-message--error" role="alert" aria-live="assertive" tabindex="-1" data-profile-result></div>
+            @if (!ViewData.ModelState.IsValid)
+            {
+                <p class="account-retry-hint">Thông tin chưa được lưu. Kiểm tra thông tin rồi chọn “Lưu thay đổi” để thử lại.</p>
+            }
+            <div class="account-fields">
+                <div class="account-field"><label for="Name">Họ và tên <span class="account-required" aria-hidden="true">*</span></label><input asp-for="Name" autocomplete="name" required minlength="2" maxlength="100" aria-describedby="Name-error" aria-invalid="@(ViewData.ModelState[nameof(Model.Name)]?.Errors.Count > 0 ? "true" : "false")"/><span asp-validation-for="Name" id="Name-error" class="account-field-error" aria-live="polite"></span></div>
+                <div class="account-field"><label for="Email">Email <span class="account-required" aria-hidden="true">*</span></label><input asp-for="Email" type="email" autocomplete="email" required maxlength="254" aria-describedby="Email-hint Email-error" aria-invalid="@(ViewData.ModelState[nameof(Model.Email)]?.Errors.Count > 0 ? "true" : "false")"/><span id="Email-hint" class="account-hint">Đây cũng là email bạn dùng để đăng nhập.</span><span asp-validation-for="Email" id="Email-error" class="account-field-error" aria-live="polite"></span></div>
+                <div class="account-field"><label for="PhoneNumber">Số điện thoại <span class="account-optional">(không bắt buộc)</span></label><input asp-for="PhoneNumber" type="tel" autocomplete="tel" inputmode="numeric" maxlength="@(ViewBag.LegacyPhone == true ? null : 15)" pattern="@(ViewBag.LegacyPhone == true ? null : "[0-9]*")" data-original-phone="@(ViewBag.LegacyPhone == true ? Model.PhoneNumber : null)" placeholder="Ví dụ: 0901234567" aria-describedby="PhoneNumber-hint PhoneNumber-error" aria-invalid="@(ViewData.ModelState[nameof(Model.PhoneNumber)]?.Errors.Count > 0 ? "true" : "false")"/><span id="PhoneNumber-hint" class="account-hint">@(ViewBag.LegacyPhone == true ? "Số cũ được giữ nguyên nếu không sửa. Khi thay đổi, nhập tối đa 15 chữ số." : "Chỉ gồm chữ số, tối đa 15 chữ số. Để trống nếu chưa muốn cung cấp.")</span><span asp-validation-for="PhoneNumber" id="PhoneNumber-error" class="account-field-error" aria-live="polite"></span></div>
+            </div>
+            <div class="account-actions"><button class="btn" type="submit" data-profile-submit>Lưu thay đổi</button><a class="btn outline" asp-action="Profile" data-profile-cancel>Hủy thay đổi</a><span class="account-status" role="status" aria-live="polite" data-profile-status></span></div>
+        </form>
+    </div>
+    <p class="account-footnote"><span aria-hidden="true">◇</span> Thông tin được cập nhật cho tài khoản đang đăng nhập.</p>
+}
+@section Scripts { <script src="~/js/account-profile.js" asp-append-version="true" defer></script> }

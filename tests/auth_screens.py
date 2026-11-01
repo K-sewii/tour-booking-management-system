@@ -136,6 +136,7 @@ def run_api_checks():
         registration_payload("bad-terms@example.test", termsAccepted=False),
         registration_payload("bad-phone-alpha@example.test", phoneNumber="09012abc"),
         registration_payload("bad-phone-long@example.test", phoneNumber="0" * 16),
+        registration_payload("bad-phone-unicode@example.test", phoneNumber="١٢٣"),
     ]
     for payload in invalid_cases:
         api(API + "/api/auth/register", "POST", payload, expected=400)

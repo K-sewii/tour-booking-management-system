@@ -124,6 +124,11 @@ def cleanup_test_accounts():
         return
     emails = ', '.join(sql_literal(email) for email in test_emails)
     sql_non_query(f'''
+IF OBJECT_ID('dbo.ACCOUNT_FAVORITE', 'U') IS NOT NULL DELETE FROM dbo.ACCOUNT_FAVORITE WHERE AccountId IN (SELECT MaTK FROM TAIKHOAN WHERE Email IN ({emails}));
+IF OBJECT_ID('dbo.ACCOUNT_ACTIVITY', 'U') IS NOT NULL DELETE FROM dbo.ACCOUNT_ACTIVITY WHERE AccountId IN (SELECT MaTK FROM TAIKHOAN WHERE Email IN ({emails}));
+IF OBJECT_ID('dbo.ACCOUNT_NOTICE', 'U') IS NOT NULL DELETE FROM dbo.ACCOUNT_NOTICE WHERE AccountId IN (SELECT MaTK FROM TAIKHOAN WHERE Email IN ({emails}));
+IF OBJECT_ID('dbo.ACCOUNT_PREFERENCE', 'U') IS NOT NULL DELETE FROM dbo.ACCOUNT_PREFERENCE WHERE AccountId IN (SELECT MaTK FROM TAIKHOAN WHERE Email IN ({emails}));
+IF OBJECT_ID('dbo.ACCOUNT_PAYMENT_CHOICE', 'U') IS NOT NULL DELETE FROM dbo.ACCOUNT_PAYMENT_CHOICE WHERE AccountId IN (SELECT MaTK FROM TAIKHOAN WHERE Email IN ({emails}));
 DELETE assignment
 FROM TAIKHOAN_VAITRO AS assignment
 INNER JOIN TAIKHOAN AS account ON account.MaTK = assignment.MaTK
@@ -133,10 +138,10 @@ DELETE FROM TAIKHOAN WHERE Email IN ({emails});
 
 
 @contextlib.contextmanager
-def running_apps(session_lifetime_seconds=300, *, api_only=False):
+def running_apps(session_lifetime_seconds=300, *, api_only=False, spa=False):
     if not isinstance(session_lifetime_seconds, int) or not 1 <= session_lifetime_seconds <= 86_400:
         raise ValueError('Test session lifetime must be an integer between 1 and 86400 seconds.')
-    apps = [(API_EXE, API + '/health')]
+    apps = [(API_EXE, API + '/health/db')]
     if not api_only:
         apps.append((WEB_EXE, WEB + '/Account/Login'))
     assert all(executable.exists() for executable, _ in apps), 'Build the solution before running smoke.py --start.'
@@ -146,8 +151,18 @@ def running_apps(session_lifetime_seconds=300, *, api_only=False):
     environment['Authentication__SessionLifetimeSeconds'] = str(session_lifetime_seconds)
     environment['BootstrapAdmin__Enabled'] = 'false'
     environment['DevelopmentTestAccounts__Enabled'] = 'false'
+    environment['Spa__Enabled'] = 'true' if spa else 'false'
     processes, logs = [], []
     try:
+        for _, url in apps:
+            try:
+                urllib.request.urlopen(url, timeout=.5).close()
+            except urllib.error.HTTPError as error:
+                raise RuntimeError(f'Port is already serving another process before test startup: {url} ({error.code})') from error
+            except (urllib.error.URLError, TimeoutError):
+                pass
+            else:
+                raise RuntimeError('Port is already serving another process before test startup: ' + url)
         for executable, _ in apps:
             log = tempfile.TemporaryFile()
             logs.append(log)
@@ -158,6 +173,8 @@ def running_apps(session_lifetime_seconds=300, *, api_only=False):
             for _ in range(80):
                 try:
                     urllib.request.urlopen(url, timeout=1).close()
+                    if any(process.poll() is not None for process in processes):
+                        raise RuntimeError('A test application exited while another process answered the readiness URL.')
                     break
                 except (urllib.error.URLError, TimeoutError):
                     if any(process.poll() is not None for process in processes):
@@ -165,7 +182,7 @@ def running_apps(session_lifetime_seconds=300, *, api_only=False):
                     time.sleep(.25)
             else:
                 raise RuntimeError('Application did not become ready: ' + url)
-        yield
+        yield processes
     except Exception:
         for log in logs:
             log.seek(0)
@@ -202,7 +219,7 @@ def registration(name, password='SmokePass!2026'):
 
 def run():
     health = request(API + '/health/db')
-    assert health['tableCount'] == 25 and health['vaiTroCount'] == 6 and health['ngonNguCount'] >= 1
+    assert health['tableCount'] >= 25 and health['vaiTroCount'] == 6 and health['ngonNguCount'] >= 1
     places = request(API + '/api/destinations')
     assert len(places) >= 6
     request(API + '/api/itineraries', expected=401)

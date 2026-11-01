@@ -1,4 +1,5 @@
 @model LoginRequest
+@if (TempData["PasswordChanged"] is string passwordChanged) { <div class="container account-message account-message--success" role="status">@passwordChanged</div> }
 @{ ViewData["Title"] = "Đăng nhập"; }
 <div class="container section auth-layout auth-page auth-page--login">
 <div class="auth-art">

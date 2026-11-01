@@ -27,6 +27,5 @@
   .header nav { display: none; position: absolute; left: 0; right: 0; top: 100%; padding: 20px; background: #103E35; border-bottom: 1px solid #ffffff40; box-shadow: var(--shadow); align-items: stretch; gap: 12px; }
   .header nav.open { display: flex; flex-direction: column; }
   .header nav > a:not(.btn) { padding: 10px 0; font-size: 14px; }
-  .header nav a[href="/Account/Profile"] { max-width: none; }
   .header nav form .btn { width: 100%; }
 }

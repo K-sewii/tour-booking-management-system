@@ -1,11 +1,7 @@
-@using System.Security.Claims
-@{
-    var roleNames = User.FindAll(ClaimTypes.Role).Select(claim => claim.Value).ToArray();
-}
 <!DOCTYPE html>
 <html lang="vi"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1"/><meta name="description" content="DongNamTrip — khám phá Đông Nam Bộ và tạo chuyến đi của riêng bạn."/><title>@ViewData["Title"] · DongNamTrip</title>
 <link rel="icon" href="~/images/mark.svg" type="image/svg+xml"/>
-<link rel="stylesheet" href="~/css/site.css" asp-append-version="true"/><link rel="stylesheet" href="~/css/auth.css" asp-append-version="true"/></head>
+<link rel="stylesheet" href="~/css/site.css" asp-append-version="true"/><link rel="stylesheet" href="~/css/auth.css" asp-append-version="true"/>@await RenderSectionAsync("Styles", required: false)</head>
 <body>
 <a class="skip" href="#main">Đến nội dung chính</a>
 <header class="header">
@@ -20,7 +16,7 @@
 <a class="@(ViewContext.RouteData.Values["controller"]?.ToString()=="Trips" ? "active" : "")" asp-controller="Trips" asp-action="Index">Chuyến đi của tôi</a>
 @if (User.Identity?.IsAuthenticated == true)
 {
-    <a class="btn small outline @(ViewContext.RouteData.Values["action"]?.ToString()=="Profile" ? "active" : "")" asp-controller="Account" asp-action="Profile">@User.Identity.Name · @string.Join(", ", roleNames) · Thông tin tài khoản</a>
+    <a class="btn small outline @(ViewContext.RouteData.Values["action"]?.ToString()=="Profile" ? "active" : "")" asp-controller="Account" asp-action="Profile">Hồ sơ</a>
     <form asp-controller="Account" asp-action="Logout" method="post">
     <button class="btn small outline" type="submit">Đăng xuất</button></form>
 }

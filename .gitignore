@@ -9,5 +9,7 @@ appsettings.Local.json
 TestResults/
 artifacts/
 node_modules/
+*.tsbuildinfo
+src/DongNamTrip.Web/wwwroot/spa/
 __pycache__/
 *.pyc

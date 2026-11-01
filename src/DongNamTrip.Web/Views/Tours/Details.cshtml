@@ -7,6 +7,11 @@
 <span class="pill">@t.Category · @t.Duration</span>
 <h1>@t.Name</h1>
 <p>@t.Summary</p></div>
+@if (User.Identity?.IsAuthenticated == true)
+{
+    @if (ViewBag.FavoritesUnavailable == true) { <p class="notice">Chưa tải được yêu thích. Vui lòng thử lại sau.</p> }
+    else { <form method="post" action="/Account/Favorites/tour/@t.Id">@Html.AntiForgeryToken()<input type="hidden" name="save" value="@(ViewBag.IsFavorite == true ? "false" : "true")"/><input type="hidden" name="returnUrl" value="@Context.Request.Path"/><button class="btn outline" type="submit">@(ViewBag.IsFavorite == true ? "Bỏ lưu tour" : "Lưu tour yêu thích")</button></form> }
+}
 <img class="detail-hero" src="~/images/@(t.Illustration).svg" alt="Minh họa @t.Region"/>
 <div class="detail-layout">
 <article>

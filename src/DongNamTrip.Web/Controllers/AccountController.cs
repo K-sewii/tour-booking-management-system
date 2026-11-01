@@ -5,11 +5,15 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.DataProtection;
+using System.Security.Cryptography;
+using System.ComponentModel.DataAnnotations;
 
 namespace DongNamTrip.Web.Controllers;
 
-public class AccountController(TripApiClient api) : Controller
+public class AccountController(TripApiClient api, IDataProtectionProvider protection) : Controller
 {
+    private readonly ITimeLimitedDataProtector profileProof = protection.CreateProtector("SCR21.ProfileLoaded").ToTimeLimitedDataProtector();
     [HttpGet]
     public IActionResult Login(string? returnUrl)
     {
@@ -101,11 +105,14 @@ public class AccountController(TripApiClient api) : Controller
 
     [Authorize]
     [HttpGet]
+    [ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
     public async Task<IActionResult> Profile()
     {
         try
         {
             var profile = await api.ProfileAsync(ApiToken());
+            ViewBag.ProfileLoadToken = profileProof.Protect(profile.Id.ToString(), TimeSpan.FromHours(4));
+            ViewBag.LegacyPhone = HasLegacyPhone(profile.PhoneNumber);
             return View(ToRequest(profile));
         }
         catch (HttpRequestException exception) when (exception.StatusCode == System.Net.HttpStatusCode.Unauthorized)
@@ -115,38 +122,59 @@ public class AccountController(TripApiClient api) : Controller
         }
         catch (HttpRequestException exception)
         {
-            TempData["ProfileError"] = exception.StatusCode is null
+            ViewBag.ProfileError = exception.StatusCode is null
                 ? "Chưa kết nối được API. Vui lòng thử lại sau."
                 : exception.Message;
-            return View(ToRequestFromClaims());
+            return View(new UpdateProfileRequest());
         }
         catch (TaskCanceledException)
         {
-            TempData["ProfileError"] = "API phản hồi chậm. Vui lòng thử lại.";
-            return View(ToRequestFromClaims());
+            ViewBag.ProfileError = "API phản hồi chậm. Vui lòng thử lại.";
+            return View(new UpdateProfileRequest());
         }
     }
 
     [Authorize]
     [HttpPost]
-    public async Task<IActionResult> Profile(UpdateProfileRequest input)
+    [ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
+    public async Task<IActionResult> Profile(UpdateProfileRequest input, string? profileLoadToken)
     {
-        if (!ModelState.IsValid)
-            return View(input);
-
         try
         {
+            // A failed GET must never produce a writable claims-based fallback.
+            if (string.IsNullOrEmpty(profileLoadToken)
+                || profileProof.Unprotect(profileLoadToken, out _) != User.FindFirstValue(ClaimTypes.NameIdentifier))
+                return RedirectToAction(nameof(Profile));
+            ViewBag.ProfileLoadToken = profileLoadToken;
+            var current = await api.ProfileAsync(ApiToken());
+            ViewBag.LegacyPhone = HasLegacyPhone(current.PhoneNumber);
+            input.Normalize();
+            ModelState.Clear();
+            foreach (var issue in input.ValidateForExistingPhone(current.PhoneNumber))
+                foreach (var member in issue.MemberNames.DefaultIfEmpty(string.Empty))
+                    ModelState.AddModelError(member, issue.ErrorMessage ?? "Dữ liệu chưa hợp lệ.");
+            if (!ModelState.IsValid)
+                return View(input);
+
             var profile = await api.UpdateProfileAsync(input, ApiToken());
             await SignInAsync(
                 new AuthenticatedUser(profile.Id, profile.Name, profile.Email, User.FindAll(ClaimTypes.Role).Select(claim => claim.Value).ToArray()),
                 ApiToken());
-            TempData["ProfileSuccess"] = "Thông tin liên hệ đã được cập nhật.";
+            TempData["ProfileSuccess"] = "Đã lưu thay đổi hồ sơ tài khoản.";
             return RedirectToAction(nameof(Profile));
         }
         catch (HttpRequestException exception) when (exception.StatusCode == System.Net.HttpStatusCode.Unauthorized)
         {
             await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
             return RedirectToAction(nameof(Login), new { returnUrl = Url.Action(nameof(Profile)) });
+        }
+        catch (CryptographicException)
+        {
+            return RedirectToAction(nameof(Profile));
+        }
+        catch (HttpRequestException exception) when (exception.StatusCode == System.Net.HttpStatusCode.Conflict)
+        {
+            ModelState.AddModelError(nameof(input.Email), "Email đã được sử dụng. Vui lòng chọn email khác.");
         }
         catch (HttpRequestException exception)
         {
@@ -163,6 +191,9 @@ public class AccountController(TripApiClient api) : Controller
     }
 
     private Task SignInAsync(LoginResponse session) => SignInAsync(session.User, session.Token);
+
+    private static bool HasLegacyPhone(string? phone) => !string.IsNullOrEmpty(phone)
+        && (phone.Length > 15 || phone.Any(character => character is < '0' or > '9'));
 
     private void SetReturnUrl(string? returnUrl) => ViewBag.ReturnUrl = Url.IsLocalUrl(returnUrl) ? returnUrl : null;
 
@@ -235,9 +266,4 @@ public class AccountController(TripApiClient api) : Controller
         PhoneNumber = profile.PhoneNumber
     };
 
-    private UpdateProfileRequest ToRequestFromClaims() => new()
-    {
-        Name = User.Identity?.Name ?? "",
-        Email = User.FindFirstValue(ClaimTypes.Email) ?? ""
-    };
 }

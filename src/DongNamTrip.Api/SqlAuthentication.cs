@@ -7,7 +7,6 @@ using System.Security.Cryptography;
 using System.Text.Encodings.Web;
 using System.Text.Json;
 using System.Text.Json.Nodes;
-using System.Text.RegularExpressions;
 using DongNamTrip.Api.Data;
 using DongNamTrip.Api.Data.Entities;
 using DongNamTrip.Contracts;
@@ -35,7 +34,7 @@ public sealed class SqlSessionStore(IOptions<SqlAuthenticationOptions> options)
     {
         RemoveExpired();
         var token = Convert.ToHexString(RandomNumberGenerator.GetBytes(32));
-        sessions[token] = new SessionRecord(accountId, DateTimeOffset.UtcNow.Add(lifetime));
+        sessions[token] = new SessionRecord(accountId, Convert.ToHexString(RandomNumberGenerator.GetBytes(12)), DateTimeOffset.UtcNow, DateTimeOffset.UtcNow.Add(lifetime));
         return token;
     }
 
@@ -56,6 +55,29 @@ public sealed class SqlSessionStore(IOptions<SqlAuthenticationOptions> options)
 
     public void Remove(string token) => sessions.TryRemove(token, out _);
 
+    public IReadOnlyList<AccountSession> ForAccount(int accountId, string currentToken)
+    {
+        RemoveExpired();
+        return sessions.Where(pair => pair.Value.AccountId == accountId)
+            .Select(pair => new AccountSession(pair.Value.Id, pair.Value.CreatedAt, pair.Value.ExpiresAt, pair.Key == currentToken))
+            .OrderByDescending(item => item.CreatedAt).ToArray();
+    }
+
+    public bool RemoveForAccount(int accountId, string id)
+    {
+        foreach (var pair in sessions)
+            if (pair.Value.AccountId == accountId && pair.Value.Id == id)
+                return sessions.TryRemove(pair.Key, out _);
+        return false;
+    }
+
+    public void RemoveAllForAccount(int accountId)
+    {
+        foreach (var pair in sessions)
+            if (pair.Value.AccountId == accountId)
+                sessions.TryRemove(pair.Key, out _);
+    }
+
     private void RemoveExpired()
     {
         foreach (var session in sessions)
@@ -65,7 +87,7 @@ public sealed class SqlSessionStore(IOptions<SqlAuthenticationOptions> options)
 
     private static TimeSpan GetLifetime(int seconds) => TimeSpan.FromSeconds(seconds is >= 1 and <= 86_400 ? seconds : 14_400);
 
-    private sealed record SessionRecord(int AccountId, DateTimeOffset ExpiresAt);
+    private sealed record SessionRecord(int AccountId, string Id, DateTimeOffset CreatedAt, DateTimeOffset ExpiresAt);
 }
 
 public sealed class SqlAuthService(
@@ -73,6 +95,28 @@ public sealed class SqlAuthService(
     IPasswordHasher<Taikhoan> passwordHasher,
     SqlSessionStore sessions)
 {
+    public async Task<PasswordChangeStatus> ChangePasswordAsync(int accountId, ChangePasswordRequest input, CancellationToken cancellationToken)
+    {
+        if (!Validator.TryValidateObject(input, new ValidationContext(input), [], true))
+            return PasswordChangeStatus.Invalid;
+        var account = await db.Taikhoan.SingleOrDefaultAsync(item => item.MaTk == accountId, cancellationToken);
+        if (account is null || !IsActive(account))
+            return PasswordChangeStatus.Unavailable;
+        if (passwordHasher.VerifyHashedPassword(account, account.MatKhauBam, input.CurrentPassword) == PasswordVerificationResult.Failed)
+            return PasswordChangeStatus.IncorrectCurrent;
+        account.MatKhauBam = passwordHasher.HashPassword(account, input.NewPassword);
+        await using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
+        await db.SaveChangesAsync(cancellationToken);
+        var preference = await db.AccountPreferences.AsNoTracking().SingleOrDefaultAsync(item => item.AccountId == accountId, cancellationToken);
+        if (preference?.SecurityNotices != false)
+        {
+            db.AccountNotices.Add(new AccountNotice { AccountId = accountId, Title = "Mật khẩu đã được đổi", Body = "Mật khẩu tài khoản vừa được thay đổi. Tất cả phiên đăng nhập đã kết thúc.", CreatedAt = DateTime.UtcNow });
+            await db.SaveChangesAsync(cancellationToken);
+        }
+        await transaction.CommitAsync(cancellationToken);
+        sessions.RemoveAllForAccount(accountId);
+        return PasswordChangeStatus.Changed;
+    }
     public async Task<LoginResponse?> LoginAsync(LoginRequest input, CancellationToken cancellationToken)
     {
         var email = NormalizeEmail(input.Email);
@@ -150,9 +194,6 @@ public sealed class SqlAuthService(
 
     public async Task<ProfileUpdateResult> UpdateProfileAsync(int accountId, UpdateProfileRequest input, CancellationToken cancellationToken)
     {
-        if (!IsValidProfile(input, out var name, out var email, out var phoneNumber))
-            return ProfileUpdateResult.Invalid;
-
         await using var transaction = await db.Database.BeginTransactionAsync(IsolationLevel.Serializable, cancellationToken);
         try
         {
@@ -160,17 +201,24 @@ public sealed class SqlAuthService(
             if (account is null || !IsActive(account))
                 return ProfileUpdateResult.Unavailable;
 
+            input.Normalize();
+            if (input.ValidateForExistingPhone(account.SoDienThoai).Count > 0)
+                return ProfileUpdateResult.Invalid;
+            var name = input.Name;
+            var email = input.Email;
+            var phoneNumber = input.PhoneNumber;
+
             if (!string.Equals(account.Email, email, StringComparison.OrdinalIgnoreCase)
                 && await db.Taikhoan.AsNoTracking().AnyAsync(item => item.Email == email, cancellationToken))
                 return ProfileUpdateResult.Duplicate;
 
-            var previousEmail = account.Email;
             account.HoTen = name;
             account.Email = email;
-            account.SoDienThoai = phoneNumber;
+            account.SoDienThoai = string.Equals(phoneNumber, account.SoDienThoai?.Trim(), StringComparison.Ordinal)
+                ? account.SoDienThoai : phoneNumber;
             await db.SaveChangesAsync(cancellationToken);
             await transaction.CommitAsync(cancellationToken);
-            return ProfileUpdateResult.Updated(ToProfile(account), previousEmail);
+            return ProfileUpdateResult.Updated(ToProfile(account));
         }
         catch (DbUpdateException exception) when (IsUniqueEmailViolation(exception))
         {
@@ -216,7 +264,7 @@ public sealed class SqlAuthService(
             && email.Length is > 0 and <= 254
             && email.All(character => character <= 127)
             && new EmailAddressAttribute().IsValid(email)
-            && (phoneNumber is null || phoneNumber.Length <= 15 && phoneNumber.All(char.IsDigit))
+            && (phoneNumber is null || phoneNumber.Length <= 15 && phoneNumber.All(character => character is >= '0' and <= '9'))
             && password.Length is >= 8 and <= 128
             && password.Any(char.IsLetter)
             && password.Any(char.IsDigit)
@@ -224,30 +272,16 @@ public sealed class SqlAuthService(
             && input.TermsAccepted;
     }
 
-    private static bool IsValidProfile(UpdateProfileRequest input, out string name, out string email, out string? phoneNumber)
-    {
-        name = input.Name?.Trim() ?? "";
-        email = NormalizeEmail(input.Email);
-        phoneNumber = string.IsNullOrWhiteSpace(input.PhoneNumber) ? null : input.PhoneNumber.Trim();
-        return name.Length is >= 2 and <= 100
-            && email.Length is > 0 and <= 254
-            && email.All(character => character <= 127)
-            && new EmailAddressAttribute().IsValid(email)
-            && (phoneNumber is null || PhoneNumberPattern().IsMatch(phoneNumber));
-    }
-
-    private static Regex PhoneNumberPattern() => new("^\\+?[0-9]{9,14}$", RegexOptions.CultureInvariant);
-
     private static bool IsUniqueEmailViolation(DbUpdateException exception) =>
         exception.GetBaseException() is SqlException sqlException && sqlException.Number is 2601 or 2627;
 }
 
-public sealed record ProfileUpdateResult(AccountProfile? Profile, string? PreviousEmail, ProfileUpdateStatus Status)
+public sealed record ProfileUpdateResult(AccountProfile? Profile, ProfileUpdateStatus Status)
 {
-    public static ProfileUpdateResult Updated(AccountProfile profile, string previousEmail) => new(profile, previousEmail, ProfileUpdateStatus.Updated);
-    public static ProfileUpdateResult Duplicate { get; } = new(null, null, ProfileUpdateStatus.Duplicate);
-    public static ProfileUpdateResult Invalid { get; } = new(null, null, ProfileUpdateStatus.Invalid);
-    public static ProfileUpdateResult Unavailable { get; } = new(null, null, ProfileUpdateStatus.Unavailable);
+    public static ProfileUpdateResult Updated(AccountProfile profile) => new(profile, ProfileUpdateStatus.Updated);
+    public static ProfileUpdateResult Duplicate { get; } = new(null, ProfileUpdateStatus.Duplicate);
+    public static ProfileUpdateResult Invalid { get; } = new(null, ProfileUpdateStatus.Invalid);
+    public static ProfileUpdateResult Unavailable { get; } = new(null, ProfileUpdateStatus.Unavailable);
 }
 
 public enum ProfileUpdateStatus
@@ -257,6 +291,8 @@ public enum ProfileUpdateStatus
     Invalid,
     Unavailable
 }
+
+public enum PasswordChangeStatus { Changed, Invalid, IncorrectCurrent, Unavailable }
 
 public sealed record RegistrationResult(LoginResponse? Session, RegistrationStatus Status)
 {
