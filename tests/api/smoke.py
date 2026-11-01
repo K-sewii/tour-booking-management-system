@@ -51,7 +51,7 @@ def catalog_ids():
     tours, places = request(API + '/api/tours'), request(API + '/api/destinations')
     assert tours and len(places) >= 2, 'Catalog is empty: apply db/seed first.'
     ids = tours[0]['id'], places[0]['id'], places[1]['id']
-    os.environ.update(CATALOG_TOUR_ID=str(ids[0]), CATALOG_PLACE_ID=str(ids[1]), CATALOG_PLACE2_ID=str(ids[2]))
+    os.environ.update(CATALOG_TOUR_ID=str(ids[0]), CATALOG_PLACE_ID=str(ids[1]), CATALOG_PLACE2_ID=str(ids[2]), CATALOG_PLACE2_NAME=places[1]['name'])
     return ids
 
 
@@ -165,6 +165,7 @@ def running_apps(session_lifetime_seconds=300, *, api_only=False, spa=False):
     environment['BootstrapAdmin__Enabled'] = 'false'
     environment['DevelopmentTestAccounts__Enabled'] = 'false'
     environment['Spa__Enabled'] = 'true' if spa else 'false'
+    environment['Logging__LogLevel__System.Net.Http'] = 'Warning'  # keep CI logs readable
     processes, logs = [], []
     try:
         for _, url in apps:

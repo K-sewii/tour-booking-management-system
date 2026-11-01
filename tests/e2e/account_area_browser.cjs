@@ -98,7 +98,7 @@ const fs = require('node:fs');
     await page.getByRole('link', { name: 'Tìm kiếm gần đây' }).click();
     assert.match(await page.locator('.account-list').innerText(), /núi/);
     await page.getByRole('link', { name: 'Đã xem gần đây' }).click();
-    assert.match(await page.locator('.account-list').innerText(), /Núi Bà Đen/);
+    assert.ok((await page.locator('.account-list').innerText()).includes(process.env.CATALOG_PLACE2_NAME));
     await page.goto(root+'/Account/Security');
     await page.locator('#CurrentPassword').fill('ProfilePass2026');
     await page.locator('#NewPassword').fill('AreaPass2026');
