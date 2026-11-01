@@ -5,6 +5,8 @@ WORKDIR /src/Frontend/DongNamTrip.Spa
 COPY src/Frontend/DongNamTrip.Spa/package.json src/Frontend/DongNamTrip.Spa/package-lock.json ./
 RUN npm ci
 COPY src/Frontend/DongNamTrip.Spa ./
+# main.tsx imports the shared CSS from the Web project
+COPY src/Frontend/DongNamTrip.Web/wwwroot/css /src/Frontend/DongNamTrip.Web/wwwroot/css
 # vite.config.ts writes to ../DongNamTrip.Web/wwwroot/spa
 RUN npm run build
 
