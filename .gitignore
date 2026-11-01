@@ -11,3 +11,10 @@ artifacts/
 node_modules/
 __pycache__/
 *.pyc
+
+# Local AI assistant instructions
+.github/copilot-instructions.md
+.claude/
+CLAUDE.md
+.chatgpt/
+CHATGPT.md
