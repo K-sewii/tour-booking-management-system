@@ -30,3 +30,17 @@
   .header nav a[href="/Account/Profile"] { max-width: none; }
   .header nav form .btn { width: 100%; }
 }
+
+/* Personal itinerary and private tour requests. */
+#selected-places li { display: block; }
+#selected-places li > span { display: inline-block; width: calc(100% - 125px); vertical-align: middle; }
+#selected-places li > button { margin: 0 2px; }
+.planner-stop-details { display: grid; grid-template-columns: 95px minmax(0, 1fr); gap: 8px 12px; padding: 10px 0 2px; }
+.planner-stop-details > p, .planner-stop-details > small, .planner-stop-details > .planner-slot-choice { grid-column: 1 / -1; margin: 0; }
+.planner-stop-details input { height: 38px; }
+.planner-stop-details .planner-slot-choice { display: flex; align-items: center; gap: 8px; font-weight: 400; }
+.planner-slot-choice input { width: auto; height: auto; margin: 0; }
+.saved-trip textarea { display: block; width: 100%; padding: 10px 12px; border: 1px solid #cddbd3; border-radius: 6px; font: inherit; resize: vertical; }
+.quote-summary { border-top: 1px solid var(--line); padding-top: 14px; margin-top: 16px; font-size: 12px; }
+.quote-summary ul { padding-left: 20px; }
+@media (max-width: 600px) { .planner-stop-details { grid-template-columns: 1fr; } .tabs { overflow-x: auto; } .tabs button { flex: 0 0 auto; } }

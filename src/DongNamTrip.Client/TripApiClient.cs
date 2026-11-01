@@ -10,6 +10,27 @@ public class TripApiClient(HttpClient http)
     public Task<List<Destination>> DestinationsAsync(CancellationToken ct = default) => GetAsync<List<Destination>>("api/destinations", ct: ct);
     public Task<List<Tour>> ToursAsync(CancellationToken ct = default) => GetAsync<List<Tour>>("api/tours", ct: ct);
     public Task<List<Itinerary>> ItinerariesAsync(string token, CancellationToken ct = default) => GetAsync<List<Itinerary>>("api/itineraries", token, ct);
+    public Task<Itinerary> ItineraryAsync(int id, string token, CancellationToken ct = default) => GetAsync<Itinerary>($"api/itineraries/{id}", token, ct);
+    public Task<PlannerCatalog> PlannerCatalogAsync(CancellationToken ct = default) => GetAsync<PlannerCatalog>("api/planner/catalog", ct: ct);
+    public Task<ItineraryStopDraft[]> TourTemplateAsync(int id, CancellationToken ct = default) => GetAsync<ItineraryStopDraft[]>($"api/planner/tours/{id}", ct: ct);
+    public Task<Itinerary> UpdateItineraryAsync(int id, ItineraryDraft data, string token, CancellationToken ct = default) =>
+        SendAsync<Itinerary>(HttpMethod.Put, $"api/itineraries/{id}", data, token, ct);
+    public Task<PrivateTourRequest> SubmitPrivateTourRequestAsync(int id, PrivateTourRequestDraft data, string token, CancellationToken ct = default) =>
+        SendAsync<PrivateTourRequest>(HttpMethod.Post, $"api/itineraries/{id}/requests", data, token, ct);
+    public Task<List<PrivateTourRequest>> PrivateTourRequestsAsync(string token, CancellationToken ct = default) =>
+        GetAsync<List<PrivateTourRequest>>("api/private-tour-requests", token, ct);
+    public Task<List<PrivateTourRequest>> StaffPrivateTourRequestsAsync(string token, CancellationToken ct = default) =>
+        GetAsync<List<PrivateTourRequest>>("api/staff/private-tour-requests", token, ct);
+    public Task<PrivateTourRequest> PrivateTourRequestAsync(int id, string token, CancellationToken ct = default) =>
+        GetAsync<PrivateTourRequest>($"api/private-tour-requests/{id}", token, ct);
+    public Task<ServiceVerification> VerifyServiceAsync(int id, ServiceVerificationDraft data, string token, CancellationToken ct = default) =>
+        SendAsync<ServiceVerification>(HttpMethod.Post, $"api/staff/private-tour-requests/{id}/verifications", data, token, ct);
+    public Task<PrivateTourRequest> IssueQuoteAsync(int id, QuoteDraft data, string token, CancellationToken ct = default) =>
+        SendAsync<PrivateTourRequest>(HttpMethod.Post, $"api/staff/private-tour-requests/{id}/quotes", data, token, ct);
+    public Task<PrivateTourOrder> AcceptQuoteAsync(int id, int quoteId, string token, CancellationToken ct = default) =>
+        SendAsync<PrivateTourOrder>(HttpMethod.Post, $"api/private-tour-requests/{id}/quotes/{quoteId}/accept", new { }, token, ct);
+    public Task<List<PrivateTourOrder>> PrivateTourOrdersAsync(string token, CancellationToken ct = default) =>
+        GetAsync<List<PrivateTourOrder>>("api/private-tour-orders", token, ct);
     public Task<LoginResponse> LoginAsync(LoginRequest data, CancellationToken ct = default) => SendAsync<LoginResponse>(HttpMethod.Post, "api/auth/login", data, null, ct);
     public Task<LoginResponse> RegisterAsync(RegisterRequest data, CancellationToken ct = default) => SendAsync<LoginResponse>(HttpMethod.Post, "api/auth/register", data, null, ct);
     public Task<AuthenticatedUser> MeAsync(string token, CancellationToken ct = default) => GetAsync<AuthenticatedUser>("api/auth/me", token, ct);

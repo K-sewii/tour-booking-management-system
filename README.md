@@ -164,7 +164,7 @@ Không dừng hàng loạt mọi process `dotnet` vì có thể làm gián đo�
 
 Đăng ký trên Web luôn tạo tài khoản `Customer` đang hoạt động. Request công khai không thể tự gán role, trạng thái hoặc hash mật khẩu. Mật khẩu được hash bằng ASP.NET Core `PasswordHasher` trước khi lưu SQL Server.
 
-`Customer` dùng Web, có thể đăng nhập/đăng xuất, cập nhật hồ sơ liên hệ và lưu lịch trình minh họa của mình trong phiên API. Customer không được mở WinForms Admin; form Admin chỉ chấp nhận tài khoản có ít nhất một role nhân viên.
+`Customer` dùng Web, có thể đăng nhập/đăng xuất, cập nhật hồ sơ, lưu và sửa lịch trình trong SQL Server, gửi yêu cầu tour riêng và chấp nhận báo giá. Customer không được mở WinForms Admin; form Admin chỉ chấp nhận tài khoản có ít nhất một role nhân viên.
 
 ### Vai trò hiện có
 
@@ -172,7 +172,7 @@ Mã hiện có hỗ trợ sáu role: `Admin`, `Customer`, `Operator`, `Editor`, 
 
 - `Admin`, `Operator`, `Editor`, `Finance`, `Publisher` là nhóm nhân viên mà WinForms cho phép đăng nhập.
 - Menu WinForms được ẩn/hiện theo role: Admin toàn bộ menu hiện có; Editor có Địa điểm; Operator có các mục vận hành; Finance có Tài chính; Publisher có Công bố nội dung.
-- Việc thấy menu không thay thế kiểm tra ở API. Endpoint thêm/sửa địa điểm hiện yêu cầu `Admin` hoặc `Editor`; các màn hình nghiệp vụ khác chưa đồng nghĩa đã có API/SQL triển khai.
+- Việc thấy menu không thay thế kiểm tra ở API. Endpoint thêm/sửa địa điểm yêu cầu `Admin` hoặc `Editor`; xác minh dịch vụ và phát hành báo giá tour riêng yêu cầu `Admin` hoặc `Operator`.
 
 ### Bootstrap Admin (Development)
 
@@ -228,15 +228,18 @@ Seed không đổi mật khẩu, role hay trạng thái của email đã có. V�
 - Xác thực: đăng ký, đăng nhập, logout, token phiên và kiểm tra trạng thái tài khoản.
 - Bảng tài khoản/role: `TAIKHOAN`, `VAITRO`, `TAIKHOAN_VAITRO`.
 - Hồ sơ Web: họ tên, email và số điện thoại.
+- Lịch trình cá nhân, điểm dừng và suất mong muốn: `LICHTRINH`, `LICHTRINH_DIADIEM`, `LICHTRINH_SUAT`.
+- Yêu cầu tour riêng, bản chụp lịch trình, xác minh dịch vụ, báo giá, hạng mục và đơn được chấp nhận: `PHIENBANLICHTRINH`, `YEUCAUTOURRIENG`, `XACMINHDICHVU`, `BAOGIA`, `HANGMUCBAOGIA`, `DONDAT`.
 - `/health/db`: kiểm tra kết nối, số bảng, `VAITRO` và `NGONNGU`.
 
 ### Vẫn là dữ liệu trong bộ nhớ (`DemoStore`)
 
 - Danh mục địa điểm, tour hiển thị trên Web.
 - Thêm/sửa địa điểm qua API và WinForms Admin.
-- Lịch trình nháp/lịch trình lưu từ Planner và danh sách chuyến đi của khách.
 
-Các dữ liệu trên mất khi API khởi động lại. Chúng không đọc/ghi các bảng SQL tour, địa điểm, lịch trình, đơn đặt, thanh toán, hoạt động hoặc suất; các bảng có trong DbContext không có nghĩa nghiệp vụ tương ứng đã được tích hợp.
+Danh mục công khai ở trên mất khi API khởi động lại. Riêng Planner đọc địa điểm, hoạt động, suất và tour mẫu đã công bố từ SQL để giữ đúng khóa ngoại của lịch trình. Dữ liệu mới của địa điểm ở `DemoStore` chưa tự xuất hiện trong Planner cho đến khi phân hệ danh mục chuyển sang SQL.
+
+Từ **Tự tạo chuyến đi**, khách lưu lịch trình rồi mở **Chuyến đi của tôi** để sửa hoặc gửi yêu cầu tour riêng. Nhân viên `Admin`/`Operator` tải yêu cầu trong WinForms, ghi xác minh, phát hành báo giá theo hạng mục. Khách xem báo giá và chấp nhận bản còn hiệu lực để tạo đơn tour riêng. Suất trong kế hoạch là mong muốn, chưa giữ chỗ; thời gian di chuyển chưa có dữ liệu nên hiển thị cảnh báo và cần điều hành kiểm tra.
 
 Token phiên là chuỗi ngẫu nhiên được giữ trong bộ nhớ của API, mặc định sống 14.400 giây (4 giờ; cấu hình `Authentication:SessionLifetimeSeconds`). Logout xóa token phía API. Khởi động lại API làm mất toàn bộ token nên người dùng phải đăng nhập lại, kể cả cookie Web còn thời hạn. Cookie Web được đặt 4 giờ và không sliding.
 
@@ -252,7 +255,7 @@ Sau khi `dotnet build` thành công, có hai script Python liên quan đến API
 python .\tests\smoke.py --start
 ```
 
-`smoke.py` yêu cầu User Secrets có connection string, database có 25 bảng, sáu role và ít nhất một ngôn ngữ. Script tạo tài khoản có tiền tố `auth-test-`, kiểm tra đăng ký/đăng nhập/phân quyền/khóa tài khoản/logout/hết hạn token và luồng Web, rồi xóa chính các tài khoản test đó. Không chạy song song với API/Web đang dùng các cổng này.
+`smoke.py` yêu cầu User Secrets có connection string, database có 25 bảng, sáu role và ít nhất một ngôn ngữ. Script tạo tài khoản có tiền tố `auth-test-`, kiểm tra tài khoản, phân quyền, lịch trình SQL, yêu cầu tour riêng, xác minh, thay thế và chấp nhận báo giá, rồi xóa dữ liệu test. Không chạy song song với API/Web đang dùng các cổng này.
 
 Kiểm tra riêng màn hình đăng nhập/đăng ký khi API/Web đã chạy tại 5080/5081:
 
@@ -261,6 +264,8 @@ python .\tests\auth_screens.py
 ```
 
 Script này tạo rồi xóa các email `scr02scr03-*`, kiểm tra validation, email trùng, đăng ký đồng thời, role injection, hash mật khẩu, trạng thái khóa, logout và luồng form. Các script test có thao tác SQL để dọn dữ liệu test; chỉ chạy trên database Development được phép kiểm thử.
+
+Kiểm thử giao diện Playwright theo luồng PH2/PH4 (đăng ký, tạo/sửa lịch trình, gửi yêu cầu tour riêng, xem và chấp nhận báo giá) chạy trong CI bằng `python .\tests\browser_runner.py`. Script tạo tài khoản thử riêng, phát hành báo giá qua API nhân viên, lưu ảnh tại `artifacts/previews` và xóa dữ liệu thử khi kết thúc. Cần cài Playwright và Chromium như trong workflow CI trước khi chạy tại máy cá nhân.
 
 ## Lỗi thường gặp
 

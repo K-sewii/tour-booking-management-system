@@ -124,6 +124,52 @@ def cleanup_test_accounts():
         return
     emails = ', '.join(sql_literal(email) for email in test_emails)
     sql_non_query(f'''
+DELETE [line] FROM HANGMUCBAOGIA AS [line]
+JOIN BAOGIA AS quote ON quote.MaBG = [line].MaBG
+JOIN YEUCAUTOURRIENG AS req ON req.MaYC = quote.MaYC
+JOIN PHIENBANLICHTRINH AS version ON version.MaPB = req.MaPB
+JOIN LICHTRINH AS trip ON trip.MaLT = version.MaLT
+JOIN TAIKHOAN AS account ON account.MaTK = trip.MaTK
+WHERE account.Email IN ({emails});
+DELETE [order] FROM DONDAT AS [order]
+JOIN BAOGIA AS quote ON quote.MaBG = [order].MaBG
+JOIN YEUCAUTOURRIENG AS req ON req.MaYC = quote.MaYC
+JOIN PHIENBANLICHTRINH AS version ON version.MaPB = req.MaPB
+JOIN LICHTRINH AS trip ON trip.MaLT = version.MaLT
+JOIN TAIKHOAN AS account ON account.MaTK = trip.MaTK
+WHERE account.Email IN ({emails});
+DELETE quote FROM BAOGIA AS quote
+JOIN YEUCAUTOURRIENG AS req ON req.MaYC = quote.MaYC
+JOIN PHIENBANLICHTRINH AS version ON version.MaPB = req.MaPB
+JOIN LICHTRINH AS trip ON trip.MaLT = version.MaLT
+JOIN TAIKHOAN AS account ON account.MaTK = trip.MaTK
+WHERE account.Email IN ({emails});
+DELETE verification FROM XACMINHDICHVU AS verification
+JOIN YEUCAUTOURRIENG AS req ON req.MaYC = verification.MaYC
+JOIN PHIENBANLICHTRINH AS version ON version.MaPB = req.MaPB
+JOIN LICHTRINH AS trip ON trip.MaLT = version.MaLT
+JOIN TAIKHOAN AS account ON account.MaTK = trip.MaTK
+WHERE account.Email IN ({emails});
+DELETE req FROM YEUCAUTOURRIENG AS req
+JOIN PHIENBANLICHTRINH AS version ON version.MaPB = req.MaPB
+JOIN LICHTRINH AS trip ON trip.MaLT = version.MaLT
+JOIN TAIKHOAN AS account ON account.MaTK = trip.MaTK
+WHERE account.Email IN ({emails});
+DELETE version FROM PHIENBANLICHTRINH AS version
+JOIN LICHTRINH AS trip ON trip.MaLT = version.MaLT
+JOIN TAIKHOAN AS account ON account.MaTK = trip.MaTK
+WHERE account.Email IN ({emails});
+DELETE slot FROM LICHTRINH_SUAT AS slot
+JOIN LICHTRINH AS trip ON trip.MaLT = slot.MaLT
+JOIN TAIKHOAN AS account ON account.MaTK = trip.MaTK
+WHERE account.Email IN ({emails});
+DELETE place FROM LICHTRINH_DIADIEM AS place
+JOIN LICHTRINH AS trip ON trip.MaLT = place.MaLT
+JOIN TAIKHOAN AS account ON account.MaTK = trip.MaTK
+WHERE account.Email IN ({emails});
+DELETE trip FROM LICHTRINH AS trip
+JOIN TAIKHOAN AS account ON account.MaTK = trip.MaTK
+WHERE account.Email IN ({emails});
 DELETE assignment
 FROM TAIKHOAN_VAITRO AS assignment
 INNER JOIN TAIKHOAN AS account ON account.MaTK = assignment.MaTK
@@ -225,12 +271,20 @@ def run():
     request(API + '/api/destinations', 'POST', {'name': 'Không được phép', 'region': 'Tây Ninh', 'category': 'Văn hóa', 'address': 'Test', 'description': 'Không được lưu', 'visitMinutes': 60}, token=logged_in['token'], expected=403)
 
     tomorrow = (datetime.date.today() + datetime.timedelta(days=1)).isoformat()
-    itinerary = {'name': 'Lịch trình SQL identity', 'startDate': tomorrow, 'guests': 2, 'destinationIds': [1, 6]}
+    planner_catalog = request(API + '/api/planner/catalog')
+    assert len(planner_catalog['destinations']) >= 2
+    planner_ids = [item['id'] for item in planner_catalog['destinations'][:2]]
+    itinerary = {'name': 'Lịch trình SQL identity', 'startDate': tomorrow, 'guests': 2,
+                 'destinationIds': planner_ids, 'departurePoint': 'TP. Hồ Chí Minh',
+                 'transport': 'Ô tô', 'budget': 2000000}
     trip = request(API + '/api/itineraries', 'POST', itinerary, token=customer_token)
     assert trip['userId'] == customer['user']['id']
+    assert trip['destinationIds'] == planner_ids and trip['departurePoint'] == 'TP. Hồ Chí Minh'
+    assert request(API + f"/api/itineraries/{trip['id']}", token=customer_token)['id'] == trip['id']
     other_email, _, other = registration('Khách khác')
     other_items = request(API + '/api/itineraries', token=other['token'])
     assert all(item['id'] != trip['id'] for item in other_items), 'A SQL account must not inherit another account\'s demo itinerary.'
+    request(API + f"/api/itineraries/{trip['id']}", token=other['token'], expected=404)
 
     staff_email, _, staff = registration('Nhân viên đa vai trò')
     sql_non_query(f'''
@@ -244,6 +298,40 @@ WHERE account.Email = {sql_literal(staff_email)}
     staff_me = request(API + '/api/auth/me', token=staff['token'])
     assert set(staff_me['roles']) == {'Admin', 'Customer', 'Editor'}
     request(API + '/api/destinations', 'POST', {'name': 'Điểm kiểm tra quyền', 'region': 'Tây Ninh', 'category': 'Văn hóa', 'address': 'Chỉ bộ nhớ', 'description': 'Xác nhận Admin hoặc Editor được phép.', 'visitMinutes': 60}, token=staff['token'])
+
+    tour_request = request(API + f"/api/itineraries/{trip['id']}/requests", 'POST',
+                           {'contact': customer_email, 'serviceNeeds': 'Hướng dẫn viên'}, token=customer_token)
+    assert tour_request['snapshot']['destinationIds'] == planner_ids
+    assert request(API + f"/api/itineraries/{trip['id']}/requests", 'POST',
+                   {'contact': customer_email, 'serviceNeeds': 'Hướng dẫn viên'}, token=customer_token)['id'] == tour_request['id']
+    request(API + f"/api/private-tour-requests/{tour_request['id']}", token=other['token'], expected=404)
+    request(API + f"/api/private-tour-requests/{tour_request['id']}/quotes/1/accept", 'POST', {}, token=other['token'], expected=404)
+    assert any(item['id'] == tour_request['id'] for item in request(API + '/api/staff/private-tour-requests', token=staff['token']))
+    changed = {**itinerary, 'name': 'Lịch trình đã sửa', 'destinationIds': [planner_ids[0]]}
+    request(API + f"/api/itineraries/{trip['id']}", 'PUT', changed, token=customer_token)
+    assert request(API + f"/api/private-tour-requests/{tour_request['id']}", token=customer_token)['snapshot']['name'] == itinerary['name']
+    quote_payload = {'expiresAt': (datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(days=2)).isoformat(),
+                     'amountDue': 300000, 'cancellationTerms': 'Hủy trước 48 giờ.',
+                     'lines': [{'description': 'Dịch vụ tour riêng', 'unit': 'khách', 'quantity': 2, 'unitPrice': 500000}]}
+    request(API + f"/api/staff/private-tour-requests/{tour_request['id']}/verifications", 'POST',
+            {'item': 'Hướng dẫn viên', 'supplier': 'Đối tác thử nghiệm', 'result': 'Available'}, token=staff['token'])
+    old_quote = request(API + f"/api/staff/private-tour-requests/{tour_request['id']}/quotes", 'POST', quote_payload, token=staff['token'])['quotes'][-1]
+    request(API + f"/api/private-tour-requests/{tour_request['id']}/quotes/{old_quote['id']}/accept", 'POST', {}, token=customer_token, expected=409)
+    updated_request = request(API + f"/api/itineraries/{trip['id']}/requests", 'POST',
+                              {'contact': customer_email, 'serviceNeeds': 'Hướng dẫn viên'}, token=customer_token)
+    assert updated_request['id'] != tour_request['id'] and updated_request['version'] > tour_request['version']
+    tour_request = updated_request
+    request(API + f"/api/staff/private-tour-requests/{tour_request['id']}/quotes", 'POST', quote_payload, token=staff['token'], expected=409)
+    request(API + f"/api/staff/private-tour-requests/{tour_request['id']}/verifications", 'POST',
+            {'item': 'Hướng dẫn viên', 'supplier': 'Đối tác thử nghiệm', 'result': 'Available', 'note': 'Đã xác minh'}, token=staff['token'])
+    first = request(API + f"/api/staff/private-tour-requests/{tour_request['id']}/quotes", 'POST', quote_payload, token=staff['token'])['quotes'][-1]
+    assert first['total'] == 1000000
+    second = request(API + f"/api/staff/private-tour-requests/{tour_request['id']}/quotes", 'POST', quote_payload, token=staff['token'])['quotes'][-1]
+    request(API + f"/api/private-tour-requests/{tour_request['id']}/quotes/{first['id']}/accept", 'POST', {}, token=customer_token, expected=409)
+    order = request(API + f"/api/private-tour-requests/{tour_request['id']}/quotes/{second['id']}/accept", 'POST', {}, token=customer_token)
+    assert order['quoteId'] == second['id'] and order['agreedPrice'] == 1000000
+    assert request(API + f"/api/private-tour-requests/{tour_request['id']}/quotes/{second['id']}/accept", 'POST', {}, token=customer_token)['id'] == order['id']
+    assert any(item['id'] == order['id'] for item in request(API + '/api/private-tour-orders', token=customer_token))
     sql_non_query(f'''
 DELETE assignment
 FROM TAIKHOAN_VAITRO AS assignment
@@ -268,6 +356,15 @@ WHERE account.Email = {sql_literal(staff_email)} AND role.TenVaiTro IN ('Admin',
         '__RequestVerificationToken': register_token,
         'Name': 'Khách Web', 'Email': web_email, 'Password': 'WebPass!2026', 'ConfirmPassword': 'WebPass!2026', 'TermsAccepted': 'true',
     }, opener=web)
+    planner_page = request(WEB + '/Planner', opener=web)
+    planner_token = antiforgery_token(planner_page)
+    web_trip = json.loads(form_request(WEB + '/Planner/Save', {
+        '__RequestVerificationToken': planner_token, 'Name': 'Web lưu SQL', 'StartDate': tomorrow,
+        'Guests': '2', 'DeparturePoint': 'TP. Hồ Chí Minh', 'Transport': 'Ô tô',
+        'DestinationIds': str(planner_ids[0]), 'Stops[0].DestinationId': str(planner_ids[0]),
+        'Stops[0].Day': '1', 'Stops[0].Order': '1', 'Stops[0].Note': 'Kiểm thử Web',
+    }, opener=web))
+    assert web_trip['id'] > 0 and 'Web lưu SQL' in html.unescape(request(WEB + '/Trips', opener=web))
     trips_page = request(WEB + '/Trips', opener=web)
     assert 'Chuyến đi của tôi' in html.unescape(trips_page)
     logout_token = antiforgery_token(trips_page)
@@ -278,7 +375,7 @@ WHERE account.Email = {sql_literal(staff_email)} AND role.TenVaiTro IN ('Admin',
         '__RequestVerificationToken': login_token,
         'Email': web_email, 'Password': 'WebPass!2026',
     }, opener=web)
-    assert 'Chuyến đi của tôi' in html.unescape(request(WEB + '/Trips', opener=web))
+    assert 'Web lưu SQL' in html.unescape(request(WEB + '/Trips', opener=web))
 
     request(API + '/api/auth/logout', 'POST', token=customer_token, expected=204)
     request(API + '/api/auth/me', token=customer_token, expected=401)

@@ -7,4 +7,4 @@ guests?.addEventListener('input', estimate); estimate();
 const tabs = [...document.querySelectorAll('[data-tab]')];
 function selectTab(tab) { for (const button of tabs) { const active = button === tab; button.classList.toggle('current', active); button.setAttribute('aria-selected', String(active)); button.tabIndex = active ? 0 : -1; document.getElementById(button.dataset.tab).hidden = !active; } }
 for (const tab of tabs) { tab.addEventListener('click', () => selectTab(tab)); tab.addEventListener('keydown', event => { if (!['ArrowLeft','ArrowRight','Home','End'].includes(event.key)) return; event.preventDefault(); let i = tabs.indexOf(tab); i = event.key === 'Home' ? 0 : event.key === 'End' ? tabs.length - 1 : (i + (event.key === 'ArrowRight' ? 1 : -1) + tabs.length) % tabs.length; selectTab(tabs[i]); tabs[i].focus(); }); }
-if (tabs.length) selectTab(tabs[0]);
+if (tabs.length) selectTab(tabs.find(tab => `#${tab.dataset.tab}` === location.hash) || tabs[0]);

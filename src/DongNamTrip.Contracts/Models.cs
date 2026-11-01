@@ -94,11 +94,38 @@ public class ItineraryDraft
     [Range(1, 40)]
     public int Guests { get; set; } = 2;
 
-    [Required, MinLength(1), MaxLength(12)]
+    [MaxLength(12)]
     public int[] DestinationIds { get; set; } = [];
+
+    [StringLength(250)]
+    public string? DeparturePoint { get; set; }
+
+    [StringLength(50)]
+    public string? Transport { get; set; }
+
+    [Range(0, 999999999999999999)]
+    public decimal? Budget { get; set; }
+
+    public ItineraryStopDraft[] Stops { get; set; } = [];
 }
 
-public record Itinerary(int Id, int UserId, string Name, DateOnly StartDate, int Guests, int[] DestinationIds);
+public class ItineraryStopDraft
+{
+    public int DestinationId { get; set; }
+    [Range(1, 30)] public int Day { get; set; } = 1;
+    [Range(1, 12)] public int Order { get; set; } = 1;
+    [StringLength(500)] public string? Note { get; set; }
+    [MaxLength(20)] public int[] SlotIds { get; set; } = [];
+}
+
+public record Itinerary(int Id, int UserId, string Name, DateOnly StartDate, int Guests, int[] DestinationIds)
+{
+    public string? DeparturePoint { get; init; }
+    public string? Transport { get; init; }
+    public decimal? Budget { get; init; }
+    public ItineraryStopDraft[] Stops { get; init; } = [];
+    public string[] Warnings { get; init; } = [];
+}
 
 public static class AppRoles
 {

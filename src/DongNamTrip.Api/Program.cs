@@ -24,6 +24,7 @@ builder.Services.AddScoped<SqlAuthService>();
 builder.Services.AddSingleton<DevelopmentAdminBootstrapper>();
 builder.Services.AddSingleton<DevelopmentTestAccountsBootstrapper>();
 builder.Services.AddSingleton<DemoStore>();
+builder.Services.AddScoped<PlanningService>();
 builder.Services.AddAuthentication("SqlBearer").AddScheme<AuthenticationSchemeOptions, SqlAuthenticationHandler>("SqlBearer", _ => { });
 builder.Services.AddAuthorization();
 builder.Services.AddRateLimiter(options =>
@@ -119,26 +120,15 @@ app.MapPost("/api/destinations", (DestinationDraft draft, DemoStore store) =>
 app.MapPut("/api/destinations/{id:int}", (int id, DestinationDraft draft, DemoStore store) =>
     !ValidDestination(draft) ? Results.BadRequest() : store.Save(id, draft) is { } result ? Results.Ok(result) : Results.NotFound()).RequireAuthorization(policy => policy.RequireRole(AppRoles.Admin, AppRoles.Editor));
 
-app.MapGet("/api/itineraries", (ClaimsPrincipal user, DemoStore store) =>
-    store.Itineraries(OwnerKey(user))).RequireAuthorization();
-app.MapPost("/api/itineraries", (ItineraryDraft draft, ClaimsPrincipal user, DemoStore store) =>
-{
-    if (!Valid(draft) || draft.StartDate < DateOnly.FromDateTime(DateTime.Today) || draft.DestinationIds.Distinct().Count() != draft.DestinationIds.Length)
-        return Results.BadRequest();
-
-    var item = store.SaveItinerary(OwnerKey(user), int.Parse(user.FindFirstValue(ClaimTypes.NameIdentifier)!), draft);
-    return item is null ? Results.BadRequest() : Results.Ok(item);
-}).RequireAuthorization();
+app.MapPlanningEndpoints();
 
 app.Run();
 
 static bool Valid(object value) => Validator.TryValidateObject(value, new ValidationContext(value), [], true);
 static bool ValidDestination(DestinationDraft draft) => Valid(draft) && CatalogOptions.Regions.Contains(draft.Region) && CatalogOptions.Categories.Contains(draft.Category);
-static string OwnerKey(ClaimsPrincipal user) => SqlAuthService.NormalizeEmail(user.FindFirstValue(ClaimTypes.Email));
 static int AccountId(ClaimsPrincipal user) => int.Parse(user.FindFirstValue(ClaimTypes.NameIdentifier)!);
 static IResult UpdateProfileResult(ProfileUpdateResult result, DemoStore store)
 {
-    store.MoveItineraries(result.PreviousEmail!, result.Profile!.Email);
     return Results.Ok(result.Profile);
 }
 static AuthenticatedUser CurrentUser(ClaimsPrincipal user) => new(
