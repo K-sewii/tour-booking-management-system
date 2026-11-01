@@ -1,0 +1,15 @@
+**/bin/
+**/obj/
+**/node_modules/
+.git/
+.github/
+.vs/
+.vscode/
+artifacts/
+docs/
+tests/
+db/
+*.md
+.env
+src/DongNamTrip.Admin/
+src/DongNamTrip.Web/wwwroot/spa/

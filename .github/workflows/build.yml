@@ -7,7 +7,30 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: build-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
+  frontend:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: src/DongNamTrip.Spa/package-lock.json
+
+      - name: Install, type-check and build SPA
+        working-directory: src/DongNamTrip.Spa
+        run: |
+          npm ci
+          npm audit --audit-level=high --omit=dev
+          npm run build
+
   windows:
     runs-on: windows-2022
     timeout-minutes: 20
