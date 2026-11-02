@@ -113,9 +113,9 @@ jobs:
               $connection.Dispose()
           }
 
-      # DongNamTrip_Full.sql keeps the 8 reference tours as Draft, but the API only lists Published rows
-      # and the tests need at least one tour. Publish them on the disposable CI database only.
-      - name: Publish reference tours for tests
+      # DongNamTrip_Full.sql keeps its reference tours as Draft (the API lists only Published) and the browser
+      # tests expect a fixed catalog, so load a CI-only fixture into the disposable LocalDB.
+      - name: Load CI catalog fixture
         shell: powershell
         run: |
           $ErrorActionPreference = 'Stop'
@@ -124,8 +124,9 @@ jobs:
           try {
               $connection.Open()
               $command = $connection.CreateCommand()
-              $command.CommandText = "UPDATE dbo.TOUR SET TrangThai = 'Published' WHERE TrangThai = 'Draft'"
-              Write-Host "Published $($command.ExecuteNonQuery()) tours"
+              $command.CommandText = [System.IO.File]::ReadAllText('tests/ci/catalog_fixture.sql', [System.Text.Encoding]::UTF8)
+              [void]$command.ExecuteNonQuery()
+              Write-Host 'CI catalog fixture loaded.'
           }
           finally {
               $connection.Dispose()
