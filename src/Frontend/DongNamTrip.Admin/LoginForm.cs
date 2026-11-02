@@ -10,13 +10,16 @@ public sealed class LoginForm : Form
     public LoginForm(TripApiClient api)
     {
         Text = "DongNamTrip · Đăng nhập quản trị";
+        AutoScaleDimensions = new SizeF(96F, 96F);
+        AutoScaleMode = AutoScaleMode.Dpi;
         ClientSize = new Size(455, 440);
+        MinimumSize = Size;
         FormBorderStyle = FormBorderStyle.FixedDialog;
         MaximizeBox = false;
+        AutoScroll = true;
         StartPosition = FormStartPosition.CenterScreen;
         Font = new Font("Segoe UI", 10);
         BackColor = Ui.Background;
-        AutoScaleMode = AutoScaleMode.Dpi;
         var layout = new TableLayoutPanel
         {
             Dock = DockStyle.Fill,
@@ -24,6 +27,9 @@ public sealed class LoginForm : Form
             ColumnCount = 1,
             RowCount = 8
         };
+        layout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
+        for (var i = 0; i < layout.RowCount; i++)
+            layout.RowStyles.Add(new RowStyle(SizeType.AutoSize));
         var email = new TextBox
         {
             Dock = DockStyle.Fill,
@@ -45,7 +51,7 @@ public sealed class LoginForm : Form
         layout.Controls.Add(Ui.Label("Mật khẩu"));
         layout.Controls.Add(password);
         layout.Controls.Add(login);
-        layout.Controls.Add(Ui.Label("Chỉ tài khoản được phân công ít nhất một vai trò nhân viên mới có thể mở ứng dụng này.", 9));
+        layout.Controls.Add(Ui.Label("Chỉ tài khoản được phân công ít nhất một vai trò nhân viên mới có thể mở ứng dụng này.", 9, wrap: true));
         Controls.Add(layout);
         AcceptButton = login;
         login.Click += async (_, _) => await Ui.RunAsync(this, async () =>

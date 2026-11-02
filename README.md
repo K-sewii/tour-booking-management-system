@@ -148,6 +148,22 @@ For frontend work with hot reload, keep API and Web running and run `npm run dev
 
 Never commit connection strings, passwords, tokens or `.env`. Public registration always creates a `Customer`; staff roles are `Admin`, `Operator`, `Editor`, `Finance`, `Publisher`.
 
+### Test accounts already in the database
+
+If the database was created from `db/init/DongNamTrip_Full.sql`, the script already seeds seven test accounts that **share the initial password `DntTest@2026!`**. No extra configuration is needed to sign in. Development databases only.
+
+| Email | Role |
+| --- | --- |
+| `admin@dongnamtrip.test` | Admin |
+| `operator@dongnamtrip.test` | Operator |
+| `editor@dongnamtrip.test` | Editor |
+| `finance@dongnamtrip.test` | Finance |
+| `publisher@dongnamtrip.test` | Publisher |
+| `customer1@dongnamtrip.test` | Customer |
+| `customer2@dongnamtrip.test` | Customer |
+
+The WinForms Admin accepts staff roles only (not Customer). If a password was changed in the database, or the database was not created from this script, the password will differ.
+
 ## Testing
 
 Tests run against a real API and SQL Server **development** database and may create and clean up temporary accounts. Do not run them against production data.

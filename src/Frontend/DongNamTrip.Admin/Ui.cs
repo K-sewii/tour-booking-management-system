@@ -2,14 +2,28 @@ namespace DongNamTrip.Admin;
 internal static class Ui
 {
     public static readonly Color Green = Color.FromArgb(8, 127, 108), Ink = Color.FromArgb(20, 59, 53), Muted = Color.FromArgb(98, 115, 111), Background = Color.FromArgb(246, 248, 244);
-    public static Label Label(string text, float size = 10, bool bold = false) => new()
+    public static Label Label(string text, float size = 10, bool bold = false, bool wrap = false)
     {
-        Text = text,
-        AutoSize = true,
-        ForeColor = Ink,
-        Font = new Font("Segoe UI", size, bold ? FontStyle.Bold : FontStyle.Regular),
-        Margin = new Padding(0, 8, 0, 8)
-    };
+        var label = wrap ? new WrapLabel() : new Label();
+        label.Text = text;
+        label.AutoSize = true;
+        label.ForeColor = Ink;
+        label.Font = new Font("Segoe UI", size, bold ? FontStyle.Bold : FontStyle.Regular);
+        label.Margin = new Padding(0, 8, 0, 8);
+        return label;
+    }
+
+    // Wraps text to the width its container offers instead of widening the container.
+    private sealed class WrapLabel : Label
+    {
+        public override Size GetPreferredSize(Size proposedSize)
+        {
+            var width = proposedSize.Width is > 1 and < int.MaxValue / 2
+                ? proposedSize.Width
+                : Parent is null ? 0 : Parent.ClientSize.Width - Parent.Padding.Horizontal;
+            return width > 0 ? base.GetPreferredSize(new Size(width - Margin.Horizontal, 0)) : base.GetPreferredSize(proposedSize);
+        }
+    }
     public static Button Button(string text, bool primary = false) => new()
     {
         Text = text,
