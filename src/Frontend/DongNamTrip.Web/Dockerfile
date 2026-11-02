@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1
 # Build context: repository root.  docker build -f src/Frontend/DongNamTrip.Web/Dockerfile .
-FROM node:22-alpine AS spa
+FROM node:26-alpine AS spa
 WORKDIR /src/Frontend/DongNamTrip.Spa
 COPY src/Frontend/DongNamTrip.Spa/package.json src/Frontend/DongNamTrip.Spa/package-lock.json ./
 RUN npm ci
