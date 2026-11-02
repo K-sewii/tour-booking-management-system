@@ -1,32 +1,25 @@
-import { useEffect, useState, type FormEvent } from 'react';
-import { Link, useSearchParams } from 'react-router';
+import { useEffect } from 'react';
+import { Link } from 'react-router';
 import { api } from '../../api/client';
 import { useLoad } from '../../api/useLoad';
 import type { Paged, Tour } from '../../api/types';
 import { useMeta } from '../../api/meta';
 import { useAuth } from '../../auth/AuthContext';
-import { Failure, Loading, TourCard } from '../../components/Catalog';
+import { Failure, Loading, Pagination, TourCard } from '../../components/Catalog';
 import { recordActivity } from '../account/recordActivity';
+import { useFilterForm } from '../useFilterForm';
+
+const FILTERS = ['q', 'region', 'category', 'sort'] as const;
 
 export function ToursPage() {
-  const [params, setParams] = useSearchParams();
-  const [form, setForm] = useState({ q: params.get('q') || '', region: params.get('region') || '', category: params.get('category') || '', sort: params.get('sort') || '' });
+  const { params, applied: { q, region, category, sort }, form, setForm, page, submit } = useFilterForm(FILTERS);
   const { user } = useAuth();
   const meta = useMeta();
-  const q = params.get('q')?.trim() || '';
-  const region = params.get('region') || '';
-  const category = params.get('category') || '';
-  const sort = params.get('sort') || '';
-  const page = Math.max(1, Number(params.get('page') || 1) || 1);
   const tours = useLoad('tours?' + params.toString(), () => api.get<Paged<Tour>>('proxy/tours/search?' + new URLSearchParams({ q, region, category, sort, page: String(page) })));
-  useEffect(() => { setForm({ q, region, category, sort }); }, [q, region, category, sort]);
-  useEffect(() => { if (user && q) recordActivity('search', undefined, q); }, [user?.id, q]);
+  const userId = user?.id;
+  useEffect(() => { if (userId && q) recordActivity('search', undefined, q); }, [userId, q]);
   const items = tours.data?.items || [];
   const total = tours.data?.total ?? 0;
-  const totalPages = Math.max(1, Math.ceil(total / (tours.data?.pageSize || 1)));
-  const currentPage = tours.data?.page ?? page;
-  function submit(event: FormEvent) { event.preventDefault(); const next = new URLSearchParams(); Object.entries(form).forEach(([key, value]) => { if (value.trim()) next.set(key, value.trim()); }); setParams(next); }
-  function pageLink(number: number) { const next = new URLSearchParams(params); next.set('page', String(number)); return `/Tours?${next}`; }
   return <><section className="page-intro"><div className="container"><div className="eyebrow">ĐÔNG NAM BỘ, THEO CÁCH CỦA BẠN</div><h1>Tìm một hành trình đáng nhớ.</h1><p>Biển xanh, phố thị hay một ngày giữa thiên nhiên?</p></div></section>
     <div className="container listing-layout section"><aside className="filter-panel"><h3>Chọn chuyến đi</h3><form onSubmit={submit}>
       <label>Tìm kiếm<input value={form.q} onChange={event => setForm({ ...form, q: event.target.value })} placeholder="Tên tour, trải nghiệm…"/></label>
@@ -37,6 +30,6 @@ export function ToursPage() {
       <section>{tours.loading ? <Loading/> : tours.error ? <Failure message={tours.error} retry={tours.retry}/> : <><div className="results-line"><b>{total} hành trình</b><span>Giá mẫu để trải nghiệm giao diện</span></div>
         <div className="card-grid two">{items.map(item => <TourCard key={item.id} tour={item}/>)}</div>
         {!items.length && <div className="empty"><h2>Chưa tìm thấy tour phù hợp.</h2><p>Thử thay đổi từ khóa hoặc chọn khu vực khác.</p><Link className="btn" to="/Tours">Xem tất cả tour</Link></div>}
-        <nav className="pagination" aria-label="Phân trang">{Array.from({ length: totalPages }, (_, index) => <Link className={index + 1 === currentPage ? 'current' : ''} key={index} to={pageLink(index + 1)}>{index + 1}</Link>)}</nav></>}</section></div></>;
+        {tours.data && <Pagination page={tours.data.page} total={tours.data.total} pageSize={tours.data.pageSize} params={params} path="/Tours"/>}</>}</section></div></>;
 }
 

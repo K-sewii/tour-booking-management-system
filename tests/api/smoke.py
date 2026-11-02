@@ -49,7 +49,7 @@ def request(path, method='GET', data=None, token=None, expected=200, opener=None
 def catalog_ids():
     """(tour, place, second place) ids from the API, also exported for the browser tests."""
     tours, places = request(API + '/api/tours'), request(API + '/api/destinations')
-    assert tours and len(places) >= 2, 'Catalog is empty: load the team's db/init script first.'
+    assert tours and len(places) >= 2, 'Catalog is empty: load the db/init scripts first.'
     ids = tours[0]['id'], places[0]['id'], places[1]['id']
     os.environ.update(CATALOG_TOUR_ID=str(ids[0]), CATALOG_PLACE_ID=str(ids[1]), CATALOG_PLACE2_ID=str(ids[2]), CATALOG_PLACE2_NAME=places[1]['name'])
     return ids
@@ -133,11 +133,11 @@ def cleanup_test_accounts():
         return
     emails = ', '.join(sql_literal(email) for email in test_emails)
     sql_non_query(f'''
-IF OBJECT_ID('dbo.ACCOUNT_FAVORITE', 'U') IS NOT NULL DELETE FROM dbo.ACCOUNT_FAVORITE WHERE AccountId IN (SELECT MaTK FROM TAIKHOAN WHERE Email IN ({emails}));
-IF OBJECT_ID('dbo.ACCOUNT_ACTIVITY', 'U') IS NOT NULL DELETE FROM dbo.ACCOUNT_ACTIVITY WHERE AccountId IN (SELECT MaTK FROM TAIKHOAN WHERE Email IN ({emails}));
-IF OBJECT_ID('dbo.ACCOUNT_NOTICE', 'U') IS NOT NULL DELETE FROM dbo.ACCOUNT_NOTICE WHERE AccountId IN (SELECT MaTK FROM TAIKHOAN WHERE Email IN ({emails}));
-IF OBJECT_ID('dbo.ACCOUNT_PREFERENCE', 'U') IS NOT NULL DELETE FROM dbo.ACCOUNT_PREFERENCE WHERE AccountId IN (SELECT MaTK FROM TAIKHOAN WHERE Email IN ({emails}));
-IF OBJECT_ID('dbo.ACCOUNT_PAYMENT_CHOICE', 'U') IS NOT NULL DELETE FROM dbo.ACCOUNT_PAYMENT_CHOICE WHERE AccountId IN (SELECT MaTK FROM TAIKHOAN WHERE Email IN ({emails}));
+IF OBJECT_ID('dbo.TAIKHOAN_YEUTHICH', 'U') IS NOT NULL DELETE FROM dbo.TAIKHOAN_YEUTHICH WHERE MaTK IN (SELECT MaTK FROM TAIKHOAN WHERE Email IN ({emails}));
+IF OBJECT_ID('dbo.TAIKHOAN_LICHSU', 'U') IS NOT NULL DELETE FROM dbo.TAIKHOAN_LICHSU WHERE MaTK IN (SELECT MaTK FROM TAIKHOAN WHERE Email IN ({emails}));
+IF OBJECT_ID('dbo.TAIKHOAN_THONGBAO', 'U') IS NOT NULL DELETE FROM dbo.TAIKHOAN_THONGBAO WHERE MaTK IN (SELECT MaTK FROM TAIKHOAN WHERE Email IN ({emails}));
+IF OBJECT_ID('dbo.TAIKHOAN_TUYCHON', 'U') IS NOT NULL DELETE FROM dbo.TAIKHOAN_TUYCHON WHERE MaTK IN (SELECT MaTK FROM TAIKHOAN WHERE Email IN ({emails}));
+IF OBJECT_ID('dbo.TAIKHOAN_THANHTOAN', 'U') IS NOT NULL DELETE FROM dbo.TAIKHOAN_THANHTOAN WHERE MaTK IN (SELECT MaTK FROM TAIKHOAN WHERE Email IN ({emails}));
 DELETE FROM LICHTRINH_SUAT WHERE MaLT IN (SELECT MaLT FROM LICHTRINH WHERE MaTK IN (SELECT MaTK FROM TAIKHOAN WHERE Email IN ({emails})));
 DELETE FROM LICHTRINH_DIADIEM WHERE MaLT IN (SELECT MaLT FROM LICHTRINH WHERE MaTK IN (SELECT MaTK FROM TAIKHOAN WHERE Email IN ({emails})));
 DELETE FROM PHIENBANLICHTRINH WHERE MaLT IN (SELECT MaLT FROM LICHTRINH WHERE MaTK IN (SELECT MaTK FROM TAIKHOAN WHERE Email IN ({emails})));

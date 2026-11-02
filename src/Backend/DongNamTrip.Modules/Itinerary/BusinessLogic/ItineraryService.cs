@@ -18,8 +18,11 @@ public sealed class ItineraryService(ItineraryRepository repository, ICatalogApi
         return trips.Select(trip => Build(trip.Id, accountId, trip.Name, trip.StartDate, trip.Guests, trip.DestinationIds, places)).ToList();
     }
 
+    /// <returns>Null nếu ngày đi đã qua, địa điểm trùng lặp hoặc có địa điểm không còn hiển thị.</returns>
     public async Task<Contracts.Itinerary?> SaveAsync(int accountId, ItineraryDraft draft, CancellationToken ct)
     {
+        if (draft.StartDate < DateOnly.FromDateTime(DateTime.Today) || draft.DestinationIds.Distinct().Count() != draft.DestinationIds.Length)
+            return null;
         var places = await catalog.DestinationsAsync(draft.DestinationIds, ct);
         if (places.Count != draft.DestinationIds.Length) return null;
         var id = await repository.AddAsync(accountId, draft, ct);

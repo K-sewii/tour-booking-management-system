@@ -9,7 +9,9 @@ import { art, Failure, Loading } from '../../components/Catalog';
 
 type Draft = { name: string; startDate: string; guests: number; ids: number[] };
 const draftKey = 'dongnamtrip.planner.v1';
-const nextWeek = () => new Date(Date.now() + 7 * 86400000).toISOString().slice(0, 10);
+// Ngày theo giờ máy người dùng (sv-SE cho dạng YYYY-MM-DD); toISOString() là giờ UTC nên lệch ngày trước 7h sáng ở Việt Nam.
+const localDate = (days = 0) => new Date(Date.now() + days * 86400000).toLocaleDateString('sv-SE');
+const nextWeek = () => localDate(7);
 function savedDraft(): Draft {
   try {
     const source = JSON.parse(sessionStorage.getItem(draftKey) || '{}') as Partial<Draft> & { Name?: string; StartDate?: string; Guests?: number };
@@ -45,7 +47,7 @@ export function PlannerPage() {
     event.preventDefault(); setError('');
     if (!selected.length) { setError('Bạn cần chọn ít nhất một địa điểm.'); return; }
     const rules = meta.data;
-    if (!rules || !draft.name.trim() || draft.name.trim().length > rules.itineraryNameMax || !draft.startDate || draft.startDate < new Date().toISOString().slice(0, 10) || draft.guests < rules.guestsMin || draft.guests > rules.guestsMax) {
+    if (!rules || !draft.name.trim() || draft.name.trim().length > rules.itineraryNameMax || !draft.startDate || draft.startDate < localDate() || draft.guests < rules.guestsMin || draft.guests > rules.guestsMax) {
       setError(`Nhập tên, ngày đi hợp lệ và số khách từ ${rules?.guestsMin} đến ${rules?.guestsMax}.`); return;
     }
     if (!user) { setError('Đăng nhập để lưu lịch trình. Bản nháp được giữ trong tab này.'); return; }
@@ -63,7 +65,7 @@ export function PlannerPage() {
           <button type="button" className="add-place" aria-label={`Thêm ${place.name}`} disabled={draft.ids.includes(place.id) || draft.ids.length >= (meta.data?.maxPlaces ?? 0)} onClick={() => updateIds([...draft.ids, place.id])}>{draft.ids.includes(place.id) ? '✓' : '+'}</button></article>)}{!visible.length && <p>Không có địa điểm phù hợp với từ khóa.</p>}</div>}</section>
         <aside className="itinerary-panel"><div className="section-heading"><h2>Lịch trình của bạn</h2><span className="pill">{selected.length} điểm</span></div><form onSubmit={event => void submit(event)}>
           <label>Tên chuyến đi<input required maxLength={meta.data?.itineraryNameMax} value={draft.name} onChange={event => setDraft({ ...draft, name: event.target.value })} placeholder="Cuối tuần đi đâu đó…"/></label>
-          <div className="form-row"><label>Ngày dự kiến<input type="date" required min={new Date().toISOString().slice(0, 10)} value={draft.startDate} onChange={event => setDraft({ ...draft, startDate: event.target.value })}/></label>
+          <div className="form-row"><label>Ngày dự kiến<input type="date" required min={localDate()} value={draft.startDate} onChange={event => setDraft({ ...draft, startDate: event.target.value })}/></label>
             <label>Số khách<input type="number" min={meta.data?.guestsMin} max={meta.data?.guestsMax} required value={draft.guests} onChange={event => setDraft({ ...draft, guests: Number(event.target.value) })}/></label></div>
           <ol id="selected-places">{selected.map((place, index) => <li key={place.id}><span>{index + 1}. {place.name}<small>{place.visitMinutes} phút · {place.region}</small></span>
             <button type="button" aria-label={`Đưa ${place.name} lên`} disabled={index === 0} onClick={() => move(index, -1)}>↑</button><button type="button" aria-label={`Đưa ${place.name} xuống`} disabled={index === selected.length - 1} onClick={() => move(index, 1)}>↓</button><button type="button" aria-label={`Xóa ${place.name}`} onClick={() => updateIds(draft.ids.filter(id => id !== place.id))}>×</button></li>)}</ol>

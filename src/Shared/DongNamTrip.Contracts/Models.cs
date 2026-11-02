@@ -178,7 +178,8 @@ public record ClientRules(
     IReadOnlyList<RegionOption> Regions, IReadOnlyList<string> Categories,
     int TourPageSize, int DestinationPageSize, int PlannerListSize,
     int ItineraryNameMax, int GuestsMin, int GuestsMax, int MaxPlaces,
-    int NameMin, int NameMax, int PasswordMin, int PasswordMax, int PhoneMax);
+    int NameMin, int NameMax, int PasswordMin, int PasswordMax, int PhoneMax,
+    IReadOnlyList<string> PaymentMethods);
 
 public static class Limits
 {

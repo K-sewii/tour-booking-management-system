@@ -17,15 +17,16 @@ var connectionString = builder.Configuration.GetConnectionString("DongNamTrip")
     ?? throw new InvalidOperationException("ConnectionStrings:DongNamTrip must be configured for the API.");
 builder.Services.AddDbContext<DongNamTripDbContext>(options => options.UseSqlServer(connectionString));
 builder.Services.AddAuthorization();
+builder.Services.AddProblemDetails(); // mọi lỗi (400/401/404/500...) trả application/problem+json thống nhất
 builder.Services.AddRateLimiter(options =>
 {
     options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
-    options.AddPolicy("login", context => RateLimitPartition.GetFixedWindowLimiter(context.Connection.RemoteIpAddress?.ToString() ?? "local", _ => new FixedWindowRateLimiterOptions
-    {
-        PermitLimit = 20,
-        Window = TimeSpan.FromMinutes(1),
-        QueueLimit = 0
-    }));
+    // Giới hạn theo IP. Khi API đứng sau Web (BFF) mọi người dùng chung IP của Web: cần forwarded headers trước khi nâng cấp lên môi trường thật.
+    void LimitPerIp(string policy, int permitLimit) => options.AddPolicy(policy, context => RateLimitPartition.GetFixedWindowLimiter(
+        context.Connection.RemoteIpAddress?.ToString() ?? "local",
+        _ => new FixedWindowRateLimiterOptions { PermitLimit = permitLimit, Window = TimeSpan.FromMinutes(1), QueueLimit = 0 }));
+    LimitPerIp(RateLimits.Login, 20);
+    LimitPerIp(RateLimits.Register, 30); // mỗi lần đăng ký băm mật khẩu PBKDF2 nên tốn CPU
 });
 
 IModule[] modules = [new AdministrationModule(), new CatalogModule(), new ItineraryModule(), new BookingModule(), new QuotationModule(), new NarrationModule()];
@@ -35,6 +36,8 @@ foreach (var module in modules)
 var app = builder.Build();
 await AdministrationModule.EnsureDevelopmentAccountsAsync(app.Services, app.Environment);
 
+app.UseExceptionHandler();
+app.UseStatusCodePages();
 app.UseRateLimiter();
 app.UseAuthentication();
 app.UseAuthorization();

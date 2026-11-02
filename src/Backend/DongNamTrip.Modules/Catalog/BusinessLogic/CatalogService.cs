@@ -8,7 +8,8 @@ public sealed class CatalogService(CatalogRepository repository) : ICatalogApi
         CatalogOptions.Regions.Select(region => new RegionOption(region, CatalogOptions.IllustrationFor(region))).ToArray(), CatalogOptions.Categories,
         Limits.TourPageSize, Limits.DestinationPageSize, Limits.PlannerListSize,
         Limits.ItineraryNameMax, Limits.GuestsMin, Limits.GuestsMax, Limits.MaxPlaces,
-        Limits.NameMin, Limits.NameMax, Limits.PasswordMin, Limits.PasswordMax, Limits.PhoneMax);
+        Limits.NameMin, Limits.NameMax, Limits.PasswordMin, Limits.PasswordMax, Limits.PhoneMax,
+        PaymentMethods.All);
 
     private static (int Page, int Size) Paging(int? page, int? size, int defaultSize) =>
         (Math.Clamp(page ?? 1, 1, Limits.MaxPage), Math.Clamp(size ?? defaultSize, 1, Limits.MaxPageSize));
@@ -18,7 +19,13 @@ public sealed class CatalogService(CatalogRepository repository) : ICatalogApi
     Task<List<Destination>> ICatalogApi.DestinationsAsync(IReadOnlyCollection<int> ids, CancellationToken ct) => repository.DestinationsAsync(ids, ct);
     public Task<List<Destination>> AdminDestinationsAsync(CancellationToken ct) => repository.AdminDestinationsAsync(ct);
     public Task<List<Tour>> ToursAsync(CancellationToken ct) => repository.ToursAsync(ct);
-    public Task<Destination?> SaveDestinationAsync(int? id, DestinationDraft draft, CancellationToken ct) => repository.SaveDestinationAsync(id, draft, ct);
+    /// <summary>Tạo mới (<paramref name="id"/> null) hoặc cập nhật; vùng và loại hình phải thuộc <see cref="CatalogOptions"/>.</summary>
+    public async Task<DestinationSaveResult> SaveDestinationAsync(int? id, DestinationDraft draft, CancellationToken ct)
+    {
+        if (!CatalogOptions.Regions.Contains(draft.Region) || !CatalogOptions.Categories.Contains(draft.Category))
+            return DestinationSaveResult.Invalid;
+        return await repository.SaveDestinationAsync(id, draft, ct) is { } saved ? DestinationSaveResult.Saved(saved) : DestinationSaveResult.NotFound;
+    }
 
     public async Task<PagedResult<Destination>> SearchDestinationsAsync(string? q, string? region, string? category, int? page, int? size, CancellationToken ct)
     {
@@ -49,15 +56,24 @@ public sealed class CatalogService(CatalogRepository repository) : ICatalogApi
 
     public async Task<bool> ExistsAsync(string kind, int id, CancellationToken ct) => kind switch
     {
-        "tour" => await repository.TourAsync(id, ct) is not null,
-        "destination" => (await repository.DestinationsAsync([id], ct)).Count == 1,
+        ItemKinds.Tour => await repository.TourAsync(id, ct) is not null,
+        ItemKinds.Destination => (await repository.DestinationsAsync([id], ct)).Count == 1,
         _ => false
     };
 
     public async Task<Dictionary<int, string>> NamesAsync(string kind, IReadOnlyCollection<int> ids, CancellationToken ct) => kind switch
     {
-        "tour" => ids.Count == 0 ? [] : await repository.TourNamesAsync(ids, ct),
-        "destination" => ids.Count == 0 ? [] : (await repository.DestinationsAsync(ids, ct)).ToDictionary(item => item.Id, item => item.Name),
+        ItemKinds.Tour => ids.Count == 0 ? [] : await repository.TourNamesAsync(ids, ct),
+        ItemKinds.Destination => ids.Count == 0 ? [] : (await repository.DestinationsAsync(ids, ct)).ToDictionary(item => item.Id, item => item.Name),
         _ => []
     };
 }
+
+public sealed record DestinationSaveResult(Destination? Item, DestinationSaveStatus Status)
+{
+    public static DestinationSaveResult Saved(Destination item) => new(item, DestinationSaveStatus.Saved);
+    public static DestinationSaveResult Invalid { get; } = new(null, DestinationSaveStatus.Invalid);
+    public static DestinationSaveResult NotFound { get; } = new(null, DestinationSaveStatus.NotFound);
+}
+
+public enum DestinationSaveStatus { Saved, Invalid, NotFound }

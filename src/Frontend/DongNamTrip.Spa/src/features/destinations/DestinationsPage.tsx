@@ -1,5 +1,5 @@
-import { useEffect, useState, type FormEvent } from 'react';
-import { Link, useSearchParams } from 'react-router';
+import { useEffect } from 'react';
+import { Link } from 'react-router';
 import { api } from '../../api/client';
 import { useLoad } from '../../api/useLoad';
 import type { Destination, Paged } from '../../api/types';
@@ -7,20 +7,17 @@ import { useMeta } from '../../api/meta';
 import { useAuth } from '../../auth/AuthContext';
 import { DestinationCard, Failure, Loading, Pagination } from '../../components/Catalog';
 import { recordActivity } from '../account/recordActivity';
+import { useFilterForm } from '../useFilterForm';
+
+const FILTERS = ['q', 'region', 'category'] as const;
 
 export function DestinationsPage() {
-  const [params, setParams] = useSearchParams();
-  const [form, setForm] = useState({ q: params.get('q') || '', region: params.get('region') || '', category: params.get('category') || '' });
+  const { params, applied: { q, region, category }, form, setForm, page, submit } = useFilterForm(FILTERS);
   const { user } = useAuth();
   const meta = useMeta();
-  const q = params.get('q')?.trim() || '';
-  const region = params.get('region') || '';
-  const category = params.get('category') || '';
-  const page = Math.max(1, Number(params.get('page') || 1) || 1);
   const destinations = useLoad('destinations?' + params.toString(), () => api.get<Paged<Destination>>('proxy/destinations/search?' + new URLSearchParams({ q, region, category, page: String(page) })));
-  useEffect(() => { setForm({ q, region, category }); }, [q, region, category]);
-  useEffect(() => { if (user && q) recordActivity('search', undefined, q); }, [user?.id, q]);
-  function submit(event: FormEvent) { event.preventDefault(); const next = new URLSearchParams(); Object.entries(form).forEach(([key, value]) => { if (value.trim()) next.set(key, value.trim()); }); setParams(next); }
+  const userId = user?.id;
+  useEffect(() => { if (userId && q) recordActivity('search', undefined, q); }, [userId, q]);
   return <><section className="page-intro"><div className="container"><div className="eyebrow">CÓ MỘT NƠI ĐANG ĐỢI BẠN</div><h1>Điểm đến, nguồn cảm hứng.</h1><p>Khám phá năm khu vực du lịch trong phạm vi Đông Nam Bộ của đề tài.</p></div></section>
     <div className="container section"><form className="inline-filters" onSubmit={submit}><label>Tên địa điểm<input value={form.q} onChange={event => setForm({ ...form, q: event.target.value })} placeholder="Bạn đang tìm nơi nào?"/></label>
       <label>Khu vực<select value={form.region} onChange={event => setForm({ ...form, region: event.target.value })}><option value="">Tất cả khu vực</option>{(meta.data?.regions || []).map(item => <option key={item.name}>{item.name}</option>)}</select></label>

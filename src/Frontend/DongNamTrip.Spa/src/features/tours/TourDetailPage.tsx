@@ -18,7 +18,8 @@ export function TourDetailPage() {
   const estimate = useLoad('tour-estimate-' + id + '-' + guests, () => api.get<TourEstimate>(`proxy/tours/${id}/estimate?guests=${guests}`));
   const tour = detail.data?.tour;
   const places = detail.data?.places || [];
-  useEffect(() => { if (user && id > 0 && tour) recordActivity('tour', id); }, [user?.id, id, tour?.id]);
+  const userId = user?.id, tourId = tour?.id;
+  useEffect(() => { if (userId && id > 0 && tourId) recordActivity('tour', id); }, [userId, id, tourId]);
   if (detail.loading) return <div className="container section"><Loading/></div>;
   if (detail.error) return <div className="container section"><Failure message={detail.error} retry={detail.retry}/></div>;
   if (!tour) return <div className="container section"><h1>Tour không còn hiển thị.</h1><Link to="/Tours">Xem các tour</Link></div>;

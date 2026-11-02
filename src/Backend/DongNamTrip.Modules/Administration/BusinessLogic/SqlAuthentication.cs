@@ -202,8 +202,9 @@ public sealed class SqlAuthService(
                 return ProfileUpdateResult.Unavailable;
 
             input.Normalize();
-            if (input.ValidateForExistingPhone(account.SoDienThoai).Count > 0)
-                return ProfileUpdateResult.Invalid;
+            var issues = input.ValidateForExistingPhone(account.SoDienThoai);
+            if (issues.Count > 0)
+                return ProfileUpdateResult.Invalid(ToErrors(issues));
             var name = input.Name;
             var email = input.Email;
             var phoneNumber = input.PhoneNumber;
@@ -272,15 +273,20 @@ public sealed class SqlAuthService(
             && input.TermsAccepted;
     }
 
+    private static Dictionary<string, string[]> ToErrors(IEnumerable<ValidationResult> issues) => issues
+        .SelectMany(issue => issue.MemberNames.Select(member => (member, issue.ErrorMessage)))
+        .GroupBy(item => item.member)
+        .ToDictionary(group => group.Key, group => group.Select(item => item.ErrorMessage!).ToArray());
+
     private static bool IsUniqueEmailViolation(DbUpdateException exception) =>
         exception.GetBaseException() is SqlException sqlException && sqlException.Number is 2601 or 2627;
 }
 
-public sealed record ProfileUpdateResult(AccountProfile? Profile, ProfileUpdateStatus Status)
+public sealed record ProfileUpdateResult(AccountProfile? Profile, ProfileUpdateStatus Status, IReadOnlyDictionary<string, string[]>? Errors = null)
 {
     public static ProfileUpdateResult Updated(AccountProfile profile) => new(profile, ProfileUpdateStatus.Updated);
     public static ProfileUpdateResult Duplicate { get; } = new(null, ProfileUpdateStatus.Duplicate);
-    public static ProfileUpdateResult Invalid { get; } = new(null, ProfileUpdateStatus.Invalid);
+    public static ProfileUpdateResult Invalid(IReadOnlyDictionary<string, string[]> errors) => new(null, ProfileUpdateStatus.Invalid, errors);
     public static ProfileUpdateResult Unavailable { get; } = new(null, ProfileUpdateStatus.Unavailable);
 }
 

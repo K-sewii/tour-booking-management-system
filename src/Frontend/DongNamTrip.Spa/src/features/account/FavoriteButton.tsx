@@ -1,20 +1,21 @@
 import { useEffect, useState } from 'react';
 import { api, messageFor } from '../../api/client';
-import type { Collections } from '../../api/types';
+import type { Collections, ItemKind } from '../../api/types';
 import { useAuth } from '../../auth/AuthContext';
 
-export function FavoriteButton({ kind, id }: { kind: 'tour' | 'destination'; id: number }) {
+export function FavoriteButton({ kind, id }: { kind: ItemKind; id: number }) {
   const { user } = useAuth();
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
+  const userId = user?.id;
   useEffect(() => {
-    if (!user) return;
+    if (!userId) return;
     let active = true;
     api.get<Collections>('proxy/account/collections').then(items => { if (active) setSaved(items.favorites.some(item => item.kind === kind && item.itemId === id)); })
       .catch(caught => { if (active) setError(messageFor(caught)); });
     return () => { active = false; };
-  }, [kind, id, user?.id]);
+  }, [kind, id, userId]);
   if (!user) return null;
   async function toggle() {
     setBusy(true); setError('');

@@ -13,7 +13,8 @@ export function DestinationDetailPage() {
   const { user } = useAuth();
   const destinations = useLoad('destination-detail-' + id, () => api.get<Destination>('proxy/destinations/' + id));
   const destination = destinations.data;
-  useEffect(() => { if (user && id > 0 && destination) recordActivity('destination', id); }, [user?.id, id, destination?.id]);
+  const userId = user?.id, destinationId = destination?.id;
+  useEffect(() => { if (userId && id > 0 && destinationId) recordActivity('destination', id); }, [userId, id, destinationId]);
   if (destinations.loading) return <div className="container section"><Loading/></div>;
   if (destinations.error) return <div className="container section"><Failure message={destinations.error} retry={destinations.retry}/></div>;
   if (!destination) return <div className="container section"><h1>Địa điểm không còn hiển thị.</h1><Link to="/Destinations">Xem các điểm đến</Link></div>;

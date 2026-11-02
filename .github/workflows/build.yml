@@ -29,6 +29,8 @@ jobs:
         run: |
           npm ci
           npm audit --audit-level=high --omit=dev
+          npm run lint
+          npm test
           npm run build
 
   windows:
@@ -111,11 +113,32 @@ jobs:
               $connection.Dispose()
           }
 
+      # DongNamTrip_Full.sql keeps the 8 reference tours as Draft, but the API only lists Published rows
+      # and the tests need at least one tour. Publish them on the disposable CI database only.
+      - name: Publish reference tours for tests
+        shell: powershell
+        run: |
+          $ErrorActionPreference = 'Stop'
+          Add-Type -AssemblyName System.Data
+          $connection = [System.Data.SqlClient.SqlConnection]::new('Server=(localdb)\DongNamTripCI;Database=DongNamTrip;Integrated Security=True;Encrypt=False;Connect Timeout=30;')
+          try {
+              $connection.Open()
+              $command = $connection.CreateCommand()
+              $command.CommandText = "UPDATE dbo.TOUR SET TrangThai = 'Published' WHERE TrangThai = 'Draft'"
+              Write-Host "Published $($command.ExecuteNonQuery()) tours"
+          }
+          finally {
+              $connection.Dispose()
+          }
+
       - name: Run HTTP and SQL smoke tests
         run: python tests/api/smoke.py --start
 
       - name: Run SCR02/SCR03 authentication tests
         run: python tests/api/auth_screens.py --start
+
+      - name: Run SCR22-SCR25 account area tests
+        run: python tests/api/account_area.py
 
       - uses: actions/setup-node@v4
         with:

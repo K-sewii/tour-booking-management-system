@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { Link, useParams, useSearchParams } from 'react-router';
 import { api, messageFor } from '../../api/client';
+import { useMeta } from '../../api/meta';
 import { useLoad } from '../../api/useLoad';
 import type { Payment, PaymentChoice } from '../../api/types';
 import { useAuth } from '../../auth/AuthContext';
@@ -8,10 +9,14 @@ import { dateTime, Failure, Loading, price } from '../../components/Catalog';
 import { PageState } from '../../components/PageState';
 import { AccountLayout } from '../../layouts/AccountLayout';
 
-const methodLabel = (code: string | null) => code === 'bank_transfer' ? 'Ưu tiên chuyển khoản ngân hàng' : code === 'cash' ? 'Ưu tiên trao đổi về tiền mặt' : 'Chưa có lựa chọn ưu tiên';
+// Danh sách mã do Backend công bố (/api/meta); UI chỉ giữ nhãn hiển thị, mã lạ hiển thị nguyên mã.
+const methodNames: Record<string, string> = { bank_transfer: 'chuyển khoản ngân hàng', cash: 'trao đổi về tiền mặt' };
+const methodName = (code: string) => methodNames[code] ?? code;
+const methodLabel = (code: string | null) => code ? 'Ưu tiên ' + methodName(code) : 'Chưa có lựa chọn ưu tiên';
 
 export function PaymentsPage() {
   const { user } = useAuth();
+  const methods = useMeta().data?.paymentMethods ?? [];
   const { id } = useParams();
   const [params, setParams] = useSearchParams();
   const payments = useLoad('payments-' + user?.id, () => api.get<Payment[]>('proxy/account/payments'));
@@ -47,7 +52,7 @@ export function PaymentsPage() {
     <dialog ref={dialog} className="account-dialog" aria-labelledby="payment-dialog-title" aria-describedby="payment-dialog-description" onClose={() => openButton.current?.focus()}>
       <div className="account-dialog-head"><h2 id="payment-dialog-title">Phương thức thanh toán ưu tiên</h2><button className="account-dialog-close" type="button" aria-label="Đóng hộp thoại" onClick={close}>×</button></div>
       <form onSubmit={event => void save(event)} noValidate><div className="account-dialog-body"><label htmlFor="payment-method">Phương thức ưu tiên <span className="account-required">*</span></label>
-        <select ref={select} id="payment-method" value={method} onChange={event => setMethod(event.target.value)} required><option value="">Chọn phương thức</option><option value="bank_transfer">Chuyển khoản ngân hàng</option><option value="cash">Trao đổi về tiền mặt</option></select>
+        <select ref={select} id="payment-method" value={method} onChange={event => setMethod(event.target.value)} required><option value="">Chọn phương thức</option>{methods.map(code => <option key={code} value={code}>{methodName(code).replace(/^./, letter => letter.toUpperCase())}</option>)}</select>
         <p id="payment-dialog-description">Đây là lựa chọn để trao đổi khi có nghiệp vụ đặt tour. Hệ thống chưa nhận hoặc xử lý thanh toán.</p>{error && <p className="account-message account-message--error account-long-message" role="alert">{error}</p>}</div>
         <div className="account-actions"><button className="btn outline" type="button" onClick={close}>Hủy</button><button className="btn" type="submit" disabled={busy}>{busy ? 'Đang lưu…' : 'Lưu'}</button></div></form>
     </dialog>

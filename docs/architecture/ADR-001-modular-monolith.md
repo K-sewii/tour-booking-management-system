@@ -37,10 +37,10 @@ Ràng buộc: DB schema do nhóm cung cấp, README cấm tự tạo/đổi sche
 | --- | --- | --- | --- |
 | `Catalog` | PH1 Quản lý danh mục du lịch | UC03, UC04, UC14, UC15 | `DIADIEM`, `HOATDONG`, `SUAT` |
 | `Itinerary` | PH2 Lịch trình cá nhân | UC05–UC09 | `LICHTRINH`, `LICHTRINH_DIADIEM`, `LICHTRINH_SUAT`, `PHIENBANLICHTRINH`, `YEUCAUTOURRIENG` |
-| `Booking` | PH3 Tour và đơn đặt | UC02, UC10–UC13, UC16, UC20 | `TOUR`, `TOUR_DIADIEM`, `LICHKHOIHANH`, `DONDAT`, `GIAODICHTIEN`, `ACCOUNT_PAYMENT_CHOICE` |
+| `Booking` | PH3 Tour và đơn đặt | UC02, UC10–UC13, UC16, UC20 | `TOUR`, `TOUR_DIADIEM`, `LICHKHOIHANH`, `DONDAT`, `GIAODICHTIEN`, `TAIKHOAN_THANHTOAN` |
 | `Quotation` | PH4 Xác minh và báo giá | UC09–xác nhận, UC21–22 | `XACMINHDICHVU`, `BAOGIA`, `HANGMUCBAOGIA` |
 | `Narration` | PH5 Thuyết minh đa ngôn ngữ | thuyết minh, dịch, TTS | `NGONNGU`, `THUYETMINH`, `BANDICH`, `TEPAUDIO`, `QUYENNGHE` |
-| `Administration` | PH6 Quản trị hệ thống | UC01 + khu tài khoản SCR21–25 | `TAIKHOAN`, `VAITRO`, `TAIKHOAN_VAITRO`, `NHATKYTHAOTAC`, `ACCOUNT_FAVORITE/ACTIVITY/PREFERENCE/NOTICE`, phiên đăng nhập |
+| `Administration` | PH6 Quản trị hệ thống | UC01 + khu tài khoản SCR21–25 | `TAIKHOAN`, `VAITRO`, `TAIKHOAN_VAITRO`, `NHATKYTHAOTAC`, `TAIKHOAN_YEUTHICH/LICHSU/TUYCHON/THONGBAO`, phiên đăng nhập |
 
 Ghi chú gán bảng (cần nhóm xác nhận): `QUYENNGHE` (quyền nghe, gắn đơn + tài khoản) đặt ở `Narration` vì là quyền truy cập nội dung; `GIAODICHTIEN` ở `Booking` theo sơ đồ PH3 (UC20); `NHATKYTHAOTAC` ghi từ mọi module nhưng sở hữu bởi `Administration`.
 
