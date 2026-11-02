@@ -162,6 +162,22 @@ Mở http://127.0.0.1:5173. Vite proxy các yêu cầu cần thiết sang Web tr
 - Màn hình thanh toán đọc đơn/giao dịch thuộc tài khoản khi có dữ liệu và lưu lựa chọn ưu tiên. Chưa có cổng thanh toán, quy trình đặt tour thật hay liên kết ngân hàng; không lưu số thẻ hoặc CVV.
 - Phiên API hiện ở trong bộ nhớ. Đăng xuất thu hồi phiên; khởi động lại API làm người dùng phải đăng nhập lại. Một số mục WinForms còn là khung giao diện chờ nghiệp vụ.
 
+### Tài khoản kiểm thử có sẵn trong database
+
+Nếu database được tạo từ `db/init/DongNamTrip_Full.sql`, script đã tạo sẵn bảy tài khoản kiểm thử, **dùng chung mật khẩu ban đầu `DntTest@2026!`**. Không cần cấu hình thêm để đăng nhập. Chỉ dùng trên database phát triển.
+
+| Email | Vai trò |
+| --- | --- |
+| `admin@dongnamtrip.test` | Admin |
+| `operator@dongnamtrip.test` | Operator |
+| `editor@dongnamtrip.test` | Editor |
+| `finance@dongnamtrip.test` | Finance |
+| `publisher@dongnamtrip.test` | Publisher |
+| `customer1@dongnamtrip.test` | Customer |
+| `customer2@dongnamtrip.test` | Customer |
+
+WinForms Admin chỉ nhận tài khoản nhân viên (không gồm Customer). Nếu đã đổi mật khẩu trong database hoặc database không tạo từ script này, mật khẩu sẽ khác.
+
 ### Tạo tài khoản Development tùy chọn
 
 Chỉ sử dụng trong môi trường Development. Bootstrap chỉ tạo Admin mới nếu email chưa tồn tại; không thay đổi tài khoản có sẵn. Thay toàn bộ giá trị ví dụ và không chia sẻ mật khẩu:
