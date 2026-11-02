@@ -10,30 +10,16 @@ if ($env:GITHUB_ACTIONS -ne 'true') {
     throw 'CI-only script. Do not run it on a developer machine.'
 }
 
-$payload = $env:DONGNAMTRIP_CI_SQL_GZIP_BASE64
-if ([string]::IsNullOrWhiteSpace($payload)) {
-    throw 'Missing repository Actions secret DONGNAMTRIP_CI_SQL_GZIP_BASE64. Run Pack-CiSql.ps1 with the shared initialization SQL file, then add the copied value in Settings > Secrets and variables > Actions.'
+$sqlPath = Join-Path (Split-Path -Parent (Split-Path -Parent $PSScriptRoot)) 'db\init\DongNamTrip_Full.sql'
+if (-not (Test-Path -LiteralPath $sqlPath)) {
+    throw "Missing $sqlPath. Commit the team's DongNamTrip_Full.sql to db/init/."
+}
+$sqlText = [System.IO.File]::ReadAllText($sqlPath, [System.Text.Encoding]::UTF8)
+if ([string]::IsNullOrWhiteSpace($sqlText)) {
+    throw 'db/init/DongNamTrip_Full.sql is empty.'
 }
 
 Add-Type -AssemblyName System.Data
-Add-Type -AssemblyName System.IO.Compression
-
-$compressed = [Convert]::FromBase64String($payload.Trim())
-$inputStream = [System.IO.MemoryStream]::new($compressed)
-$gzip = [System.IO.Compression.GZipStream]::new(
-    $inputStream, [System.IO.Compression.CompressionMode]::Decompress)
-$reader = [System.IO.StreamReader]::new($gzip, [System.Text.Encoding]::UTF8, $true)
-try {
-    $sqlText = $reader.ReadToEnd()
-}
-finally {
-    $reader.Dispose()
-    $gzip.Dispose()
-    $inputStream.Dispose()
-}
-if ([string]::IsNullOrWhiteSpace($sqlText)) {
-    throw 'The decoded initialization SQL is empty.'
-}
 
 $localDbCommand = Get-Command SqlLocalDB.exe -ErrorAction SilentlyContinue
 $localDbExe = $null

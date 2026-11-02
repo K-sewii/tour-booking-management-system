@@ -6,7 +6,6 @@ SQLCMD=(/opt/mssql-tools18/bin/sqlcmd -C -S db -U sa -P "$MSSQL_SA_PASSWORD" -b)
 
 shopt -s nullglob
 files=(/init/*.sql)
-seeds=(/seed/*.sql)
 if [ ${#files[@]} -eq 0 ]; then
   echo "db-init: no *.sql in db/init; skipping. Add the team's schema scripts, then 'docker compose down -v && docker compose up'."
   exit 0
@@ -21,7 +20,7 @@ fi
 "${SQLCMD[@]}" -Q "CREATE DATABASE [DongNamTrip]"
 # Do not leave a half-initialised database behind: the next run would skip it.
 trap '"${SQLCMD[@]}" -Q "DROP DATABASE IF EXISTS [DongNamTrip]"' ERR
-for f in "${files[@]}" "${seeds[@]}"; do
+for f in "${files[@]}"; do
   echo "db-init: applying $f"
   "${SQLCMD[@]}" -d DongNamTrip -f 65001 -i "$f"
 done

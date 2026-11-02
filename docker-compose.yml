@@ -31,7 +31,6 @@ services:
     volumes:
       - ./db/init.sh:/init.sh:ro
       - ./db/init:/init:ro
-      - ./db/seed:/seed:ro
     entrypoint: ["/bin/bash", "/init.sh"]
     restart: "no"
 

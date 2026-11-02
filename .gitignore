@@ -13,6 +13,3 @@ node_modules/
 src/Frontend/DongNamTrip.Web/wwwroot/spa/
 __pycache__/
 *.pyc
-
-# Docker
-db/init/*.sql

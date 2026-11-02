@@ -49,7 +49,7 @@ def request(path, method='GET', data=None, token=None, expected=200, opener=None
 def catalog_ids():
     """(tour, place, second place) ids from the API, also exported for the browser tests."""
     tours, places = request(API + '/api/tours'), request(API + '/api/destinations')
-    assert tours and len(places) >= 2, 'Catalog is empty: apply db/seed first.'
+    assert tours and len(places) >= 2, 'Catalog is empty: load the team's db/init script first.'
     ids = tours[0]['id'], places[0]['id'], places[1]['id']
     os.environ.update(CATALOG_TOUR_ID=str(ids[0]), CATALOG_PLACE_ID=str(ids[1]), CATALOG_PLACE2_ID=str(ids[2]), CATALOG_PLACE2_NAME=places[1]['name'])
     return ids

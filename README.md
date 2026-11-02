@@ -76,9 +76,9 @@ The Web project is a backend-for-frontend: it serves the SPA, keeps the login in
 
 ### Database schema
 
-The schema is provided by the project team and is **not** in this repository. Ask a maintainer for the base script and the two account-area scripts, and apply them in order:
+The schema and sample data live in `db/init/` and are used as-is by Docker, CI and deployment. Scripts run in file-name order:
 
-1. base schema
+1. `DongNamTrip_Full.sql` – base schema (25 tables), roles, languages, test accounts, sample catalog
 2. `V001_account_area.sql` – favorites, activity, notices, preferences
 3. `V002_payment_choice.sql` – payment method choice
 
@@ -91,8 +91,6 @@ git clone https://github.com/K-sewii/tour-booking-management-system.git
 cd tour-booking-management-system
 
 cp .env.example .env            # set MSSQL_SA_PASSWORD
-cp /path/to/team/*.sql db/init/ # base schema, V001, V002 (git-ignored)
-# name them so they sort in order: 000_base.sql, 001_account_area.sql, 002_payment_choice.sql
 docker compose up --build
 ```
 
@@ -105,7 +103,7 @@ docker compose up --build
 How it works:
 
 - `db` is SQL Server 2022 with a persistent volume.
-- `db-init` creates the `DongNamTrip` database from `db/init/*.sql`, then loads the sample catalog in `db/seed/*.sql`, only if the database does not exist, then exits. Replace the seed with real data when ready; rows must have `TrangThai = 'Published'` (statuses: `Draft`, `Published`, `Inactive`). To start over: `docker compose down -v`.
+- `db-init` creates the `DongNamTrip` database from `db/init/*.sql` (schema and data supplied by the team), only if the database does not exist, then exits. Catalog rows must have `TrangThai = 'Published'` (statuses: `Draft`, `Published`, `Inactive`). To start over: `docker compose down -v`.
 - `api` and `web` are built from `src/Backend/DongNamTrip.Api/Dockerfile` and `src/Frontend/DongNamTrip.Web/Dockerfile` (multi-stage, non-root; the Web image also builds the SPA).
 - Without any `.sql` file in `db/init/`, the stack starts but anything needing SQL fails.
 - The WinForms Admin runs on the Windows host and points at `http://localhost:5080/` (`DONGNAMTRIP_API_URL` to override).
@@ -173,7 +171,7 @@ Browser tests need Playwright and Chromium. The WinForms GUI is built in CI but 
 | `docker.yml` | push to `main`, `v*` tags, PRs touching `src/`, Docker or DB files | Validates compose; builds API and Web images; Trivy scan (fails on fixable CRITICAL); runs each image and checks HTTP 200; pushes to GHCR on `main` and tags |
 | Dependabot | weekly | NuGet, npm, GitHub Actions, Docker base images |
 
-Published images: `ghcr.io/k-sewii/tour-booking-management-system-api` and `...-web`, tagged by branch, semver tag and short SHA. There is no automatic deployment target yet; images are published for a future environment. The `build.yml` database tests require repository secrets `DONGNAMTRIP_CI_SQL_GZIP_BASE64` and `DONGNAMTRIP_CI_ACCOUNT_SQL_GZIP_BASE64`.
+Published images: `ghcr.io/k-sewii/tour-booking-management-system-api` and `...-web`, tagged by branch, semver tag and short SHA. There is no automatic deployment target yet; images are published for a future environment. The `build.yml` database tests build a LocalDB from `db/init/*.sql`; no repository secrets are needed.
 
 ## Project structure
 
@@ -197,7 +195,7 @@ Published images: `ghcr.io/k-sewii/tour-booking-management-system-api` and `...-
 │   ├── e2e/                    Playwright browser tests
 │   ├── spa/                    SPA, fault-injection and Vite HMR tests
 │   └── ci/                     CI helper scripts
-├── db/                         Docker DB init (init.sh; init/*.sql git-ignored; seed/ = sample catalog)
+├── db/                         Docker DB init (init.sh; init/*.sql = schema + data)
 ├── docs/                       Design diagrams, ADRs (docs/architecture)
 ├── docker-compose.yml
 └── .github/                    Workflows, Dependabot

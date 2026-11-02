@@ -78,99 +78,32 @@ jobs:
 
       - name: Prepare isolated SQL Server LocalDB
         shell: powershell
-        env:
-          DONGNAMTRIP_CI_SQL_GZIP_BASE64: ${{ secrets.DONGNAMTRIP_CI_SQL_GZIP_BASE64 }}
         run: .\tests\ci\prepare_ci_database.ps1
 
-      - name: Apply account area SQL
-        shell: powershell
-        env:
-          ACCOUNT_SQL_GZIP_BASE64: ${{ secrets.DONGNAMTRIP_CI_ACCOUNT_SQL_GZIP_BASE64 }}
-        run: |
-          $ErrorActionPreference = 'Stop'
-
-          if ([string]::IsNullOrWhiteSpace($env:ACCOUNT_SQL_GZIP_BASE64)) {
-              throw 'Missing CI account SQL secret.'
-          }
-
-          Add-Type -AssemblyName System.Data
-          Add-Type -AssemblyName System.IO.Compression
-
-          $bytes = [Convert]::FromBase64String(
-              $env:ACCOUNT_SQL_GZIP_BASE64.Trim()
-          )
-
-          $stream = [System.IO.MemoryStream]::new($bytes)
-
-          $gzip = [System.IO.Compression.GZipStream]::new(
-              $stream,
-              [System.IO.Compression.CompressionMode]::Decompress
-          )
-
-          $reader = [System.IO.StreamReader]::new(
-              $gzip,
-              [System.Text.Encoding]::UTF8,
-              $true
-          )
-
-          try {
-              $sql = $reader.ReadToEnd()
-          }
-          finally {
-              $reader.Dispose()
-              $gzip.Dispose()
-              $stream.Dispose()
-          }
-
-          $connectionString = 'Server=(localdb)\DongNamTripCI;Database=DongNamTrip;Integrated Security=True;Encrypt=False;Connect Timeout=30;'
-
-          $connection = [System.Data.SqlClient.SqlConnection]::new(
-              $connectionString
-          )
-
-          try {
-              $connection.Open()
-
-              $batches = [regex]::Split(
-                  $sql,
-                  '(?im)^[ \t]*GO[ \t]*(?:--[^\r\n]*)?\r?$'
-              )
-
-              foreach ($batch in $batches) {
-                  if ([string]::IsNullOrWhiteSpace($batch)) {
-                      continue
-                  }
-
-                  $command = $connection.CreateCommand()
-
-                  try {
-                      $command.CommandTimeout = 180
-                      $command.CommandText = $batch
-                      [void]$command.ExecuteNonQuery()
-                  }
-                  finally {
-                      $command.Dispose()
-                  }
-              }
-
-              Write-Host 'Account area SQL applied to CI LocalDB.'
-          }
-          finally {
-              $connection.Dispose()
-          }
-
-      - name: Apply catalog seed
+      - name: Apply account area SQL (db/init/V*.sql)
         shell: powershell
         run: |
           $ErrorActionPreference = 'Stop'
           Add-Type -AssemblyName System.Data
+          $files = @(Get-ChildItem db/init -Filter 'V*.sql' | Sort-Object Name)
+          if ($files.Count -eq 0) { throw 'Missing db/init/V001_account_area.sql and V002_payment_choice.sql.' }
           $connection = [System.Data.SqlClient.SqlConnection]::new('Server=(localdb)\DongNamTripCI;Database=DongNamTrip;Integrated Security=True;Encrypt=False;Connect Timeout=30;')
           try {
               $connection.Open()
-              foreach ($file in Get-ChildItem db/seed -Filter *.sql | Sort-Object Name) {
-                  $command = $connection.CreateCommand()
-                  $command.CommandText = Get-Content -Raw -Encoding UTF8 $file.FullName
-                  [void]$command.ExecuteNonQuery()
+              foreach ($file in $files) {
+                  $sql = [System.IO.File]::ReadAllText($file.FullName, [System.Text.Encoding]::UTF8)
+                  foreach ($batch in [regex]::Split($sql, '(?im)^[ \t]*GO[ \t]*(?:--[^\r\n]*)?\r?$')) {
+                      if ([string]::IsNullOrWhiteSpace($batch)) { continue }
+                      $command = $connection.CreateCommand()
+                      try {
+                          $command.CommandTimeout = 180
+                          $command.CommandText = $batch
+                          [void]$command.ExecuteNonQuery()
+                      }
+                      finally {
+                          $command.Dispose()
+                      }
+                  }
                   Write-Host "Applied $($file.Name)"
               }
           }
