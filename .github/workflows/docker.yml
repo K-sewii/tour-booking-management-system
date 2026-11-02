@@ -95,7 +95,7 @@ jobs:
           echo "Expected HTTP 200 from $url, last status: $code"
           exit 1
 
-      - uses: docker/login-action@v3
+      - uses: docker/login-action@v4
         if: github.event_name == 'push'
         with:
           registry: ${{ env.REGISTRY }}
