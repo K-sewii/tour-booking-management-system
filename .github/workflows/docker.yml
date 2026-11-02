@@ -1,0 +1,114 @@
+name: Docker images
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  pull_request:
+    paths:
+      - 'src/**'
+      - 'docker-compose.yml'
+      - 'db/**'
+      - '.dockerignore'
+      - '.github/workflows/docker.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: docker-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_PREFIX: ghcr.io/${{ github.repository }}
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    permissions:
+      contents: read
+      packages: write   # push to GHCR on main/tags only
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: api
+            dockerfile: src/Backend/DongNamTrip.Api/Dockerfile
+          - name: web
+            dockerfile: src/Frontend/DongNamTrip.Web/Dockerfile
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Validate compose file
+        run: MSSQL_SA_PASSWORD=ci-placeholder docker compose config --quiet
+
+      - id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.IMAGE_PREFIX }}-${{ matrix.name }}
+          tags: |
+            type=ref,event=branch
+            type=semver,pattern={{version}}
+            type=sha,format=short
+
+      - name: Build image (loaded locally for scan and smoke test)
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ${{ matrix.dockerfile }}
+          load: true
+          tags: dongnamtrip-${{ matrix.name }}:ci
+          cache-from: type=gha,scope=${{ matrix.name }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.name }}
+
+      - name: Scan image for vulnerabilities (fails on fixable CRITICAL)
+        run: |
+          docker run --rm -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy:0.57.1             image --severity CRITICAL --ignore-unfixed --exit-code 1 dongnamtrip-${{ matrix.name }}:ci
+
+      - name: Smoke test (API needs no database for /health)
+        run: |
+          if [ "${{ matrix.name }}" = "api" ]; then
+            docker run -d --name app -p 8080:8080 \
+              -e ASPNETCORE_ENVIRONMENT=Development -e AllowedHosts='*' \
+              -e 'ConnectionStrings__DongNamTrip=Server=unused;Database=x;User Id=sa;Password=x;TrustServerCertificate=True' \
+              -e BootstrapAdmin__Enabled=false -e DevelopmentTestAccounts__Enabled=false \
+              dongnamtrip-api:ci
+            url=http://localhost:8080/health
+            accept='*/*'
+          else
+            docker run -d --name app -p 8080:8080 \
+              -e ASPNETCORE_ENVIRONMENT=Development -e ApiBaseUrl=http://unused:8080/ \
+              dongnamtrip-web:ci
+            url=http://localhost:8080/
+            accept='text/html'
+          fi
+          for i in $(seq 1 30); do
+            code=$(curl -s -o /dev/null -w '%{http_code}' -H "Accept: $accept" "$url" || true)
+            [ "$code" = "200" ] && exit 0
+            sleep 2
+          done
+          docker logs app
+          echo "Expected HTTP 200 from $url, last status: $code"
+          exit 1
+
+      - uses: docker/login-action@v3
+        if: github.event_name == 'push'
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Publish image
+        if: github.event_name == 'push'
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ${{ matrix.dockerfile }}
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha,scope=${{ matrix.name }}

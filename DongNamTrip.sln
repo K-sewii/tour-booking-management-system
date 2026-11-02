@@ -5,15 +5,21 @@ VisualStudioVersion = 17.0.31903.59
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{827E0CD3-B72D-47B6-A68D-7590B98EB39B}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DongNamTrip.Contracts", "src\DongNamTrip.Contracts\DongNamTrip.Contracts.csproj", "{ABD33E1E-F5FE-4E4E-864D-C34F067F8979}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DongNamTrip.Contracts", "src\Shared\DongNamTrip.Contracts\DongNamTrip.Contracts.csproj", "{ABD33E1E-F5FE-4E4E-864D-C34F067F8979}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DongNamTrip.Client", "src\DongNamTrip.Client\DongNamTrip.Client.csproj", "{F456E4E2-B13F-47EE-A354-5D56CC67A55E}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DongNamTrip.Client", "src\Frontend\DongNamTrip.Client\DongNamTrip.Client.csproj", "{F456E4E2-B13F-47EE-A354-5D56CC67A55E}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DongNamTrip.Api", "src\DongNamTrip.Api\DongNamTrip.Api.csproj", "{4FD065AA-F8C9-44CF-8408-906BEDC0B9BA}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DongNamTrip.Api", "src\Backend\DongNamTrip.Api\DongNamTrip.Api.csproj", "{4FD065AA-F8C9-44CF-8408-906BEDC0B9BA}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DongNamTrip.Web", "src\DongNamTrip.Web\DongNamTrip.Web.csproj", "{BD06A0FA-3EE0-486C-A5C5-A21414AE4E4B}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DongNamTrip.Web", "src\Frontend\DongNamTrip.Web\DongNamTrip.Web.csproj", "{BD06A0FA-3EE0-486C-A5C5-A21414AE4E4B}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DongNamTrip.Admin", "src\DongNamTrip.Admin\DongNamTrip.Admin.csproj", "{7E2179C3-CE9B-4A25-9563-6A28A6BCCF80}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DongNamTrip.Admin", "src\Frontend\DongNamTrip.Admin\DongNamTrip.Admin.csproj", "{7E2179C3-CE9B-4A25-9563-6A28A6BCCF80}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Backend", "Backend", "{FE360695-3F2B-1049-3887-35FBB5135923}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DongNamTrip.Modules", "src\Backend\DongNamTrip.Modules\DongNamTrip.Modules.csproj", "{17D9A715-C75F-4ABF-B31C-0D0E65C7095B}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Shared", "Shared", "{C8E42992-5E42-0C2B-DBFE-AA848D06431C}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -85,6 +91,18 @@ Global
 		{7E2179C3-CE9B-4A25-9563-6A28A6BCCF80}.Release|x64.Build.0 = Release|Any CPU
 		{7E2179C3-CE9B-4A25-9563-6A28A6BCCF80}.Release|x86.ActiveCfg = Release|Any CPU
 		{7E2179C3-CE9B-4A25-9563-6A28A6BCCF80}.Release|x86.Build.0 = Release|Any CPU
+		{17D9A715-C75F-4ABF-B31C-0D0E65C7095B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{17D9A715-C75F-4ABF-B31C-0D0E65C7095B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{17D9A715-C75F-4ABF-B31C-0D0E65C7095B}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{17D9A715-C75F-4ABF-B31C-0D0E65C7095B}.Debug|x64.Build.0 = Debug|Any CPU
+		{17D9A715-C75F-4ABF-B31C-0D0E65C7095B}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{17D9A715-C75F-4ABF-B31C-0D0E65C7095B}.Debug|x86.Build.0 = Debug|Any CPU
+		{17D9A715-C75F-4ABF-B31C-0D0E65C7095B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{17D9A715-C75F-4ABF-B31C-0D0E65C7095B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{17D9A715-C75F-4ABF-B31C-0D0E65C7095B}.Release|x64.ActiveCfg = Release|Any CPU
+		{17D9A715-C75F-4ABF-B31C-0D0E65C7095B}.Release|x64.Build.0 = Release|Any CPU
+		{17D9A715-C75F-4ABF-B31C-0D0E65C7095B}.Release|x86.ActiveCfg = Release|Any CPU
+		{17D9A715-C75F-4ABF-B31C-0D0E65C7095B}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -95,5 +113,8 @@ Global
 		{4FD065AA-F8C9-44CF-8408-906BEDC0B9BA} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
 		{BD06A0FA-3EE0-486C-A5C5-A21414AE4E4B} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
 		{7E2179C3-CE9B-4A25-9563-6A28A6BCCF80} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
+		{FE360695-3F2B-1049-3887-35FBB5135923} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
+		{17D9A715-C75F-4ABF-B31C-0D0E65C7095B} = {FE360695-3F2B-1049-3887-35FBB5135923}
+		{C8E42992-5E42-0C2B-DBFE-AA848D06431C} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
 	EndGlobalSection
 EndGlobal
