@@ -47,7 +47,7 @@ jobs:
         run: MSSQL_SA_PASSWORD=ci-placeholder docker compose config --quiet
 
       - id: meta
-        uses: docker/metadata-action@v5
+        uses: docker/metadata-action@v6
         with:
           images: ${{ env.IMAGE_PREFIX }}-${{ matrix.name }}
           tags: |
