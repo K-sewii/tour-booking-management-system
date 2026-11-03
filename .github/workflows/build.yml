@@ -138,6 +138,9 @@ jobs:
       - name: Run SCR02/SCR03 authentication tests
         run: python tests/api/auth_screens.py --start
 
+      - name: Run SCR06/SCR07/SCR11/SCR14/SCR15/SCR20 content tests
+        run: python tests/api/content_screens.py --start
+
       - name: Run SCR22-SCR25 account area tests
         run: python tests/api/account_area.py
 

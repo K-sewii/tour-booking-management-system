@@ -5,6 +5,7 @@ import { DestinationDetailPage } from '../features/destinations/DestinationDetai
 import { DestinationsPage } from '../features/destinations/DestinationsPage';
 import { FavoritesPage } from '../features/account/FavoritesPage';
 import { HomePage } from '../features/home/HomePage';
+import { ListenPage } from '../features/listen/ListenPage';
 import { LoginPage } from '../features/auth/LoginPage';
 import { NoticesPage } from '../features/account/NoticesPage';
 import { PaymentsPage } from '../features/account/PaymentsPage';
@@ -45,6 +46,7 @@ function Content() {
     <Route path="/Account/Login" element={<AuthLayout mode="login"><LoginPage/></AuthLayout>}/>
     <Route path="/Account/Register" element={<AuthLayout mode="register"><RegisterPage/></AuthLayout>}/>
     <Route path="/Trips" element={<RequireAuth><TripsPage/></RequireAuth>}/>
+    <Route path="/Listen" element={<RequireAuth><ListenPage/></RequireAuth>}/>
     <Route path="/Account/Profile" element={<RequireAuth><ProfilePage/></RequireAuth>}/>
     <Route path="/Account/Security" element={<RequireAuth><SecurityPage/></RequireAuth>}/>
     <Route path="/Account/Payments" element={<RequireAuth><PaymentsPage/></RequireAuth>}/>

@@ -27,7 +27,7 @@ export async function request<T>(path: string, method = 'GET', body?: unknown): 
   try { data = raw ? JSON.parse(raw) : undefined; } catch { data = undefined; }
   if (!response.ok) {
     if (response.status === 401 && path !== 'login') window.dispatchEvent(new Event('spa:unauthorized'));
-    const payload = (data && typeof data === 'object' ? data : {}) as { message?: string; title?: string; errors?: Record<string, string[]> };
+    const payload = (data && typeof data === 'object' ? data : {}) as { message?: string; detail?: string; title?: string; errors?: Record<string, string[]> };
     const fallback = response.status === 401
       ? 'Phiên đã hết hạn. Vui lòng đăng nhập lại.'
       : response.status === 403
@@ -35,7 +35,7 @@ export async function request<T>(path: string, method = 'GET', body?: unknown): 
         : response.status === 404
           ? 'Không tìm thấy dữ liệu được yêu cầu.'
           : 'Chưa xử lý được yêu cầu. Vui lòng thử lại.';
-    throw new ApiError(response.status, payload.message || fallback, payload.errors || {});
+    throw new ApiError(response.status, payload.message || payload.detail || fallback, payload.errors || {});
   }
   return data as T;
 }
