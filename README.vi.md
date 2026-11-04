@@ -4,7 +4,7 @@
 
 DongNamTrip là dự án học tập về khám phá tour và quản lý hành trình khu vực Đông Nam Bộ. Khách hàng sử dụng Web React SPA; nhân viên sử dụng ứng dụng quản trị Windows Forms. Hai ứng dụng gọi chung API ASP.NET Core, API kết nối SQL Server.
 
-> Dự án đang trong giai đoạn phát triển. Danh mục tour, điểm đến và lịch trình vẫn dùng dữ liệu minh họa trong bộ nhớ API; chưa có chức năng đặt tour hay cổng thanh toán thật.
+> Dự án đang trong giai đoạn phát triển. Danh mục tour, điểm đến và lịch trình đã đọc/ghi SQL Server qua API; chưa có luồng đặt tour, giữ chỗ hay cổng thanh toán thật.
 
 ## Kiến trúc
 
@@ -58,14 +58,14 @@ Set-Location .\tour-booking-management-system
 
 Nếu thay đổi đang nằm trên nhánh riêng và chưa được merge vào `main`, liên hệ người phụ trách để biết tên nhánh rồi checkout nhánh đó sau khi đã được push.
 
-Database sử dụng schema do nhóm cung cấp. Repository theo bản README được cung cấp chưa chứa script SQL khởi tạo đầy đủ; xin file SQL chính thức từ nhóm. Chỉ dùng script khởi tạo trên database mới theo hướng dẫn của người phụ trách; không chạy lại script tổng hợp trên database đã có dữ liệu.
+Database sử dụng schema do nhóm cung cấp trong `db/init/`: `DongNamTrip_Full.sql`, tiếp theo là `V001_account_area.sql` và `V002_payment_choice.sql`. Chỉ dùng script khởi tạo trên database mới theo hướng dẫn của người phụ trách; không chạy lại script tổng hợp trên database đã có dữ liệu và không sinh schema từ entity EF.
 
 Các chức năng tài khoản bổ sung cần các script, chia sẻ riêng theo thỏa thuận của nhóm:
 
 1. `V001_account_area.sql` — các bảng cho yêu thích, lịch sử, thông báo và tùy chọn.
 2. `V002_payment_choice.sql` — lựa chọn phương thức thanh toán.
 
-Chạy theo thứ tự V001 rồi V002 trên môi trường phát triển đã có schema nền, sau khi kiểm tra nội dung và sao lưu khi cần. Trong môi trường đã được báo cáo, hai file nằm tại `artifacts/sql/` và bị Git bỏ qua, vì vậy thành viên clone repository có thể không có chúng. Không tự tạo schema từ entity EF, không chạy lại script khởi tạo hay dùng các thao tác xóa/tạo lại database hiện hữu.
+Các file chạy theo thứ tự tên. Không tự tạo schema từ entity EF, không chạy lại script khởi tạo hay dùng thao tác xóa/tạo lại database hiện hữu.
 
 ## Cấu hình SQL Server
 
@@ -203,6 +203,12 @@ dotnet user-secrets list --project .\src\Backend\DongNamTrip.Api | Select-String
 
 Không gửi mật khẩu qua Git hoặc công khai ảnh chụp terminal có chứa secrets.
 
+## Tài liệu API (chỉ Development)
+
+Khi API chạy với `ASPNETCORE_ENVIRONMENT=Development`, mở Swagger tại http://localhost:5080/swagger hoặc OpenAPI JSON tại http://localhost:5080/openapi/v1.json. Hai endpoint này không được map ngoài Development.
+
+Gọi `POST /api/auth/login` (hoặc đăng ký tài khoản Development cô lập), sao chép token trả về, chọn **Authorize** và dán token. Swagger gửi `Authorization: Bearer <token>` đúng tới `localhost:5080`; UI không lưu token. Token là phiên opaque trong bộ nhớ, không phải JWT, và mất khi API khởi động lại. Login/register/catalog công khai không đòi token; endpoint nhân viên nêu rõ role yêu cầu trong tài liệu.
+
 ## Kiểm thử
 
 Chạy tại thư mục solution sau khi đã build và chuẩn bị SQL Server Development. Các test có thể tạo tài khoản tạm và dọn dữ liệu tương ứng; không chạy trên database sản xuất. Đọc hướng dẫn từng script và đảm bảo các cổng yêu cầu không bị tiến trình khác chiếm.
@@ -215,7 +221,7 @@ python .\tests\spa\spa_runner.py
 python .\tests\spa\vite_hmr_runner.py
 ```
 
-Các test trình duyệt cần môi trường và phụ thuộc phù hợp với cấu hình của repository. Kết quả gần nhất được báo cáo: build solution, SPA, smoke, SCR02/SCR03, browser, SPA và Vite HMR đều đạt. WinForms đã build nhưng chưa được kiểm tra GUI trực tiếp trong lượt đó.
+Các test trình duyệt cần môi trường và phụ thuộc phù hợp với cấu hình của repository. Không suy diễn trạng thái hiện tại từ các lần chạy trước; chạy từng runner phù hợp trên database Development cô lập. WinForms chưa có kiểm thử GUI tự động.
 
 ## Xử lý lỗi thường gặp
 
@@ -239,11 +245,11 @@ Copy-Item .env.example .env        # đặt MSSQL_SA_PASSWORD
 docker compose up --build
 ```
 
-- Web: http://localhost:5081, API: http://localhost:5080, SQL Server: `127.0.0.1:1433`.
-- Service `db-init` chỉ tạo database `DongNamTrip` khi chưa tồn tại, không bao giờ chạy lại trên database đã có dữ liệu. Muốn khởi tạo lại: `docker compose down -v`.
+- Web: http://localhost:5081, API: http://localhost:5080 (gồm `/swagger` và `/openapi/v1.json`), SQL Server: `127.0.0.1:14330`.
+- Service `db-init` chỉ tạo database `DongNamTrip` khi chưa tồn tại, không bao giờ chạy lại trên database đã có dữ liệu. Giữ volume cục bộ và trao đổi với nhóm trước mọi việc khởi tạo lại.
 - Nếu `db/init` không có file `.sql`, stack vẫn chạy nhưng chức năng cần SQL sẽ lỗi.
 - WinForms Admin chỉ chạy trên Windows, trỏ tới `http://localhost:5080/`.
 - Image chỉ dành cho môi trường Development.
-- Cấu hình Docker chưa được chạy thử trên máy phát triển; workflow `.github/workflows/docker.yml` build image, quét lỗ hổng và smoke test mỗi lần push.
+- Docker local được người dùng xác nhận đang chạy. Điều đó không thay cho kết quả toàn bộ test Docker hoặc triển khai production; workflow `.github/workflows/docker.yml` build image, quét lỗ hổng và smoke test mỗi lần push.
 
 Bản tiếng Anh đầy đủ (kiến trúc, CI/CD, cấu hình): [README.md](README.md).

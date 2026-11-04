@@ -1,9 +1,9 @@
 # ADR-001: Chuyển DongNamTrip.Api thành Modular Monolith gồm 6 module nghiệp vụ
 
 ## Status
-Accepted — bước 1–5 của kế hoạch đã áp dụng cho endpoint; còn nợ: DbContext chung, Quotation/Narration chưa có code
+Accepted — quyết định kiến trúc giữ nguyên. Tiến độ hiện tại ở mục riêng bên dưới: vẫn còn DbContext chung; Quotation và Narration chưa có endpoint/nghiệp vụ.
 
-## Context
+## Context (lịch sử khi ra quyết định)
 
 Sơ đồ kiến trúc mục tiêu:
 
@@ -20,7 +20,7 @@ Ba tầng trên cùng (SPA → BFF → API, WinForms → API) **đã đúng vớ
 
 - `Program.cs` (~290 dòng) chứa toàn bộ endpoint của auth, tài khoản, danh mục, lịch trình; truy cập `DbContext` trực tiếp từ endpoint.
 - Một `DongNamTripDbContext` duy nhất, một `Data/Entities` chung cho 25 bảng + 5 bảng khu tài khoản.
-- Danh mục tour/điểm đến và lịch trình vẫn nằm trong `DemoStore` (bộ nhớ), chưa dùng SQL.
+- Danh mục tour/điểm đến và lịch trình khi đó vẫn nằm trong `DemoStore` (bộ nhớ), chưa dùng SQL.
 - Không có ranh giới module nên module này dễ chạm thẳng vào bảng của module khác.
 
 Nguồn tham khảo: [kgrzybek/modular-monolith-with-ddd](https://github.com/kgrzybek/modular-monolith-with-ddd) (mỗi module độc lập, giao tiếp qua hợp đồng công khai/sự kiện, dữ liệu riêng theo module) và sơ đồ "schema từng mô-đun".
@@ -69,7 +69,7 @@ src/
     └── DongNamTrip.Contracts/  DTO dùng chung
 ```
 
-Các lớp trong một module dùng chung namespace `DongNamTrip.Modules.<Module>`; ranh giới lớp được kiểm bằng `tests/architecture/rules.py`, không bằng project riêng. Hiện chỉ Catalog, Itinerary có `BusinessLogic` thật; Booking và Administration còn để logic/truy cập dữ liệu ngay trong `Presentation` (nợ: tách dần); Quotation, Narration mới có `<Module>Module.cs`.
+Các lớp trong một module dùng chung namespace `DongNamTrip.Modules.<Module>`; ranh giới lớp được kiểm bằng `tests/architecture/rules.py`, không bằng project riêng. Đây là quyết định ranh giới code; tiến độ triển khai thực tế ở mục “Tiến độ hiện tại”, không suy diễn từ mô tả lịch sử này.
 
 ### 3. Quy tắc phụ thuộc (kiểm bằng architecture test ở bước sau)
 
@@ -139,13 +139,26 @@ Chọn A (một project `DongNamTrip.Modules`) vì ít thư mục nhất mà v�
 - Hiện mọi module còn dùng chung một `DongNamTripDbContext` (thư mục `Persistence`), nên quy tắc 4 chưa được thực thi; tách DbContext theo module là việc kế tiếp, cần chạy được test với SQL Server.
 - `Administration` đang gộp Identity + khu Account; nếu phình to nên tách `Identity` và `Account` (ghi nhận là nợ kiến trúc, chưa làm).
 
-## Migration plan (mỗi bước build + test xanh, URL không đổi)
+## Tiến độ hiện tại (đối chiếu source cục bộ)
+
+| Module | Đã có | Chưa có / giới hạn |
+| --- | --- | --- |
+| `Catalog` | Repository SQL cho `DIADIEM`, `TOUR`, `TOUR_DIADIEM`; danh sách/tìm kiếm/chi tiết/estimate và ghi điểm đến cho Admin/Editor | Chưa tách DbContext/schema; các bảng PH1 khác chưa có endpoint riêng |
+| `Itinerary` | Repository SQL cho `LICHTRINH*`, preview công khai và danh sách/tạo lịch trình của tài khoản; đọc Catalog qua `ICatalogApi` | Chưa có các use case private-tour request/suất đầy đủ |
+| `Booking` | Repository SQL đọc `DONDAT`/`GIAODICHTIEN` của chính tài khoản, và lưu lựa chọn `bank_transfer`/`cash` | Không tạo đơn, giữ chỗ, charge, refund hay cổng thanh toán; lựa chọn chỉ là preference |
+| `Administration` | Xác thực SQL, tài khoản/khu vực tài khoản qua repository, role policy; `SqlSessionStore` giữ token Bearer trong bộ nhớ | `SqlAuthentication` vẫn truy cập DbContext trực tiếp và chưa tách repository |
+| `Quotation` | Class module được host đăng ký | Không endpoint/service/repository |
+| `Narration` | Class module được host đăng ký | Không endpoint/service/repository |
+
+Catalog và Itinerary **không còn dùng `DemoStore`**. Mọi module vẫn dùng chung `DongNamTripDbContext`, nên quyết định đích “DbContext riêng” chưa hoàn thành. OpenAPI tích hợp hiện chỉ được map trong Development; Swagger UI đọc cùng tài liệu tích hợp, không phải một generator thứ hai.
+
+## Migration plan (lịch sử và việc còn lại; mỗi bước build + test xanh, URL không đổi)
 
 1. **(Đã làm)** Khung: `Api/Modules/IModule.cs` và 6 class module.
 2. **(Đã làm)** Host: `Program.cs` gọi `IModule.Register/MapEndpoints` (module rỗng, không đổi hành vi).
 3. **(Đã làm một phần: endpoint + auth đã chuyển; chưa có DbContext riêng)** **Administration** trước: chuyển `SqlAuthentication.cs`, `/api/auth/*`, `/api/account/*` (SCR21–25 đang được test nhiều nhất → lưới an toàn tốt). Tách `AccountArea.cs` khỏi `DongNamTripDbContext` partial.
-4. **(Đã làm một phần: `DemoStore` tách thành `CatalogStore` + `ItineraryStore`, Administration kiểm tra qua `ICatalogApi`; chưa nối SQL)** **Catalog**: thay `DemoStore` phần Destinations/Tours bằng SQL qua `ICatalogApi`; `Administration` (yêu thích) kiểm tra tồn tại qua cổng này thay vì `DemoStore`.
-5. **Itinerary**, rồi **Booking**, **Quotation**, **Narration** theo thứ tự phụ thuộc.
+4. **(Đã thay)** **Catalog**: `DemoStore` đã được thay bằng repository SQL cho Destinations/Tours; `Administration` kiểm tra tồn tại qua `ICatalogApi`.
+5. **(Đã thay một phần)** **Itinerary** dùng SQL; **Booking** mới đọc lịch sử đơn/giao dịch và lưu preference. Hoàn thiện use case Booking, rồi Quotation và Narration theo thứ tự phụ thuộc.
 6. Thêm architecture test (module không tham chiếu module khác; `Domain` không tham chiếu EF/ASP.NET).
 7. (Tùy chọn, cần DBA) tách schema theo module.
 8. Xóa `DongNamTripDbContext` chung và `DemoStore` khi module cuối chuyển xong.
@@ -153,4 +166,4 @@ Chọn A (một project `DongNamTrip.Modules`) vì ít thư mục nhất mà v�
 ## Open questions
 - Gán `QUYENNGHE` và `GIAODICHTIEN` vào module như bảng trên có khớp đề cương không?
 - Có chấp nhận hoãn việc tách schema DB không?
-- Test hiện có chạy với DB thật qua CI secrets; cần xác nhận không đổi cách seed trong bước 3.
+- CI tạo LocalDB cô lập từ `db/init/*.sql` và fixture catalog CI; không lấy schema từ secret. Cần tiếp tục xác nhận seed không đổi khi tách DbContext.

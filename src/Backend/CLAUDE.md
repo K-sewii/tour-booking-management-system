@@ -12,10 +12,12 @@ Modular monolith: một API host mỏng, sáu module trong một project, một 
 HTTP → Presentation (*Endpoints) → BusinessLogic (*Service) → DataAccess (*Repository) → DbContext → SQL Server
 ```
 
-- `DongNamTrip.Api/Program.cs`: chỉ cấu hình host (DbContext, rate limit, ProblemDetails, health), đăng ký và map các `IModule`. Không chứa nghiệp vụ.
+- `DongNamTrip.Api/Program.cs`: chỉ cấu hình host (DbContext, rate limit, ProblemDetails, health, OpenAPI), đăng ký và map các `IModule`. Cấu hình/transformer OpenAPI nằm riêng trong `DongNamTrip.Api/OpenApiConfiguration.cs`; không chứa nghiệp vụ.
 - `DongNamTrip.Modules/<Module>/`: Catalog, Itinerary, Booking, Quotation, Narration, Administration. Mỗi module có `<Name>Module.cs` implement `IModule` (`Register` đăng ký DI, `MapEndpoints` map route).
 - `DongNamTrip.Modules/Persistence/`: `DongNamTripDbContext` dùng chung và entity của schema gốc (nợ kỹ thuật đã biết, xem mục 9).
 - `DongNamTrip.Contracts` (thư mục `src/Shared`): DTO và hằng số hợp đồng dùng chung với SPA, Web, Admin. Giữ ổn định URL `/api/...` và hình dạng DTO.
+
+**Tiến độ module hiện tại:** Catalog và Itinerary có repository SQL; Booking có repository/service cho lịch sử `DONDAT`/`GIAODICHTIEN` theo tài khoản và preference phương thức thanh toán, nhưng chưa có tạo đơn/thu tiền/hoàn tiền. Administration có endpoint/service/repository (riêng `SqlAuthentication` còn là nợ truy cập DbContext trực tiếp). Quotation và Narration hiện chỉ có lớp module rỗng, không được tài liệu hóa như endpoint.
 
 ```
 <Module>/
@@ -101,6 +103,8 @@ public static void Map(IEndpointRouteBuilder endpoints)
 ## 7. Xác thực và phân quyền
 
 - Phiên đăng nhập là Bearer token do `SqlSessionStore` (bộ nhớ) cấp; handler `SqlAuthenticationHandler`. Vai trò nằm trong `AppRoles`; endpoint quản trị dùng `.RequireAuthorization(policy => policy.RequireRole(...))`.
+- OpenAPI dùng `Microsoft.AspNetCore.OpenApi`; Swagger UI chỉ đọc `/openapi/v1.json`, không đăng ký bộ sinh tài liệu thứ hai. Chỉ map `/openapi/v1.json` và `/swagger` trong `Development`. Scheme Bearer là token phiên ngẫu nhiên/opaque, không phải JWT: không thêm `AddJwtBearer` hoặc sửa `SqlAuthenticationHandler` vì tài liệu.
+- Mỗi route mới thêm `.WithTags(<module>)`, summary/description và `.Produces...` khớp status thực tế. Transformer đọc `IAuthorizeData` từ metadata endpoint **và route group** để chỉ áp dụng security requirement cho route bảo vệ; route công khai không được đánh dấu Bearer. Nêu role nhân viên trên route có `RequireRole`.
 - Đăng ký công khai luôn tạo `Customer`; vai trò nhân viên chỉ gán qua Admin hoặc bootstrap Development.
 - Không ghi mật khẩu, hash, token vào log, thông báo lỗi hay nhật ký thao tác.
 - API chỉ chạy ở môi trường `Development` cho đến khi thay phần xác thực demo.
@@ -121,7 +125,7 @@ public static void Map(IEndpointRouteBuilder endpoints)
 | `SqlSessionStore` lưu phiên trong bộ nhớ | Mất phiên khi khởi động lại, không chạy nhiều instance. Đặt sau `ISessionStore` khi cần. |
 | Rate limit theo IP | Sau BFF mọi người dùng chung IP của Web; cần forwarded headers trước khi lên môi trường thật. |
 | `DateTime.UtcNow/Today` rải rác | Cân nhắc `TimeProvider` để test được. |
-| Chưa có OpenAPI | Thêm `AddOpenApi` + `WithTags` khi cần tài liệu API. |
+| `SqlAuthentication` chưa tách repository và còn truy cập DbContext trực tiếp | Có trong `LEGACY_DB_IN_BUSINESS_LOGIC`; tách AuthRepository/file theo trách nhiệm rồi xóa ngoại lệ, không thêm ngoại lệ mới. |
 
 ## 10. Checklist
 
