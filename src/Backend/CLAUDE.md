@@ -140,6 +140,7 @@ python tests/architecture/rules.py        # kiến trúc, không cần DB/build
 dotnet build .\DongNamTrip.sln --no-restore
 python .\tests\api\smoke.py --start       # cần DB Development đã nạp db/init/*.sql
 python .\tests\api\auth_screens.py --start
+python .\tests\api\content_screens.py --start
 python .\tests\api\account_area.py        # tự khởi động API + Web, không có cờ --start
 ```
 

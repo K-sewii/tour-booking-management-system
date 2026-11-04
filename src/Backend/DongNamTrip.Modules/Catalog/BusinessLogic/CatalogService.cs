@@ -17,7 +17,8 @@ public sealed class CatalogService(CatalogRepository repository) : ICatalogApi
     // Không ids: toàn bộ danh sách (Admin, MVC cũ); có ids: đúng thứ tự yêu cầu.
     public Task<List<Destination>> DestinationsAsync(IReadOnlyCollection<int>? ids, CancellationToken ct) => repository.DestinationsAsync(ids, ct);
     Task<List<Destination>> ICatalogApi.DestinationsAsync(IReadOnlyCollection<int> ids, CancellationToken ct) => repository.DestinationsAsync(ids, ct);
-    public Task<List<Destination>> AdminDestinationsAsync(CancellationToken ct) => repository.AdminDestinationsAsync(ct);
+    public Task<DestinationDetail?> DestinationDetailAsync(int id, CancellationToken ct) =>
+        repository.DestinationDetailAsync(id, DateOnly.FromDateTime(DateTime.Today), ct);
     public Task<List<Tour>> ToursAsync(CancellationToken ct) => repository.ToursAsync(ct);
     /// <summary>Tạo mới (<paramref name="id"/> null) hoặc cập nhật; vùng và loại hình phải thuộc <see cref="CatalogOptions"/>.</summary>
     public async Task<DestinationSaveResult> SaveDestinationAsync(int? id, DestinationDraft draft, CancellationToken ct)
@@ -60,6 +61,8 @@ public sealed class CatalogService(CatalogRepository repository) : ICatalogApi
         ItemKinds.Destination => (await repository.DestinationsAsync([id], ct)).Count == 1,
         _ => false
     };
+
+    public Task<bool> PlaceExistsAsync(int id, CancellationToken ct) => repository.PlaceExistsAsync(id, ct);
 
     public async Task<Dictionary<int, string>> NamesAsync(string kind, IReadOnlyCollection<int> ids, CancellationToken ct) => kind switch
     {

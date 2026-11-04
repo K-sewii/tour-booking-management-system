@@ -9,8 +9,6 @@ public static class CatalogEndpoints
     {
         var api = endpoints.MapGroup("/api");
         api.MapGet("/meta", (CatalogService catalog) => catalog.Rules());
-        api.MapGet("/admin/destinations", (CatalogService catalog, CancellationToken ct) => catalog.AdminDestinationsAsync(ct))
-            .RequireAuthorization(policy => policy.RequireRole(AppRoles.Admin, AppRoles.Editor));
 
         MapDestinations(api.MapGroup("/destinations"));
         MapTours(api.MapGroup("/tours"));
@@ -23,7 +21,7 @@ public static class CatalogEndpoints
         destinations.MapGet("/search", (string? q, string? region, string? category, int? page, int? pageSize, CatalogService catalog, CancellationToken ct) =>
             catalog.SearchDestinationsAsync(q, region, category, page, pageSize, ct));
         destinations.MapGet("/{id:int}", async (int id, CatalogService catalog, CancellationToken ct) =>
-            (await catalog.DestinationsAsync([id], ct)).FirstOrDefault() is { } item ? Results.Ok(item) : Results.NotFound());
+            await catalog.DestinationDetailAsync(id, ct) is { } item ? Results.Ok(item) : Results.NotFound());
 
         var editors = destinations.MapGroup("").RequireAuthorization(policy => policy.RequireRole(AppRoles.Admin, AppRoles.Editor));
         editors.MapPost("", async (DestinationDraft draft, CatalogService catalog, CancellationToken ct) =>

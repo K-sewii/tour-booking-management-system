@@ -32,3 +32,32 @@ public static class PaymentMethods
 
     public static bool IsSupported(string? method) => method is BankTransfer or Cash;
 }
+
+/// <summary>Trạng thái dùng chung cho địa điểm, hoạt động, suất, thuyết minh, bản dịch và audio.</summary>
+public static class ContentStatus
+{
+    public const string Draft = "Draft";
+    public const string Published = "Published";
+    public const string Inactive = "Inactive";
+    public const string Pending = "Pending";
+    public const string Failed = "Failed";
+    public const string Approved = "Approved";
+
+    public static string Label(string status) => status switch
+    {
+        Draft => "Bản nháp",
+        Published => "Đã công bố",
+        Inactive => "Ngừng công bố",
+        Pending => "Chờ duyệt",
+        Failed => "Lỗi",
+        Approved => "Đã duyệt",
+        _ => status
+    };
+}
+
+/// <summary>Kết quả của thao tác có thể ảnh hưởng hồ sơ khác (<see cref="ImpactResult"/>).</summary>
+public static class ImpactStatuses
+{
+    public const string NeedConfirm = "NeedConfirm";
+    public const string Done = "Done";
+}

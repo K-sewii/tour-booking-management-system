@@ -118,17 +118,18 @@ public sealed class MainForm : Form
         Nav("Tổng quan", () => new DashboardControl(api, session.User.Name));
         if (Has(AppRoles.Admin, AppRoles.Editor))
             Nav("Địa điểm", () => new DestinationsControl(api, session.Token));
+        if (Has(AppRoles.Admin, AppRoles.Operator, AppRoles.Editor))
+            Nav("Hoạt động & suất", () => new ActivitiesControl(api, session.Token));
         if (Has(AppRoles.Admin, AppRoles.Operator))
         {
-            Nav("Hoạt động & suất", () => new ModuleControl("Hoạt động và suất tổ chức", "Nhóm vận hành", ["Hoạt động", "Địa điểm", "Ngày tổ chức", "Trạng thái"]));
             Nav("Tour & khởi hành", () => new ToursControl(api));
             Nav("Đơn đặt tour", () => new ModuleControl("Đơn đặt tour", "Nhóm vận hành", ["Mã đơn", "Khách hàng", "Tour", "Tổng tiền", "Trạng thái"]));
             Nav("Tour riêng & báo giá", () => new ModuleControl("Yêu cầu tour riêng và báo giá", "Nhóm vận hành", ["Mã yêu cầu", "Khách hàng", "Ngày dự kiến", "Số khách", "Trạng thái"]));
         }
         if (Has(AppRoles.Finance))
             Nav("Tài chính", () => new ModuleControl("Thu, hoàn tiền và đối soát", "Nhóm tài chính", ["Mã giao dịch", "Đơn đặt", "Số tiền", "Trạng thái"]));
-        if (Has(AppRoles.Publisher))
-            Nav("Công bố nội dung", () => new ModuleControl("Duyệt và công bố nội dung", "Nhóm xuất bản", ["Nội dung", "Ngôn ngữ", "Trạng thái", "Người duyệt"]));
+        if (Has(AppRoles.Admin, AppRoles.Editor, AppRoles.Publisher))
+            Nav("Thuyết minh & audio", () => new NarrationsControl(api, session.Token, session.User.Roles.ToArray()));
         if (Has(AppRoles.Admin))
             Nav("Tài khoản", () => new ModuleControl("Tài khoản và phân quyền", "Quản trị viên", ["Họ tên", "Email", "Vai trò", "Trạng thái"]));
 

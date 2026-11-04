@@ -5,10 +5,9 @@ using DongNamTrip.Contracts;
 
 namespace DongNamTrip.Client;
 
-public class TripApiClient(HttpClient http)
+public partial class TripApiClient(HttpClient http)
 {
     public Task<List<Destination>> DestinationsAsync(CancellationToken ct = default) => GetAsync<List<Destination>>("api/destinations", ct: ct);
-    public Task<List<Destination>> AdminDestinationsAsync(string token, CancellationToken ct = default) => GetAsync<List<Destination>>("api/admin/destinations", token, ct);
     public Task<List<Tour>> ToursAsync(CancellationToken ct = default) => GetAsync<List<Tour>>("api/tours", ct: ct);
     public Task<List<Itinerary>> ItinerariesAsync(string token, CancellationToken ct = default) => GetAsync<List<Itinerary>>("api/itineraries", token, ct);
     public Task<LoginResponse> LoginAsync(LoginRequest data, CancellationToken ct = default) => SendAsync<LoginResponse>(HttpMethod.Post, "api/auth/login", data, null, ct);
