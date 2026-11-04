@@ -25,3 +25,16 @@ export type Collections = { favorites: CollectionItem[]; searches: Activity[]; v
 export type Notice = { id: number; title: string; body: string; at: string; readAt: string | null };
 export type Preference = { securityNotices: boolean };
 export type FieldErrors = Record<string, string[]>;
+export type Slot = { id: number; activityId: number; date: string; start: string; end: string; status: string };
+export type ActivityInfo = {
+  id: number; destinationId: number; name: string; description: string | null; durationMinutes: number;
+  conditions: string | null; referenceFee: number | null; status: string; slots: Slot[];
+};
+export type DestinationDetail = Destination & {
+  openTime: string | null; closeTime: string | null; latitude: number | null; longitude: number | null; activities: ActivityInfo[];
+};
+export type ListenTrack = {
+  audioId: number; destinationId: number; destinationName: string; languageCode: string; languageName: string;
+  title: string; voice: string; transcript: string;
+};
+export type ListenCatalog = { hasAccess: boolean; validUntil: string | null; message: string; tracks: ListenTrack[] };

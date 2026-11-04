@@ -20,7 +20,7 @@ public sealed class SpaBridgeController(TripApiClient api, IHttpClientFactory cl
     private readonly ITimeLimitedDataProtector profileProof = protection.CreateProtector("SCR21.ProfileLoaded").ToTimeLimitedDataProtector();
     private string? Token => User.FindFirst("api_token")?.Value;
     private static readonly Regex AllowedProxy = new(
-        @"^(meta|tours(/search|/[0-9]+(/estimate)?)?|destinations(/search|/[0-9]+)?|itineraries(/preview)?|auth/(password|sessions(/[A-Fa-f0-9]{24})?)|account/(payments(/[0-9]+)?|payment-choice|collections|favorites/(tour|destination)/[0-9]+|activity(/[0-9]+)?|notices(/[0-9]+/read)?|preferences))$",
+        @"^(meta|tours(/search|/[0-9]+(/estimate)?)?|destinations(/search|/[0-9]+)?|listen(/audio/[0-9]+)?|itineraries(/preview)?|auth/(password|sessions(/[A-Fa-f0-9]{24})?)|account/(payments(/[0-9]+)?|payment-choice|collections|favorites/(tour|destination)/[0-9]+|activity(/[0-9]+)?|notices(/[0-9]+/read)?|preferences))$",
         RegexOptions.Compiled | RegexOptions.CultureInvariant);
 
     private static readonly Regex PublicCatalog = new(

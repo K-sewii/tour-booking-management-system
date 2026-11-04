@@ -35,6 +35,7 @@ API connection string: `dotnet user-secrets set "ConnectionStrings:DongNamTrip" 
 python tests/architecture/rules.py          # static module/layer rules; no DB or build needed
 python .\tests\api\smoke.py --start         # --start launches the API itself
 python .\tests\api\auth_screens.py --start
+python .\tests\api\content_screens.py --start
 python .\tests\e2e\browser_runner.py        # Playwright + Chromium
 python .\tests\spa\spa_runner.py
 python .\tests\spa\vite_hmr_runner.py
