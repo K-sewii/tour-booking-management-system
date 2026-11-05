@@ -1,7 +1,7 @@
 # Frontend: kiến trúc, quy tắc và cách thêm code
 
 Áp dụng cho `DongNamTrip.Spa` (React), `DongNamTrip.Web` (BFF + MVC cũ), `DongNamTrip.Client` (HTTP client .NET) và `DongNamTrip.Admin` (WinForms).
-Backend: [../Backend/CLAUDE.md](../Backend/CLAUDE.md). Quy tắc đánh dấu **[CI]** do `python tests/architecture/rules.py` hoặc `npm run lint/test` kiểm tra; vi phạm thì CI đỏ.
+Backend: [../Backend/CLAUDE.md](../Backend/CLAUDE.md). Quy tắc đánh dấu **[CI]** do `python tests/architecture/rules.py` hoặc `npm run lint/test` kiểm tra; vi phạm thì CI đỏ. SPA hiện có ESLint và Vitest; chạy các lệnh npm trong `src/Frontend/DongNamTrip.Spa`.
 
 ## 1. Mô hình
 
@@ -73,7 +73,7 @@ npm run build       # tsc -b && vite build → ..\DongNamTrip.Web\wwwroot\spa
 | Nợ | Hướng đi |
 |---|---|
 | Nhiều dòng JSX rất dài, trang trộn dữ liệu + form + giao diện | Tách hook theo tính năng và component nhỏ khi chạm vào trang đó |
-| `api/types.ts` viết tay | Sinh từ OpenAPI khi backend có (`AddOpenApi`) |
+| `api/types.ts` viết tay | Cân nhắc sinh từ OpenAPI hiện có (`http://localhost:5080/openapi/v1.json`) khi quy trình sinh mã được thống nhất; không tự đổi contract chỉ vì mã sinh |
 | `useLoad` không hủy request, không cache | Thêm `AbortController` hoặc dùng TanStack Query |
 | `FavoriteButton` tải cả `collections` chỉ để biết một mục đã lưu | Endpoint kiểm tra yêu thích hoặc provider dùng chung |
 | Hai giao diện (SPA + MVC cũ) và CSS toàn cục dùng chung từ `Web/wwwroot/css` | Quyết định bỏ hoặc đóng băng MVC; chuyển CSS vào SPA |

@@ -7,6 +7,7 @@ using DongNamTrip.Modules.Itinerary;
 using DongNamTrip.Modules.Narration;
 using DongNamTrip.Modules.Quotation;
 using DongNamTrip.Modules.Persistence;
+using DongNamTrip.Api;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -17,6 +18,7 @@ var connectionString = builder.Configuration.GetConnectionString("DongNamTrip")
     ?? throw new InvalidOperationException("ConnectionStrings:DongNamTrip must be configured for the API.");
 builder.Services.AddDbContext<DongNamTripDbContext>(options => options.UseSqlServer(connectionString));
 builder.Services.AddAuthorization();
+builder.Services.AddDongNamTripOpenApi();
 builder.Services.AddProblemDetails(); // mọi lỗi (400/401/404/500...) trả application/problem+json thống nhất
 builder.Services.AddRateLimiter(options =>
 {
@@ -41,8 +43,12 @@ app.UseStatusCodePages();
 app.UseRateLimiter();
 app.UseAuthentication();
 app.UseAuthorization();
+app.UseDongNamTripOpenApi();
 
-app.MapGet("/health", () => Results.Ok(new { status = "ok", mode = "sql-auth-demo-catalog" }));
+app.MapGet("/health", () => Results.Ok(new { status = "ok", mode = "sql-auth-demo-catalog" }))
+    .WithTags("Platform")
+    .WithSummary("Check API availability")
+    .Produces(StatusCodes.Status200OK);
 app.MapGet("/health/db", async (DongNamTripDbContext db, ILogger<Program> logger, CancellationToken cancellationToken) =>
 {
     try
@@ -60,7 +66,10 @@ app.MapGet("/health/db", async (DongNamTripDbContext db, ILogger<Program> logger
         logger.LogWarning(exception, "Database health check failed.");
         return Results.Json(new { status = "unavailable" }, statusCode: StatusCodes.Status503ServiceUnavailable);
     }
-});
+}).WithTags("Platform")
+  .WithSummary("Check SQL Server connectivity")
+  .Produces(StatusCodes.Status200OK)
+  .Produces(StatusCodes.Status503ServiceUnavailable);
 
 foreach (var module in modules)
     module.MapEndpoints(app);

@@ -42,12 +42,12 @@ The API is a **modular monolith**: one deployable, six business modules, each sp
 
 | Module | Subsystem | Responsibility |
 | --- | --- | --- |
-| `Catalog` | PH1 | Destinations, activities, sessions |
-| `Itinerary` | PH2 | Personal itineraries, private-tour requests |
-| `Booking` | PH3 | Tours, departures, orders, payments |
-| `Quotation` | PH4 | Service verification and quotes |
-| `Narration` | PH5 | Multilingual narration and audio |
-| `Administration` | PH6 | Accounts, roles, sessions, account area (SCR21–25), audit |
+| `Catalog` | PH1 | SQL destinations/tours, search and estimates; staff destination editing |
+| `Itinerary` | PH2 | SQL personal itineraries and previews |
+| `Booking` | PH3 | Read-only order/transaction history and saved payment preference; no order/payment flow |
+| `Quotation` | PH4 | Registered module; no endpoints yet |
+| `Narration` | PH5 | Registered module; no endpoints yet |
+| `Administration` | PH6 | SQL accounts, roles and account area; in-memory API sessions |
 
 The Web project is a backend-for-frontend: it serves the SPA, keeps the login in an HttpOnly cookie, protects writes with antiforgery tokens and forwards calls to the API. The SPA never stores an API token in `localStorage` or `sessionStorage`; the API still enforces authorization and ownership.
 
@@ -97,18 +97,24 @@ docker compose up --build
 | Service | URL |
 | --- | --- |
 | Web (SPA + BFF) | http://localhost:5081 |
-| API | http://localhost:5080 (`/health`, `/health/db`) |
+| API | http://localhost:5080 (`/health`, `/health/db`, `/openapi/v1.json`, `/swagger`) |
 | SQL Server | `127.0.0.1:1433` (user `sa`) |
 
 How it works:
 
 - `db` is SQL Server 2022 with a persistent volume.
-- `db-init` creates the `DongNamTrip` database from `db/init/*.sql` (schema and data supplied by the team), only if the database does not exist, then exits. Catalog rows must have `TrangThai = 'Published'` (statuses: `Draft`, `Published`, `Inactive`). To start over: `docker compose down -v`.
+- `db-init` creates the `DongNamTrip` database from `db/init/*.sql` (schema and data supplied by the team), only if the database does not exist, then exits. Catalog rows must have `TrangThai = 'Published'` (statuses: `Draft`, `Published`, `Inactive`). Preserve the local volume and consult the team before any reinitialization.
 - `api` and `web` are built from `src/Backend/DongNamTrip.Api/Dockerfile` and `src/Frontend/DongNamTrip.Web/Dockerfile` (multi-stage, non-root; the Web image also builds the SPA).
 - Without any `.sql` file in `db/init/`, the stack starts but anything needing SQL fails.
 - The WinForms Admin runs on the Windows host and points at `http://localhost:5080/` (`DONGNAMTRIP_API_URL` to override).
 
-> The Docker setup has not yet been run on a developer machine; the `docker.yml` workflow builds, scans and smoke-tests the images on every push.
+> Docker is reported running locally for this workspace. This is not evidence that every Docker test or a production deployment has passed; `docker.yml` separately builds, scans and smoke-tests images in CI.
+
+## API documentation (Development only)
+
+With the API running in the `Development` environment, open [Swagger UI](http://localhost:5080/swagger) or the [OpenAPI v1 JSON](http://localhost:5080/openapi/v1.json). These routes are not mapped outside Development.
+
+Use `POST /api/auth/login` (or register a disposable development customer) to obtain the opaque session token, then choose **Authorize** and paste the token. Swagger sends `Authorization: Bearer <token>` to protected API routes at `localhost:5080`; it never persists the credential. The token is not a JWT and is lost when the API restarts. Public catalog and login/register endpoints do not require authorization. Staff-only operations state their required role in the document.
 
 ## Running locally
 
@@ -187,7 +193,7 @@ Browser tests need Playwright and Chromium. The WinForms GUI is built in CI but 
 | `docker.yml` | push to `main`, `v*` tags, PRs touching `src/`, Docker or DB files | Validates compose; builds API and Web images; Trivy scan (fails on fixable CRITICAL); runs each image and checks HTTP 200; pushes to GHCR on `main` and tags |
 | Dependabot | weekly | NuGet, npm, GitHub Actions, Docker base images |
 
-Published images: `ghcr.io/k-sewii/tour-booking-management-system-api` and `...-web`, tagged by branch, semver tag and short SHA. There is no automatic deployment target yet; images are published for a future environment. The `build.yml` database tests build a LocalDB from `db/init/*.sql`; no repository secrets are needed.
+Published images: `ghcr.io/k-sewii/tour-booking-management-system-api` and `...-web`, tagged by branch, semver tag and short SHA. There is no automatic deployment target yet; images are published for a future environment. The `build.yml` database tests build a disposable LocalDB from `db/init/*.sql` and then load a CI-only catalog fixture; no repository secret supplies the schema.
 
 ## Project structure
 
