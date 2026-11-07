@@ -10,6 +10,7 @@ public static class ActivityEndpoints
     public static void Map(IEndpointRouteBuilder endpoints)
     {
         var staff = endpoints.MapGroup("/api/admin")
+            .WithTags("Catalog")
             .RequireAuthorization(policy => policy.RequireRole(AppRoles.Admin, AppRoles.Editor, AppRoles.Operator));
 
         var activities = staff.MapGroup("/activities");
