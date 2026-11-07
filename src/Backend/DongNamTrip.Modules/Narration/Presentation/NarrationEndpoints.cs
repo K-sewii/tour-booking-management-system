@@ -9,9 +9,10 @@ public static class NarrationEndpoints
 {
     public static void Map(IEndpointRouteBuilder endpoints)
     {
-        MapEditing(endpoints.MapGroup("/api/admin"));
-        MapListening(endpoints.MapGroup("/api/listen").RequireAuthorization());
+        MapEditing(endpoints.MapGroup("/api/admin").WithTags("Narration"));
+        MapListening(endpoints.MapGroup("/api/listen").WithTags("Narration").RequireAuthorization());
         MapRights(endpoints.MapGroup("/api/internal/listen-rights")
+            .WithTags("Narration")
             .RequireAuthorization(policy => policy.RequireRole(AppRoles.Admin, AppRoles.Operator)));
     }
 

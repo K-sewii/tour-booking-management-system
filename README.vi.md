@@ -4,7 +4,7 @@
 
 DongNamTrip là dự án học tập về khám phá tour và quản lý hành trình khu vực Đông Nam Bộ. Khách hàng sử dụng Web React SPA; nhân viên sử dụng ứng dụng quản trị Windows Forms. Hai ứng dụng gọi chung API ASP.NET Core, API kết nối SQL Server.
 
-> Dự án đang trong giai đoạn phát triển. Danh mục tour, điểm đến và lịch trình đã đọc/ghi SQL Server qua API; chưa có luồng đặt tour, giữ chỗ hay cổng thanh toán thật.
+> Dự án đang trong giai đoạn phát triển. Danh mục tour, điểm đến và lịch trình đã đọc/ghi SQL Server qua API; Narration đã có biên tập thuyết minh, phiên bản, bản dịch, tải audio, trạng thái công bố, nghe có xác thực và quản lý quyền nghe. Chưa có luồng đặt tour, giữ chỗ, cổng thanh toán thật hoặc tự động cấp quyền nghe sau thanh toán.
 
 ## Kiến trúc
 
@@ -149,7 +149,7 @@ Mở http://127.0.0.1:5173. Vite proxy các yêu cầu cần thiết sang Web tr
 | `/Account/Login`, `/Account/Register` | SCR02 đăng nhập và SCR03 đăng ký |
 | `/Account/Profile` | SCR21: hồ sơ tài khoản |
 | `/Account/Security` | SCR22: mật khẩu và phiên |
-| `/Account/Payments`, `/Account/Payments/{id}` | SCR23: thanh toán và hoàn tiền |
+| `/Account/Payments`, `/Account/Payments/{id}` | SCR23: lịch sử đơn/giao dịch và lựa chọn phương thức thanh toán |
 | `/Account/Favorites` | SCR24: yêu thích và lịch sử |
 | `/Account/Notices` | SCR25: thông báo và tùy chọn |
 
@@ -160,6 +160,7 @@ Mở http://127.0.0.1:5173. Vite proxy các yêu cầu cần thiết sang Web tr
 - Tài khoản, vai trò, hồ sơ, mật khẩu và dữ liệu khu vực tài khoản sử dụng SQL Server, với điều kiện database đã được chuẩn bị đủ schema và script bổ sung.
 - Danh mục tour, điểm đến và lịch trình đọc/ghi SQL Server qua API; cần dữ liệu mẫu (bản ghi trạng thái `Published`) thì trang mới có nội dung. Frontend chỉ gọi API: tìm kiếm, phân trang, tổng, tạm tính và giới hạn nhập liệu (`GET /api/meta`) đều do Backend trả.
 - Màn hình thanh toán đọc đơn/giao dịch thuộc tài khoản khi có dữ liệu và lưu lựa chọn ưu tiên. Chưa có cổng thanh toán, quy trình đặt tour thật hay liên kết ngân hàng; không lưu số thẻ hoặc CVV.
+- Narration cho phép nhân viên biên tập thuyết minh, phiên bản, bản dịch, audio và trạng thái công bố; người dùng đã xác thực nghe nội dung theo quyền nghe đã được quản lý. Chưa có tích hợp Booking/thanh toán hoặc tự động cấp quyền nghe sau thanh toán.
 - Phiên API hiện ở trong bộ nhớ. Đăng xuất thu hồi phiên; khởi động lại API làm người dùng phải đăng nhập lại. Một số mục WinForms còn là khung giao diện chờ nghiệp vụ.
 
 ### Tài khoản kiểm thử có sẵn trong database

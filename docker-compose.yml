@@ -11,7 +11,7 @@ services:
       MSSQL_SA_PASSWORD: ${MSSQL_SA_PASSWORD:?Set MSSQL_SA_PASSWORD in .env}
       MSSQL_PID: Developer
     ports:
-      - "127.0.0.1:1433:1433"
+      - "127.0.0.1:14330:1433"
     volumes:
       - sqldata:/var/opt/mssql
     healthcheck:

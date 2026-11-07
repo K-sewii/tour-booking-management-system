@@ -17,7 +17,7 @@ HTTP → Presentation (*Endpoints) → BusinessLogic (*Service) → DataAccess (
 - `DongNamTrip.Modules/Persistence/`: `DongNamTripDbContext` dùng chung và entity của schema gốc (nợ kỹ thuật đã biết, xem mục 9).
 - `DongNamTrip.Contracts` (thư mục `src/Shared`): DTO và hằng số hợp đồng dùng chung với SPA, Web, Admin. Giữ ổn định URL `/api/...` và hình dạng DTO.
 
-**Tiến độ module hiện tại:** Catalog và Itinerary có repository SQL; Booking có repository/service cho lịch sử `DONDAT`/`GIAODICHTIEN` theo tài khoản và preference phương thức thanh toán, nhưng chưa có tạo đơn/thu tiền/hoàn tiền. Administration có endpoint/service/repository (riêng `SqlAuthentication` còn là nợ truy cập DbContext trực tiếp). Quotation và Narration hiện chỉ có lớp module rỗng, không được tài liệu hóa như endpoint.
+**Tiến độ module hiện tại:** Catalog và Itinerary có repository SQL; Catalog còn có quản trị địa điểm, hoạt động và suất hoạt động. Booking có repository/service cho lịch sử `DONDAT`/`GIAODICHTIEN` theo tài khoản và preference phương thức thanh toán, nhưng chưa có tạo đơn/thu tiền/hoàn tiền. Administration có endpoint/service/repository (riêng `SqlAuthentication` còn là nợ truy cập DbContext trực tiếp). Narration có biên tập thuyết minh, phiên bản, bản dịch, tải audio lên, trạng thái công bố, nghe có xác thực và quản lý quyền nghe; chưa có luồng tự động cấp quyền nghe sau thanh toán. Quotation hiện chỉ có lớp module rỗng, không được tài liệu hóa như endpoint.
 
 ```
 <Module>/
