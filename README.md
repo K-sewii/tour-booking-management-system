@@ -1,286 +1,415 @@
-[![Build and smoke test](https://github.com/K-sewii/tour-booking-management-system/actions/workflows/build.yml/badge.svg?branch=main)](https://github.com/K-sewii/tour-booking-management-system/actions/workflows/build.yml)
-
 # DongNamTrip
 
-DongNamTrip là nền tảng minh họa quản lý và khám phá tour khu vực Đông Nam Bộ. Dự án hiện có hai giao diện sử dụng chung API:
+> Tour discovery and trip management for Southeast Vietnam (Đông Nam Bộ).
 
-- Web ASP.NET Core MVC cho khách hàng.
-- WinForms Admin cho nhân viên có vai trò phù hợp.
+[![Build and smoke test](https://github.com/K-sewii/tour-booking-management-system/actions/workflows/build.yml/badge.svg)](https://github.com/K-sewii/tour-booking-management-system/actions/workflows/build.yml)
+[![Docker images](https://github.com/K-sewii/tour-booking-management-system/actions/workflows/docker.yml/badge.svg)](https://github.com/K-sewii/tour-booking-management-system/actions/workflows/docker.yml)
 
-API ASP.NET Core kết nối SQL Server. Xác thực, tài khoản, vai trò và hồ sơ dùng SQL Server; một số danh mục và nghiệp vụ tour hiện vẫn là dữ liệu minh họa trong bộ nhớ. Xem [Phạm vi hiện tại](#phạm-vi-hiện-tại) trước khi dùng dữ liệu cho mục đích khác.
+**Tiếng Việt: [README.vi.md](README.vi.md)**
 
-## Kiến trúc và project
+DongNamTrip is a university project. Customers use a React single-page application; staff use a Windows Forms admin application. Both access an ASP.NET Core API backed by SQL Server.
 
-| Project | Vai trò |
-| --- | --- |
-| `DongNamTrip.Api` | API, xác thực SQL Server, phân quyền API, health check và `DemoStore`. |
-| `DongNamTrip.Web` | Website MVC; gọi API qua `DongNamTrip.Client`, không kết nối SQL trực tiếp. |
-| `DongNamTrip.Admin` | Ứng dụng WinForms quản trị; gọi API, không kết nối SQL trực tiếp. |
-| `DongNamTrip.Client` | HTTP client và DTO client dùng chung cho Web/Admin. |
-| `DongNamTrip.Contracts` | Contract, DTO, role dùng chung. |
+**Status: under development.** Catalog and personal itinerary data use SQL Server. The project does not yet provide a complete booking, payment collection or refund workflow. Only the `Development` environment is currently supported.
 
-## Yêu cầu môi trường
+## Architecture
 
-- Windows để chạy toàn bộ solution, đặc biệt là `DongNamTrip.Admin` (Windows Forms).
-- [.NET SDK 10.0.100](global.json) hoặc feature band mới hơn theo `rollForward: latestFeature` trong `global.json`.
-- SQL Server có hỗ trợ Windows Authentication và một công cụ chạy script, ví dụ SQL Server Management Studio (SSMS).
-- Tài khoản Windows đang chạy API phải được SQL Server cho phép kết nối và có quyền phù hợp trên database `DongNamTrip`.
-- Python 3 chỉ cần khi chạy các smoke test hiện có.
-
-Kiểm tra SDK đang dùng:
-
-```powershell
-dotnet --version
-dotnet --info
+```mermaid
+flowchart TD
+    SPA["React SPA"] --> BFF["ASP.NET Core Web / BFF"]
+    BFF --> API["API host and six business modules"]
+    ADMIN["WinForms Admin"] --> API
+    API --> DB[("SQL Server")]
 ```
 
-## Lấy mã nguồn và chuẩn bị
+The API is a modular monolith: one deployable application with six business modules. Module code follows:
 
-Clone từ [repository DongNamTrip](https://github.com/K-sewii/tour-booking-management-system.git), sau đó chạy mọi lệnh dưới đây tại thư mục chứa `DongNamTrip.sln`.
+`Presentation → BusinessLogic → DataAccess`
+
+Cross-module calls use public `I*Api` ports. Persistence currently uses a shared DbContext and entities; separate module schemas are not implemented.
+
+See [ADR-001](docs/architecture/ADR-001-modular-monolith.md).
+
+| Module | Subsystem | Current scope |
+| --- | --- | --- |
+| Catalog | PH1 | SQL catalog, destination/tour search and details, reference estimates, destination administration, activities and activity slots |
+| Itinerary | PH2 | SQL personal itineraries and previews |
+| Booking | PH3 | Account-owned order/transaction history and saved payment preference; no complete booking/payment/refund workflow |
+| Quotation | PH4 | Registered module; no endpoints implemented yet |
+| Narration | PH5 | Narration editing, versions, translations, audio upload, publication status, authenticated listening and listen-right management |
+| Administration | PH6 | SQL accounts, roles, account area, in-memory API sessions and audit support |
+
+The Web application is a backend-for-frontend (BFF). It serves the SPA, maintains the browser session through an HttpOnly cookie, protects writes with antiforgery and forwards requests to the API.
+
+The SPA does not store API tokens in `localStorage` or `sessionStorage`. Authorization and data-ownership checks remain in the API.
+
+Search, paging, totals, estimates and validation limits come from the backend, including `GET /api/meta`.
+
+## Technology
+
+| Layer | Technology |
+| --- | --- |
+| Frontend | React, TypeScript, Vite, React Router |
+| BFF | ASP.NET Core (.NET 10) |
+| API | ASP.NET Core Minimal APIs, Entity Framework Core 10 |
+| Admin | Windows Forms (.NET 10, Windows only) |
+| Database | SQL Server; Docker uses SQL Server 2022 |
+| API documentation | Microsoft.AspNetCore.OpenApi and Swagger UI |
+| Testing | ESLint, Vitest, Python integration runners, Playwright |
+| Automation | Docker Compose, GitHub Actions, Dependabot |
+
+## Prerequisites
+
+For Docker:
+
+- Docker Desktop with the Linux engine running, or a compatible Docker Engine.
+- Docker Compose.
+- Repository SQL scripts and a configured `.env`.
+
+For running applications directly on Windows:
+
+- .NET SDK matching `global.json`.
+- Node.js/npm compatible with the SPA package configuration; the Docker frontend build uses Node 22.
+- SQL Server and an initialized development database.
+- Python for integration tests.
+- Playwright and Chromium for browser tests.
+
+WinForms runs directly on Windows, including when API/Web/SQL run in Docker.
+
+## Database
+
+Initialization scripts are maintained in `db/init/`:
+
+1. `DongNamTrip_Full.sql`: base schema, roles, languages, development accounts and sample catalog.
+2. `V001_account_area.sql`: favorites, activity, notices and preferences.
+3. `V002_payment_choice.sql`: payment-method preference.
+
+Use full initialization only for a new development database. Do not rerun the full script against an existing database or generate schema changes automatically from EF entities.
+
+Public catalog results depend on publication status. Seeded tours may remain `Draft` and therefore not appear publicly.
+
+For an existing database, apply future schema changes through an explicit, reviewed migration procedure. Restarting Docker does not automatically migrate an existing database.
+
+## Running with Docker
+
+Run from the repository root in PowerShell:
 
 ```powershell
 git clone https://github.com/K-sewii/tour-booking-management-system.git
 Set-Location .\tour-booking-management-system
-Get-Item .\DongNamTrip.sln
 
+if (-not (Test-Path .env)) {
+    Copy-Item .env.example .env
+}
+```
+
+Edit `.env` and configure `MSSQL_SA_PASSWORD` before starting:
+
+```powershell
+docker compose up -d --build
+docker compose ps -a
+```
+
+| Service | Host address | Internal Docker address |
+| --- | --- | --- |
+| Web | http://localhost:5081 | web:8080 |
+| API | http://localhost:5080 | api:8080 |
+| SQL Server | localhost,14330 | db:1433 |
+
+The SQL mapping in `docker-compose.yml` must match:
+
+```yaml
+ports:
+  - "127.0.0.1:14330:1433"
+```
+
+The API connection string inside Docker uses `Server=db`; keep the internal SQL port at 1433.
+
+### Startup behavior
+
+- `db` stores SQL data in the persistent `sqldata` volume.
+- `db-init` runs initialization scripts when the database does not exist.
+- If the database already exists, initialization is skipped.
+- `db-init` ending with `Exited (0)` is normal.
+- API starts after successful initialization.
+- Web starts after API becomes healthy.
+
+Keep `db/init.sh` in UTF-8 without BOM and with LF line endings. Add this rule to `.gitattributes`:
+
+```gitattributes
+db/init.sh text eol=lf
+```
+
+Check SQL connectivity:
+
+```powershell
+Invoke-RestMethod http://localhost:5080/health/db
+```
+
+View recent logs:
+
+```powershell
+docker compose logs --no-color --tail=100 api web db-init
+```
+
+After source changes:
+
+```powershell
+docker compose up -d --build api web
+```
+
+After runtime configuration changes only:
+
+```powershell
+docker compose up -d api web
+```
+
+Do not use `docker compose down -v` as a routine troubleshooting step: it removes the Compose volumes, including database storage.
+
+Local Docker startup has been verified. This is not a claim that every regression test or production deployment has passed.
+
+## Running directly on Windows
+
+Use this as an alternative to running API/Web in Docker. Do not start both on the same host ports.
+
+From the repository root:
+
+```powershell
 dotnet restore .\DongNamTrip.sln
-dotnet tool restore
 dotnet build .\DongNamTrip.sln --no-restore
 ```
 
-`dotnet-tools.json` ghim `dotnet-ef` phiên bản 10.0.12. Công cụ này phục vụ thao tác EF có chủ đích; dự án hiện dùng Database First, nên không chạy `database update`, `EnsureCreated`, `EnsureDeleted` hay migration để khởi tạo database đang dùng.
-
-## Khởi tạo database
-
-**Trạng thái hiện tại của repository:** không có thư mục `database/`, không có file `.sql`, và không có `DongNamTrip_Full.sql`. Vì vậy repository hiện chưa cung cấp script để một thành viên tự tạo database mới hoặc nhập dữ liệu mẫu.
-
-Không tự suy ra schema từ các entity EF rồi tạo bảng tay. `DongNamTripDbContext` được scaffold theo Database First; nó ánh xạ database có sẵn, không phải cơ chế tạo schema của ứng dụng.
-
-### Database mới
-
-1. Xin nhóm phụ trách database cung cấp script SQL đã được phê duyệt (schema, vai trò và dữ liệu khởi tạo nếu cần).
-2. Đọc hướng dẫn đi kèm script trước khi chạy. Chỉ chạy toàn bộ script một lần trên database mới, bằng SSMS hoặc công cụ SQL được nhóm thống nhất.
-3. Sau khi nhóm thêm script vào repo, tài liệu cần ghi chính xác tên file và thứ tự chạy. Nếu script là `database/DongNamTrip_Full.sql`, mở file đó trong SSMS, chọn đúng SQL Server đích, rồi chạy toàn bộ script trên **database mới**.
-
-Không chạy lại script tổng hợp lên database đang có dữ liệu. Không dùng lệnh `DROP`, migration, `database update`, `EnsureCreated` hoặc `EnsureDeleted` để “làm mới” database.
-
-### Database đã có dữ liệu
-
-Không chạy script khởi tạo. Chỉ xác nhận database đã có các bảng/role bắt buộc, cấu hình connection string riêng của máy, rồi chạy API. Endpoint `GET /health/db` giúp kiểm tra kết nối và đếm bảng/role mà không sửa dữ liệu.
-
-## Cấu hình kết nối SQL Server
-
-API đọc `ConnectionStrings:DongNamTrip` qua cơ chế cấu hình chuẩn của .NET. User Secrets là nơi được khuyến nghị cho Development; cấu hình chuẩn khác của .NET vẫn có thể tham gia theo thứ tự provider của ứng dụng. Không ghi connection string thật vào source hoặc Git.
-
-Project API đã có `UserSecretsId`, nên không cần chạy `dotnet user-secrets init`. Mỗi thành viên thay tên server bằng giá trị thấy trong SSMS của chính máy mình:
+Build the SPA while preserving the current directory:
 
 ```powershell
-dotnet user-secrets set "ConnectionStrings:DongNamTrip" "Server=.\SQLEXPRESS;Database=DongNamTrip;Integrated Security=True;Encrypt=True;TrustServerCertificate=True;" --project .\src\DongNamTrip.Api
+Push-Location .\src\Frontend\DongNamTrip.Spa
+try {
+    npm ci
+    npm run build
+}
+finally {
+    Pop-Location
+}
 ```
 
-Ví dụ trên dùng Windows Authentication (`Integrated Security=True`), không chứa mật khẩu SQL. Nếu tên instance là `MAYCHU\SQL2022`, chỉ thay phần `Server`:
+The frontend output is written to:
 
-```text
-Server=MAYCHU\SQL2022;Database=DongNamTrip;Integrated Security=True;Encrypt=True;TrustServerCertificate=True;
-```
+`src/Frontend/DongNamTrip.Web/wwwroot/spa`
 
-Không dùng User Secrets của người khác, không chia sẻ file secrets, token hoặc mật khẩu qua Git. API sẽ dừng khi không tìm thấy `ConnectionStrings:DongNamTrip`.
-
-Web có `ApiBaseUrl` mặc định là `http://localhost:5080/` trong `src/DongNamTrip.Web/appsettings.json`. Chỉ cần đổi khi API chạy cổng localhost khác:
+Configure the API connection string for your SQL instance. This example assumes a local `SQLEXPRESS` instance and an existing database:
 
 ```powershell
-$env:ApiBaseUrl = "http://localhost:5080/"
+dotnet user-secrets set "ConnectionStrings:DongNamTrip" "Server=.\SQLEXPRESS;Database=DongNamTrip;Integrated Security=True;Encrypt=True;TrustServerCertificate=True;" --project .\src\Backend\DongNamTrip.Api
 ```
 
-WinForms dùng `DONGNAMTRIP_API_URL`, mặc định cũng là `http://localhost:5080/` và chỉ chấp nhận địa chỉ loopback:
+Start each application in a separate terminal from the repository root.
 
-```powershell
-$env:DONGNAMTRIP_API_URL = "http://localhost:5080/"
-```
-
-## Chạy ứng dụng
-
-API phải chạy trước vì Web và WinForms đều gọi API. API và Web chỉ cho phép môi trường `Development` trong mã hiện tại. Launch profile `http` cấu hình lần lượt API ở cổng 5080 và Web ở cổng 5081.
-
-Mở ba cửa sổ PowerShell riêng tại thư mục solution. Mỗi lệnh `dotnet run` chạy liên tục; dùng `Ctrl+C` trong đúng cửa sổ để dừng ứng dụng đó.
-
-### Terminal 1 — API
+API:
 
 ```powershell
 $env:ASPNETCORE_ENVIRONMENT = "Development"
-dotnet run --project .\src\DongNamTrip.Api --launch-profile http
+dotnet run --project .\src\Backend\DongNamTrip.Api --launch-profile http
 ```
 
-- API: <http://localhost:5080>
-- Health cơ bản: <http://localhost:5080/health>
-- Health SQL Server: <http://localhost:5080/health/db>
-
-### Terminal 2 — Web
-
-Chạy sau khi API trả health thành công.
+Web:
 
 ```powershell
 $env:ASPNETCORE_ENVIRONMENT = "Development"
-dotnet run --project .\src\DongNamTrip.Web --launch-profile http
+dotnet run --project .\src\Frontend\DongNamTrip.Web --launch-profile http
 ```
 
-Mở Web tại <http://localhost:5081>.
-
-### Terminal 3 — WinForms Admin
-
-Chạy sau khi API đã sẵn sàng.
+WinForms:
 
 ```powershell
-dotnet run --project .\src\DongNamTrip.Admin
+dotnet run --project .\src\Frontend\DongNamTrip.Admin
 ```
 
-Nếu đã đặt biến `DONGNAMTRIP_API_URL` tạm thời cho cổng khác, đặt lại trước khi chạy Admin hoặc mở PowerShell mới.
-
-### Sau khi sửa mã
-
-1. Dừng đúng API, Web hoặc Admin bằng `Ctrl+C` trong terminal đang chạy.
-2. Build lại project bị ảnh hưởng hoặc cả solution.
-3. Khởi động lại theo ba terminal ở trên.
-
-Khi nghi có executable cũ hoặc DLL bị khóa, xác định **đúng** process trước:
+For frontend hot reload, keep API and Web running, then use another terminal:
 
 ```powershell
-Get-NetTCPConnection -State Listen -LocalPort 5080,5081 | Select-Object LocalPort, OwningProcess
-$dongNamTripPid = 1234 # thay 1234 bằng OwningProcess vừa tìm được
-Get-Process -Id $dongNamTripPid | Select-Object Id, ProcessName, Path
+Set-Location .\src\Frontend\DongNamTrip.Spa
+npm run dev
 ```
 
-Chỉ sau khi đã xác nhận đó là process DongNamTrip cần dừng:
+Open `http://127.0.0.1:5173`.
 
-```powershell
-Stop-Process -Id $dongNamTripPid
-```
+Legacy MVC remains available through `?legacy=1` or `Spa__Enabled=false`.
 
-Không dừng hàng loạt mọi process `dotnet` vì có thể làm gián đoạn ứng dụng khác.
+## OpenAPI and Swagger
 
-## Tài khoản và phân quyền
+Development URLs:
 
-### Đăng ký công khai
+- [Swagger UI](http://localhost:5080/swagger)
+- [OpenAPI JSON](http://localhost:5080/openapi/v1.json)
 
-Đăng ký trên Web luôn tạo tài khoản `Customer` đang hoạt động. Request công khai không thể tự gán role, trạng thái hoặc hash mật khẩu. Mật khẩu được hash bằng ASP.NET Core `PasswordHasher` trước khi lưu SQL Server.
+The native ASP.NET Core OpenAPI generator produces the document; Swagger UI renders it.
 
-`Customer` dùng Web, có thể đăng nhập/đăng xuất, cập nhật hồ sơ, lưu và sửa lịch trình trong SQL Server, gửi yêu cầu tour riêng và chấp nhận báo giá. Customer không được mở WinForms Admin; form Admin chỉ chấp nhận tài khoản có ít nhất một role nhân viên.
+To call protected endpoints:
 
-### Vai trò hiện có
+1. Call `POST /api/auth/login` using a development account.
+2. Copy the returned session token.
+3. Select **Authorize** and paste only the token.
+4. Execute the protected request.
 
-Mã hiện có hỗ trợ sáu role: `Admin`, `Customer`, `Operator`, `Editor`, `Finance`, `Publisher`. Một tài khoản có thể có nhiều role.
+Swagger sends `Authorization: Bearer <token>`.
 
-- `Admin`, `Operator`, `Editor`, `Finance`, `Publisher` là nhóm nhân viên mà WinForms cho phép đăng nhập.
-- Menu WinForms được ẩn/hiện theo role: Admin toàn bộ menu hiện có; Editor có Địa điểm; Operator có các mục vận hành; Finance có Tài chính; Publisher có Công bố nội dung.
-- Việc thấy menu không thay thế kiểm tra ở API. Endpoint thêm/sửa địa điểm yêu cầu `Admin` hoặc `Editor`; xác minh dịch vụ và phát hành báo giá tour riêng yêu cầu `Admin` hoặc `Operator`.
+The token is an opaque session token, not a JWT. API sessions are stored in memory, expire according to configuration and are lost when the API restarts. Swagger authorization persistence is not enabled.
 
-### Bootstrap Admin (Development)
+Public endpoints do not require a token. Protected operations enforce their actual roles and ownership rules in the API; Swagger descriptions do not replace those checks.
 
-Bootstrap Admin chỉ chạy khi môi trường là `Development` **và** `BootstrapAdmin:Enabled=true`. Nó chỉ tạo Admin nếu email chưa tồn tại; không đổi mật khẩu hoặc nâng quyền cho tài khoản đã có.
+Do not include real passwords or tokens in examples, screenshots or commits.
 
-Thiết lập giá trị riêng, mạnh và không đưa vào README/Git:
+## Configuration
 
-```powershell
-dotnet user-secrets set "BootstrapAdmin:Enabled" "true" --project .\src\DongNamTrip.Api
-dotnet user-secrets set "BootstrapAdmin:Name" "Tên quản trị Development" --project .\src\DongNamTrip.Api
-dotnet user-secrets set "BootstrapAdmin:Email" "admin-dev@example.test" --project .\src\DongNamTrip.Api
-dotnet user-secrets set "BootstrapAdmin:Password" "<mật-khẩu-mạnh-từ-8-ký-tự>" --project .\src\DongNamTrip.Api
-```
+| Setting | Application | Purpose |
+| --- | --- | --- |
+| `ConnectionStrings:DongNamTrip` | API | SQL connection; User Secrets for host execution or `ConnectionStrings__DongNamTrip` in environment configuration |
+| `ApiBaseUrl` | Web | API address; Docker uses `http://api:8080/` |
+| `Spa:Enabled` | Web | Set to `false` for legacy MVC |
+| `BootstrapAdmin:Enabled/Name/Email/Password` | API | Optional development admin bootstrap |
+| `DevelopmentTestAccounts:Enabled` | API | Optional development account seeding |
+| `MSSQL_SA_PASSWORD` | Docker `.env` | SQL Server administrator password |
+| `DONGNAMTRIP_API_URL` | WinForms | Override the API address |
 
-Sau khi API đã tạo tài khoản, có thể tắt bootstrap để tránh chạy kiểm tra không cần thiết:
+Host User Secrets are not automatically available inside Docker containers.
 
-```powershell
-dotnet user-secrets set "BootstrapAdmin:Enabled" "false" --project .\src\DongNamTrip.Api
-```
+Never commit `.env`, actual connection credentials or session tokens.
 
-### Seed bảy tài khoản Development
+### Development accounts
 
-Chỉ bật seed khi database có đủ sáu role và bạn cần tạo các tài khoản Development bị thiếu:
-
-```powershell
-dotnet user-secrets set "DevelopmentTestAccounts:Enabled" "true" --project .\src\DongNamTrip.Api
-```
-
-Lần chạy API kế tiếp, seed kiểm tra bảy email sau và chỉ tạo email chưa tồn tại:
+The base SQL script seeds these accounts:
 
 | Email | Role |
 | --- | --- |
-| `admin@dongnamtrip.test` | Admin |
-| `operator@dongnamtrip.test` | Operator |
-| `editor@dongnamtrip.test` | Editor |
-| `finance@dongnamtrip.test` | Finance |
-| `publisher@dongnamtrip.test` | Publisher |
-| `customer1@dongnamtrip.test` | Customer |
-| `customer2@dongnamtrip.test` | Customer |
+| admin@dongnamtrip.test | Admin |
+| operator@dongnamtrip.test | Operator |
+| editor@dongnamtrip.test | Editor |
+| finance@dongnamtrip.test | Finance |
+| publisher@dongnamtrip.test | Publisher |
+| customer1@dongnamtrip.test | Customer |
+| customer2@dongnamtrip.test | Customer |
 
-Nếu chưa cấu hình mật khẩu riêng, ứng dụng sinh mật khẩu ngẫu nhiên cho từng tài khoản mới và lưu vào User Secrets của máy đó. Xem **chỉ** các mật khẩu seed trong terminal riêng tư:
+Their initial development-only password in the supplied seed script is `DntTest@2026!`. Existing databases may have different passwords if they were changed.
 
-```powershell
-dotnet user-secrets list --project .\src\DongNamTrip.Api | Select-String '^DevelopmentTestAccounts:Passwords:'
-```
+Public registration creates only `Customer`. WinForms accepts staff roles only.
 
-Seed không đổi mật khẩu, role hay trạng thái của email đã có. Vì repository hiện không có SQL tổng hợp, không có cơ sở để khẳng định database do script tạo đã có sẵn tài khoản kiểm thử hay mật khẩu ban đầu nào. Nếu sau này script SQL tổng hợp có các tài khoản này, không bật seed để cố thay đổi chúng; dùng tài liệu mật khẩu do nhóm database cung cấp.
+## Testing
 
-## Phạm vi hiện tại
-
-### Đã đọc/ghi SQL Server
-
-- Xác thực: đăng ký, đăng nhập, logout, token phiên và kiểm tra trạng thái tài khoản.
-- Bảng tài khoản/role: `TAIKHOAN`, `VAITRO`, `TAIKHOAN_VAITRO`.
-- Hồ sơ Web: họ tên, email và số điện thoại.
-- Lịch trình cá nhân, điểm dừng và suất mong muốn: `LICHTRINH`, `LICHTRINH_DIADIEM`, `LICHTRINH_SUAT`.
-- Yêu cầu tour riêng, bản chụp lịch trình, xác minh dịch vụ, báo giá, hạng mục và đơn được chấp nhận: `PHIENBANLICHTRINH`, `YEUCAUTOURRIENG`, `XACMINHDICHVU`, `BAOGIA`, `HANGMUCBAOGIA`, `DONDAT`.
-- `/health/db`: kiểm tra kết nối, số bảng, `VAITRO` và `NGONNGU`.
-
-### Vẫn là dữ liệu trong bộ nhớ (`DemoStore`)
-
-- Danh mục địa điểm, tour hiển thị trên Web.
-- Thêm/sửa địa điểm qua API và WinForms Admin.
-
-Danh mục công khai ở trên mất khi API khởi động lại. Riêng Planner đọc địa điểm, hoạt động, suất và tour mẫu đã công bố từ SQL để giữ đúng khóa ngoại của lịch trình. Dữ liệu mới của địa điểm ở `DemoStore` chưa tự xuất hiện trong Planner cho đến khi phân hệ danh mục chuyển sang SQL.
-
-Từ **Tự tạo chuyến đi**, khách lưu lịch trình rồi mở **Chuyến đi của tôi** để sửa hoặc gửi yêu cầu tour riêng. Nhân viên `Admin`/`Operator` tải yêu cầu trong WinForms, ghi xác minh, phát hành báo giá theo hạng mục. Khách xem báo giá và chấp nhận bản còn hiệu lực để tạo đơn tour riêng. Suất trong kế hoạch là mong muốn, chưa giữ chỗ; thời gian di chuyển chưa có dữ liệu nên hiển thị cảnh báo và cần điều hành kiểm tra.
-
-Token phiên là chuỗi ngẫu nhiên được giữ trong bộ nhớ của API, mặc định sống 14.400 giây (4 giờ; cấu hình `Authentication:SessionLifetimeSeconds`). Logout xóa token phía API. Khởi động lại API làm mất toàn bộ token nên người dùng phải đăng nhập lại, kể cả cookie Web còn thời hạn. Cookie Web được đặt 4 giờ và không sliding.
-
-Vì vậy, chưa xem dự án là đã hoàn thành toàn bộ use case đặt tour, đơn đặt, thanh toán, lịch khởi hành, quản trị tài khoản/quyền hoặc audio. Một số menu WinForms mới là khung giao diện chờ nghiệp vụ/API tương ứng.
-
-## Kiểm thử
-
-Sau khi `dotnet build` thành công, có hai script Python liên quan đến API/Web:
+Frontend checks:
 
 ```powershell
-# Chỉ chạy khi không có API/Web khác chiếm 5080 và 5081.
-# Script tự khởi động executable Debug, đặt token lifetime 10 giây và dừng chúng khi kết thúc.
-python .\tests\smoke.py --start
+Push-Location .\src\Frontend\DongNamTrip.Spa
+try {
+    npm run lint
+    npm test
+    npm run build
+}
+finally {
+    Pop-Location
+}
 ```
 
-`smoke.py` yêu cầu User Secrets có connection string, database có 25 bảng, sáu role và ít nhất một ngôn ngữ. Script tạo tài khoản có tiền tố `auth-test-`, kiểm tra tài khoản, phân quyền, lịch trình SQL, yêu cầu tour riêng, xác minh, thay thế và chấp nhận báo giá, rồi xóa dữ liệu test. Không chạy song song với API/Web đang dùng các cổng này.
-
-Kiểm tra riêng màn hình đăng nhập/đăng ký khi API/Web đã chạy tại 5080/5081:
+Architecture and integration runners, from the repository root:
 
 ```powershell
-python .\tests\auth_screens.py
+python tests/architecture/rules.py
+python .\tests\api\smoke.py --start
+python .\tests\api\auth_screens.py --start
+python .\tests\api\content_screens.py --start
+python .\tests\e2e\browser_runner.py
+python .\tests\spa\spa_runner.py
+python .\tests\spa\vite_hmr_runner.py
 ```
 
-Script này tạo rồi xóa các email `scr02scr03-*`, kiểm tra validation, email trùng, đăng ký đồng thời, role injection, hash mật khẩu, trạng thái khóa, logout và luồng form. Các script test có thao tác SQL để dọn dữ liệu test; chỉ chạy trên database Development được phép kiểm thử.
+- Inspect each runner's prerequisites and arguments.
+- Integration tests use real SQL Server and may create temporary accounts and records.
+- Use an isolated development/test database.
+- Run suites sequentially unless database and port isolation is explicitly configured.
+- Check for occupied ports before using runners that start API/Web processes.
+- Browser tests require Playwright and Chromium.
+- Clean up only data created by the test.
+- A successful build or health check is not a full regression test.
+- WinForms build validation does not establish that its GUI has been tested.
 
-Kiểm thử giao diện Playwright theo luồng PH2/PH4 (đăng ký, tạo/sửa lịch trình, gửi yêu cầu tour riêng, xem và chấp nhận báo giá) chạy trong CI bằng `python .\tests\browser_runner.py`. Script tạo tài khoản thử riêng, phát hành báo giá qua API nhân viên, lưu ảnh tại `artifacts/previews` và xóa dữ liệu thử khi kết thúc. Cần cài Playwright và Chromium như trong workflow CI trước khi chạy tại máy cá nhân.
+## CI/CD
 
-## Lỗi thường gặp
-
-| Hiện tượng | Cách kiểm tra/xử lý |
+| Workflow | Purpose |
 | --- | --- |
-| API báo thiếu `ConnectionStrings:DongNamTrip` | Đặt User Secret cho đúng project API; kiểm tra tên server và database của máy mình. |
-| `/health/db` trả 503 | Kiểm tra SQL Server đang chạy, Windows account có quyền, tên instance/database và firewall cục bộ. Không tạo lại database tự động. |
-| Web/Admin báo không kết nối API | Khởi động API trước; xác nhận `http://localhost:5080/health`; kiểm tra `ApiBaseUrl` của Web hoặc `DONGNAMTRIP_API_URL` của Admin. |
-| Web mở nhưng không đúng bản mới | Dừng đúng process đang nghe 5081, build lại Web rồi chạy lại. |
-| Build lỗi DLL/EXE đang bị khóa | Dùng `Get-NetTCPConnection` và `Get-Process` để xác định PID DongNamTrip cụ thể, đóng đúng ứng dụng rồi build lại. |
-| WinForms từ chối đăng nhập Customer | Đây là thiết kế hiện tại: chỉ role nhân viên mới mở Admin. |
-| Không có script tạo database | Đây là thiếu sót hiện tại của repository; xin script đã duyệt từ nhóm database, không tự tạo schema từ DbContext. |
+| `build.yml` | Frontend checks/build/audit, .NET build, architecture rules and integration/browser tests |
+| `docker.yml` | Compose validation, image builds, security scanning, smoke tests and configured GHCR publishing |
+| Dependabot | Dependency update proposals |
 
-## Thông tin nhóm cần bổ sung
+CI database tests use repository SQL scripts and a CI catalog fixture to prepare an isolated Windows LocalDB database. The schema is not supplied through a repository secret.
 
-- Script SQL khởi tạo được phê duyệt, vị trí trong repo, thứ tự chạy và dữ liệu seed chính thức.
-- Nếu có script SQL tổng hợp: danh sách tài khoản ban đầu, cách phân phối mật khẩu an toàn và việc có cần bật seed ứng dụng hay không.
-- Quy ước môi trường ngoài Development, cấu hình triển khai và nơi lưu secrets trong CI/CD.
+See `.github/workflows/` for exact triggers, publishing conditions and current checks. A badge or previous run does not establish that a new commit passed.
+
+## Project structure
+
+| Directory | Purpose |
+| --- | --- |
+| `src/Backend/DongNamTrip.Api` | API host, configuration, health and OpenAPI |
+| `src/Backend/DongNamTrip.Modules` | Six business modules and shared persistence |
+| `src/Frontend/DongNamTrip.Spa` | React SPA organized by feature |
+| `src/Frontend/DongNamTrip.Web` | BFF, SPA hosting and legacy MVC |
+| `src/Frontend/DongNamTrip.Admin` | WinForms staff application |
+| `src/Frontend/DongNamTrip.Client` | Shared .NET HTTP client |
+| `src/Shared/DongNamTrip.Contracts` | Shared DTOs and vocabulary |
+| `tests/architecture` | Static module/layer checks |
+| `tests/api` | HTTP/SQL integration tests |
+| `tests/e2e` | Browser tests |
+| `tests/spa` | SPA, fault and HMR tests |
+| `tests/ci` | CI helpers |
+| `db` | Initialization script and SQL files |
+| `docs` | Architecture decisions and design documents |
+
+Generated directories such as `bin`, `obj`, `node_modules` and the SPA build output must not be committed.
+
+## Web screens
+
+| Path | Screen |
+| --- | --- |
+| `/` | Home |
+| `/Tours`, `/Tours/Details/{id}` | Tour listing and details |
+| `/Destinations`, `/Destinations/Details/{id}` | Destination listing and details |
+| `/Planner`, `/Trips` | Itinerary planner and personal trips |
+| `/Account/Login`, `/Account/Register` | SCR02 login and SCR03 registration |
+| `/Account/Profile` | SCR21 profile |
+| `/Account/Security` | SCR22 password and sessions |
+| `/Account/Payments` | SCR23 recorded orders/transactions and payment preference |
+| `/Account/Favorites` | SCR24 favorites and history |
+| `/Account/Notices` | SCR25 notices and preferences |
+
+Narration also provides authenticated listening functionality. Staff content management is available through the corresponding WinForms screens and API endpoints.
+
+The payment screen does not implement actual payment collection or refunds.
+
+## Troubleshooting
+
+| Symptom | Action |
+| --- | --- |
+| Docker cannot connect to `dockerDesktopLinuxEngine` | Start Docker Desktop and wait for the Linux engine |
+| SQL host port cannot bind | Check that the host mapping uses an available port; this setup uses `14330:1433` |
+| `init.sh`: `set: pipefail` invalid option | Check LF line endings and UTF-8 without BOM |
+| `db-init` exits with code 0 | Normal: initialization finished or the database already exists |
+| `db-init` exits with a nonzero code | Read its latest logs before modifying SQL or rerunning initialization |
+| Initialization is skipped | Check whether the database already exists or SQL scripts are missing |
+| `/health/db` fails | Check SQL readiness, database name and connection configuration |
+| Web reports missing SPA build | Run `npm ci` and `npm run build` in the SPA directory |
+| Swagger omits recent changes | Rebuild/restart the API serving the current source |
+| DLL/EXE locked during build | Stop the specific process holding the files, then rebuild |
+| Customer cannot sign in to WinForms | WinForms requires a staff role |
+| New initialization script is not applied | Existing databases are skipped; prepare an explicit migration procedure |
+
+## Contributing
+
+1. Create a `feature/<short-name>` branch from the appropriate current base.
+2. Preserve existing local changes before updating or merging.
+3. Follow module boundaries and read the relevant `CLAUDE.md`.
+4. Keep API contracts compatible with Web and WinForms.
+5. Build and run tests relevant to the change.
+6. Update documentation to match actual behavior.
+7. Stage explicit files and exclude credentials/generated output.
+8. Open a pull request and check CI results before merging.
+
+## License
+
+No license is declared in this README. Consult the repository's current license files and project owners before redistribution.

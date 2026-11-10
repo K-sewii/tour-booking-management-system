@@ -1,0 +1,17 @@
+@model ChangePasswordRequest
+@{ Layout = "_AccountLayout"; ViewData["Title"] = "Bảo mật tài khoản"; var sessions = ViewBag.Sessions as IReadOnlyList<AccountSession>; }
+<div class="account-heading"><div class="eyebrow">TÀI KHOẢN</div><h1 id="account-title">Bảo mật tài khoản</h1><p>Đổi mật khẩu và quản lý các phiên đăng nhập đang hoạt động.</p></div>
+@if (TempData["SessionStatus"] is string status) { <p class="account-message" role="status">@status</p> }
+<div class="account-card"><div class="account-card-heading"><h2>Đổi mật khẩu</h2><p>Sau khi lưu, mọi phiên đăng nhập sẽ kết thúc.</p></div>
+<form method="post" action="/Account/Security" novalidate>@Html.AntiForgeryToken()
+<div asp-validation-summary="All" class="account-message account-message--error" role="alert"></div>
+<div class="account-fields">
+<div class="account-field"><label for="CurrentPassword">Mật khẩu hiện tại <span class="account-required">*</span></label><input asp-for="CurrentPassword" type="password" autocomplete="current-password" required/><span asp-validation-for="CurrentPassword" class="account-field-error"></span></div>
+<div class="account-field"><label for="NewPassword">Mật khẩu mới <span class="account-required">*</span></label><input asp-for="NewPassword" type="password" autocomplete="new-password" required minlength="8" maxlength="128"/><span class="account-hint">Từ 8 đến 128 ký tự, có ít nhất một chữ và một số.</span><span asp-validation-for="NewPassword" class="account-field-error"></span></div>
+<div class="account-field"><label for="ConfirmNewPassword">Xác nhận mật khẩu mới <span class="account-required">*</span></label><input asp-for="ConfirmNewPassword" type="password" autocomplete="new-password" required/><span asp-validation-for="ConfirmNewPassword" class="account-field-error"></span></div></div>
+<div class="account-actions"><button class="btn" type="submit">Đổi mật khẩu</button></div></form></div>
+<div class="account-card account-secondary"><div class="account-card-heading"><h2>Phiên đăng nhập đang hoạt động</h2><p>Chỉ hiển thị thời điểm và hạn của phiên do API ghi nhận. Phiên sẽ mất khi API khởi động lại.</p></div>
+@if (ViewBag.LoadError is string error) { <div class="account-empty" role="alert">@error <a asp-action="Security">Thử lại</a></div> }
+else if (sessions is null || sessions.Count == 0) { <p class="account-empty">Không có phiên đang hoạt động.</p> }
+else { <ul class="account-list">@foreach (var session in sessions) { <li><div><strong>@(session.IsCurrent ? "Phiên hiện tại" : "Phiên khác")</strong><p>Bắt đầu @session.CreatedAt.ToString("dd/MM/yyyy HH:mm") UTC · Hết hạn @session.ExpiresAt.ToString("dd/MM/yyyy HH:mm") UTC</p></div><form method="post" action="/Account/Security/Revoke/@session.Id">@Html.AntiForgeryToken()<button class="btn outline" type="submit">Kết thúc phiên</button></form></li> }</ul> }
+</div>

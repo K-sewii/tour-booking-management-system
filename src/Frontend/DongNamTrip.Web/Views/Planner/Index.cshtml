@@ -1,0 +1,43 @@
+@model PlannerVm
+@{ ViewData["Title"] = "Tự tạo chuyến đi"; }
+<section class="page-intro compact">
+<div class="container">
+<div class="eyebrow">LÊN Ý TƯỞNG, RỒI LÊN ĐƯỜNG</div>
+<h1>Chuyến đi của riêng bạn.</h1>
+<p>Chọn điểm đến, đổi thứ tự và lưu lại hành trình yêu thích.</p></div></section>
+<div class="container section" id="planner" data-initial="@string.Join(",", Model.InitialIds)" data-authenticated="@(User.Identity?.IsAuthenticated==true ? "true" : "false")">
+<div class="planner-steps"><b>01 Chọn điểm đến</b>
+<span>→</span><b>02 Sắp xếp lịch trình</b>
+<span>→</span><b>03 Lưu ý tưởng</b></div>
+<div class="planner-layout">
+<section>
+<div class="section-heading">
+<h2>Thêm nơi bạn muốn đến</h2>
+<label class="sr-only" for="place-search">Tìm địa điểm</label>
+<input id="place-search" placeholder="Tìm tên hoặc khu vực…"/></div>
+<div id="place-list">@foreach(var d in Model.Destinations){<article class="place-row" data-id="@d.Id" data-name="@d.Name" data-region="@d.Region" data-minutes="@d.VisitMinutes">
+<img src="~/images/@(d.Illustration).svg" alt=""/>
+<div><small>@d.Region · @d.VisitMinutes phút</small>
+<h3>@d.Name</h3>
+<span>@d.Category</span></div>
+<button type="button" class="add-place" aria-label="Thêm @d.Name">+</button></article>}<p id="no-places" hidden>Không có địa điểm phù hợp với từ khóa.</p></div></section>
+<aside class="itinerary-panel">
+<div class="section-heading">
+<h2>Lịch trình của bạn</h2>
+<span class="pill" id="selected-count">0 điểm</span></div>
+<form id="itinerary-form" asp-controller="Planner" asp-action="Save" method="post">
+<label>Tên chuyến đi<input name="Name" required maxlength="100" placeholder="Cuối tuần đi đâu đó…"/></label>
+<div class="form-row">
+<label>Ngày dự kiến<input name="StartDate" type="date" required min="@DateTime.Today.ToString("yyyy-MM-dd")" value="@DateTime.Today.AddDays(7).ToString("yyyy-MM-dd")"/></label>
+<label>Số khách<input name="Guests" type="number" min="1" max="40" value="2" required/></label></div>
+<ol id="selected-places"></ol>
+<div class="planner-empty" id="planner-empty">
+<span>↖</span><b>Bắt đầu từ một nơi bạn thích.</b>
+<p>Nhấn dấu + để thêm điểm đầu tiên.</p></div>
+<p class="hint" id="duration-note">Thời gian tham quan chưa bao gồm di chuyển.</p>
+<p class="notice small-notice">Đây là lịch trình nháp. Chưa kiểm tra tuyến đường, trùng giờ hoặc khả năng cung ứng dịch vụ.</p>
+<button type="submit" class="btn full" id="save-itinerary">Lưu lịch trình ↗</button>
+<p id="planner-message" role="status" aria-live="polite"></p>
+<a class="text-link" id="planner-login" href="/Account/Login?returnUrl=%2FPlanner" hidden>Đăng nhập để lưu →</a>
+<button type="button" class="reset-link" id="clear-itinerary">Làm mới lịch trình</button></form></aside></div></div>
+@section Scripts {<script src="~/js/planner.js" asp-append-version="true" defer></script>}

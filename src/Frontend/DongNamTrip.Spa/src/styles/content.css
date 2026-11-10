@@ -1,0 +1,20 @@
+/* Địa điểm chi tiết (SCR07) và nghe thuyết minh (SCR11) */
+.cx-status{display:inline-block;padding:2px 10px;border-radius:999px;background:var(--mint);color:var(--green);font-size:.78rem;font-weight:600}
+.cx-activity{border:1px solid var(--line);border-radius:14px;padding:18px 20px;margin:0 0 16px;background:#fff}
+.cx-activity h3{margin:0 0 6px}
+.cx-activity p{margin:4px 0;color:var(--muted)}
+.cx-meta{display:flex;flex-wrap:wrap;gap:8px 20px;margin:10px 0;font-size:.92rem}
+.cx-meta b{color:var(--ink)}
+.cx-days{display:grid;gap:10px;margin-top:12px}
+.cx-day{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+.cx-day>strong{min-width:130px}
+.cx-slot{padding:4px 12px;border:1px solid var(--line);border-radius:999px;background:var(--cream);font-size:.9rem}
+.cx-filter{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:0 0 16px}
+.cx-filter select{padding:8px 12px;border:1px solid var(--line);border-radius:10px;background:#fff}
+.cx-listen{display:grid;gap:18px;max-width:820px}
+.cx-listen-panel{border:1px solid var(--line);border-radius:16px;padding:22px;background:#fff;display:grid;gap:14px}
+.cx-listen-panel label{display:grid;gap:6px;font-weight:600;color:var(--ink)}
+.cx-listen-panel select{padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:#fff;font:inherit}
+.cx-controls{display:flex;flex-wrap:wrap;gap:10px}
+.cx-transcript{white-space:pre-wrap;line-height:1.7;background:var(--cream);border-radius:12px;padding:16px;max-height:340px;overflow:auto}
+.cx-note{color:var(--muted);font-size:.9rem}

@@ -7,17 +7,47 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: build-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
+  frontend:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: src/Frontend/DongNamTrip.Spa/package-lock.json
+
+      - name: Install, type-check and build SPA
+        working-directory: src/Frontend/DongNamTrip.Spa
+        run: |
+          npm ci
+          npm audit --audit-level=high --omit=dev
+          npm run lint
+          npm test
+          npm run build
+
   windows:
     runs-on: windows-2022
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '10.0.x'
+
       - name: Build solution
         run: dotnet build DongNamTrip.sln --configuration Release
+
+      - name: Check architecture rules
+        run: python tests/architecture/rules.py
 
   web-api:
     runs-on: windows-2022
@@ -27,11 +57,14 @@ jobs:
       DOTNET_ENVIRONMENT: Development
       BootstrapAdmin__Enabled: 'false'
       DevelopmentTestAccounts__Enabled: 'false'
+
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '10.0.x'
+
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
@@ -39,32 +72,90 @@ jobs:
       - name: Build API and Web in Debug
         shell: powershell
         run: |
-          dotnet build src/DongNamTrip.Api --configuration Debug
+          dotnet build src/Backend/DongNamTrip.Api --configuration Debug
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-          dotnet build src/DongNamTrip.Web --configuration Debug
+
+          dotnet build src/Frontend/DongNamTrip.Web --configuration Debug
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
       - name: Prepare isolated SQL Server LocalDB
         shell: powershell
-        env:
-          DONGNAMTRIP_CI_SQL_GZIP_BASE64: ${{ secrets.DONGNAMTRIP_CI_SQL_GZIP_BASE64 }}
-        run: .\tests\prepare_ci_database.ps1
+        run: .\tests\ci\prepare_ci_database.ps1
+
+      - name: Apply account area SQL (db/init/V*.sql)
+        shell: powershell
+        run: |
+          $ErrorActionPreference = 'Stop'
+          Add-Type -AssemblyName System.Data
+          $files = @(Get-ChildItem db/init -Filter 'V*.sql' | Sort-Object Name)
+          if ($files.Count -eq 0) { throw 'Missing db/init/V001_account_area.sql and V002_payment_choice.sql.' }
+          $connection = [System.Data.SqlClient.SqlConnection]::new('Server=(localdb)\DongNamTripCI;Database=DongNamTrip;Integrated Security=True;Encrypt=False;Connect Timeout=30;')
+          try {
+              $connection.Open()
+              foreach ($file in $files) {
+                  $sql = [System.IO.File]::ReadAllText($file.FullName, [System.Text.Encoding]::UTF8)
+                  foreach ($batch in [regex]::Split($sql, '(?im)^[ \t]*GO[ \t]*(?:--[^\r\n]*)?\r?$')) {
+                      if ([string]::IsNullOrWhiteSpace($batch)) { continue }
+                      $command = $connection.CreateCommand()
+                      try {
+                          $command.CommandTimeout = 180
+                          $command.CommandText = $batch
+                          [void]$command.ExecuteNonQuery()
+                      }
+                      finally {
+                          $command.Dispose()
+                      }
+                  }
+                  Write-Host "Applied $($file.Name)"
+              }
+          }
+          finally {
+              $connection.Dispose()
+          }
+
+      # DongNamTrip_Full.sql keeps its reference tours as Draft (the API lists only Published) and the browser
+      # tests expect a fixed catalog, so load a CI-only fixture into the disposable LocalDB.
+      - name: Load CI catalog fixture
+        shell: powershell
+        run: |
+          $ErrorActionPreference = 'Stop'
+          Add-Type -AssemblyName System.Data
+          $connection = [System.Data.SqlClient.SqlConnection]::new('Server=(localdb)\DongNamTripCI;Database=DongNamTrip;Integrated Security=True;Encrypt=False;Connect Timeout=30;')
+          try {
+              $connection.Open()
+              $command = $connection.CreateCommand()
+              $command.CommandText = [System.IO.File]::ReadAllText('tests/ci/catalog_fixture.sql', [System.Text.Encoding]::UTF8)
+              [void]$command.ExecuteNonQuery()
+              Write-Host 'CI catalog fixture loaded.'
+          }
+          finally {
+              $connection.Dispose()
+          }
 
       - name: Run HTTP and SQL smoke tests
-        run: python tests/smoke.py --start
+        run: python tests/api/smoke.py --start
 
       - name: Run SCR02/SCR03 authentication tests
-        run: python tests/auth_screens.py --start
+        run: python tests/api/auth_screens.py --start
+
+      - name: Run SCR06/SCR07/SCR11/SCR14/SCR15/SCR20 content tests
+        run: python tests/api/content_screens.py --start
+
+      - name: Run SCR22-SCR25 account area tests
+        run: python tests/api/account_area.py
 
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+
       - name: Install Playwright
         run: npm install --no-save --package-lock=false playwright@1.56.1
+
       - name: Install Chromium
         run: npx playwright install chromium
+
       - name: Run browser tests
-        run: python tests/browser_runner.py
+        run: python tests/e2e/browser_runner.py
 
       - uses: actions/upload-artifact@v4
         if: always()

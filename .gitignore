@@ -9,12 +9,7 @@ appsettings.Local.json
 TestResults/
 artifacts/
 node_modules/
+*.tsbuildinfo
+src/Frontend/DongNamTrip.Web/wwwroot/spa/
 __pycache__/
 *.pyc
-
-# Local AI assistant instructions
-.github/copilot-instructions.md
-.claude/
-CLAUDE.md
-.chatgpt/
-CHATGPT.md
