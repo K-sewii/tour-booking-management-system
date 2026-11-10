@@ -5,6 +5,8 @@ namespace DongNamTrip.Admin;
 
 public sealed class MainForm : Form
 {
+    public bool SessionEnded { get; private set; }
+
     private readonly Panel content = new()
     {
         Dock = DockStyle.Fill,
@@ -139,9 +141,21 @@ public sealed class MainForm : Form
         sidebar.Controls.Add(logout);
         logout.Click += async (_, _) =>
         {
-            await Ui.RunAsync(this, () => api.LogoutAsync(session.Token));
-            Close();
+            var revoked = false;
+            await Ui.RunAsync(this, async () =>
+            {
+                await api.LogoutAsync(session.Token);
+                revoked = true;
+            });
+            if (revoked)
+                EndSession();
         };
         Shown += (_, _) => navButtons[0].PerformClick();
+    }
+
+    internal void EndSession()
+    {
+        SessionEnded = true;
+        Close();
     }
 }
