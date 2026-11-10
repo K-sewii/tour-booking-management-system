@@ -20,6 +20,37 @@ public sealed class CatalogRepository(DongNamTripDbContext db)
 
     public Task<bool> PlaceExistsAsync(int id, CancellationToken ct) => db.Diadiem.AnyAsync(item => item.MaDd == id, ct);
 
+    public async Task<PlannerCatalog> PlannerCatalogAsync(CancellationToken ct)
+    {
+        var places = await DestinationsAsync(null, ct);
+        var activities = await db.Hoatdong.AsNoTracking()
+            .Where(item => item.TrangThai == Published && item.MaDdNavigation.TrangThai == Published)
+            .OrderBy(item => item.MaHd)
+            .Select(item => new PlannerActivity(item.MaHd, item.MaDd, item.TenHd, item.ThoiLuongPhut, item.DieuKien, item.PhiThamKhao))
+            .ToListAsync(ct);
+        var slots = await db.Suat.AsNoTracking()
+            .Where(item => item.TrangThai == Published && item.Ngay >= DateOnly.FromDateTime(DateTime.Today)
+                && item.MaHdNavigation.TrangThai == Published && item.MaHdNavigation.MaDdNavigation.TrangThai == Published)
+            .OrderBy(item => item.Ngay).ThenBy(item => item.GioBatDau)
+            .Select(item => new PlannerSlot(item.MaSuat, item.MaHd, item.MaHdNavigation.MaDd, item.Ngay, item.GioBatDau, item.GioKetThuc, item.TrangThai))
+            .ToListAsync(ct);
+        return new(places, activities, slots);
+    }
+
+    public async Task<ItineraryStopDraft[]?> TourTemplateAsync(int tourId, CancellationToken ct)
+    {
+        if (!await VisibleTours.AnyAsync(item => item.MaTour == tourId, ct)) return null;
+        return await db.TourDiadiem.AsNoTracking().Where(item => item.MaTour == tourId)
+            .OrderBy(item => item.NgayThu).ThenBy(item => item.ThuTu)
+            .Select(item => new ItineraryStopDraft { DestinationId = item.MaDd, Day = item.NgayThu, Order = item.ThuTu })
+            .ToArrayAsync(ct);
+    }
+
+    public Task<List<PlannerSlot>> SlotsAsync(IReadOnlyCollection<int> ids, CancellationToken ct) =>
+        db.Suat.AsNoTracking().Where(item => ids.Contains(item.MaSuat))
+            .Select(item => new PlannerSlot(item.MaSuat, item.MaHd, item.MaHdNavigation.MaDd, item.Ngay, item.GioBatDau, item.GioKetThuc, item.TrangThai))
+            .ToListAsync(ct);
+
     public async Task<Dictionary<int, string>> TourNamesAsync(IReadOnlyCollection<int> ids, CancellationToken ct) =>
         await VisibleTours.Where(item => ids.Contains(item.MaTour)).ToDictionaryAsync(item => item.MaTour, item => item.TenTour, ct);
 

@@ -17,6 +17,9 @@ public sealed class CatalogService(CatalogRepository repository) : ICatalogApi
     // Không ids: toàn bộ danh sách (Admin, MVC cũ); có ids: đúng thứ tự yêu cầu.
     public Task<List<Destination>> DestinationsAsync(IReadOnlyCollection<int>? ids, CancellationToken ct) => repository.DestinationsAsync(ids, ct);
     Task<List<Destination>> ICatalogApi.DestinationsAsync(IReadOnlyCollection<int> ids, CancellationToken ct) => repository.DestinationsAsync(ids, ct);
+    public Task<PlannerCatalog> PlannerCatalogAsync(CancellationToken ct) => repository.PlannerCatalogAsync(ct);
+    public Task<ItineraryStopDraft[]?> TourTemplateAsync(int tourId, CancellationToken ct) => repository.TourTemplateAsync(tourId, ct);
+    public Task<List<PlannerSlot>> SlotsAsync(IReadOnlyCollection<int> ids, CancellationToken ct) => repository.SlotsAsync(ids, ct);
     public Task<DestinationDetail?> DestinationDetailAsync(int id, CancellationToken ct) =>
         repository.DestinationDetailAsync(id, DateOnly.FromDateTime(DateTime.Today), ct);
     public Task<List<Tour>> ToursAsync(CancellationToken ct) => repository.ToursAsync(ct);

@@ -6,6 +6,7 @@ public sealed class ItineraryModule : IModule
     {
         services.AddScoped<ItineraryRepository>();
         services.AddScoped<ItineraryService>();
+        services.AddScoped<IItineraryApi>(provider => provider.GetRequiredService<ItineraryService>());
     }
 
     public void MapEndpoints(IEndpointRouteBuilder endpoints) => ItineraryEndpoints.Map(endpoints);

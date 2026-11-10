@@ -124,6 +124,7 @@ public sealed class MainForm : Form
         {
             Nav("Tour & khởi hành", () => new ToursControl(api));
             Nav("Đơn đặt tour", () => new ModuleControl("Đơn đặt tour", "Nhóm vận hành", ["Mã đơn", "Khách hàng", "Tour", "Tổng tiền", "Trạng thái"]));
+            Nav("Tour riêng & báo giá", () => new PrivateToursControl(api, session.Token));
             Nav("Tour riêng & báo giá", () => new ModuleControl("Yêu cầu tour riêng và báo giá", "Nhóm vận hành", ["Mã yêu cầu", "Khách hàng", "Ngày dự kiến", "Số khách", "Trạng thái"]));
         }
         if (Has(AppRoles.Finance))

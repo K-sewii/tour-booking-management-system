@@ -32,9 +32,9 @@ See [ADR-001](docs/architecture/ADR-001-modular-monolith.md).
 | Module | Subsystem | Current scope |
 | --- | --- | --- |
 | Catalog | PH1 | SQL catalog, destination/tour search and details, reference estimates, destination administration, activities and activity slots |
-| Itinerary | PH2 | SQL personal itineraries and previews |
+| Itinerary | PH2 | SQL personal itineraries, ordered stops, desired activity slots, editing and schedule warnings |
 | Booking | PH3 | Account-owned order/transaction history and saved payment preference; no complete booking/payment/refund workflow |
-| Quotation | PH4 | Registered module; no endpoints implemented yet |
+| Quotation | PH4 | Private-tour requests, service verification, quotes and accepting a current quote into a pending order |
 | Narration | PH5 | Narration editing, versions, translations, audio upload, publication status, authenticated listening and listen-right management |
 | Administration | PH6 | SQL accounts, roles, account area, in-memory API sessions and audit support |
 
