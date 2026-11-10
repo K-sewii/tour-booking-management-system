@@ -11,4 +11,7 @@ public interface ICatalogApi
     Task<Dictionary<int, string>> NamesAsync(string kind, IReadOnlyCollection<int> ids, CancellationToken ct);
     /// <summary>Trả về theo đúng thứ tự <paramref name="ids"/>, bỏ qua id không còn hiển thị.</summary>
     Task<List<Destination>> DestinationsAsync(IReadOnlyCollection<int> ids, CancellationToken ct);
+    Task<PlannerCatalog> PlannerCatalogAsync(CancellationToken ct);
+    Task<ItineraryStopDraft[]?> TourTemplateAsync(int tourId, CancellationToken ct);
+    Task<List<PlannerSlot>> SlotsAsync(IReadOnlyCollection<int> ids, CancellationToken ct);
 }

@@ -147,7 +147,7 @@ public class UpdateProfileRequest : IValidatableObject
     }
 }
 
-public class ItineraryDraft
+public class ItineraryDraft : IValidatableObject
 {
     [Required, StringLength(Limits.ItineraryNameMax)]
     public string Name { get; set; } = "";
@@ -157,11 +157,39 @@ public class ItineraryDraft
     [Range(Limits.GuestsMin, Limits.GuestsMax)]
     public int Guests { get; set; } = 2;
 
-    [Required, MinLength(1), MaxLength(Limits.MaxPlaces)]
+    [MaxLength(Limits.MaxPlaces)]
     public int[] DestinationIds { get; set; } = [];
+
+    [StringLength(250)] public string? DeparturePoint { get; set; }
+    [StringLength(50)] public string? Transport { get; set; }
+    [Range(0, 999999999999999999)] public decimal? Budget { get; set; }
+    [MaxLength(Limits.MaxPlaces)] public ItineraryStopDraft[] Stops { get; set; } = [];
+
+    public IEnumerable<ValidationResult> Validate(ValidationContext context)
+    {
+        if ((Stops?.Length ?? 0) == 0 && (DestinationIds?.Length ?? 0) == 0)
+            yield return new ValidationResult("Cần ít nhất một địa điểm.", [nameof(DestinationIds)]);
+    }
 }
 
-public record Itinerary(int Id, int UserId, string Name, DateOnly StartDate, int Guests, int[] DestinationIds, IReadOnlyList<string> DestinationNames, int TotalVisitMinutes);
+public class ItineraryStopDraft
+{
+    public int DestinationId { get; set; }
+    [Range(1, 30)] public int Day { get; set; } = 1;
+    [Range(1, Limits.MaxPlaces)] public int Order { get; set; } = 1;
+    [StringLength(500)] public string? Note { get; set; }
+    [MaxLength(20)] public int[] SlotIds { get; set; } = [];
+}
+
+public record Itinerary(int Id, int UserId, string Name, DateOnly StartDate, int Guests, int[] DestinationIds, IReadOnlyList<string> DestinationNames, int TotalVisitMinutes)
+{
+    public string? DeparturePoint { get; init; }
+    public string? Transport { get; init; }
+    public decimal? Budget { get; init; }
+    public DateTime UpdatedAt { get; init; }
+    public ItineraryStopDraft[] Stops { get; init; } = [];
+    public string[] Warnings { get; init; } = [];
+}
 
 public record ItineraryPreview(IReadOnlyList<Destination> Places, int TotalVisitMinutes);
 

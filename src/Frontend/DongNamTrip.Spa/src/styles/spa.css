@@ -18,3 +18,11 @@
 .header .nav nav .btn.outline:hover{background:#ffffff20}
 @media(max-width:850px){.header .nav nav .btn{width:100%}}
 @media(max-width:640px){.account-page .account-filter select{flex-basis:100%}.spa-state .btn{margin:12px 0 0}.account-page .account-list a,.account-page .account-list button{max-width:100%}}
+.stop-options { width: 100%; display: grid; gap: .6rem; margin-top: .7rem; }
+.stop-options fieldset { border: 1px solid #d6dfd6; border-radius: .6rem; padding: .7rem; display: grid; gap: .4rem; }
+.stop-options fieldset label { display: flex; align-items: center; gap: .5rem; }
+.stop-options fieldset input { width: auto; }
+.private-request-form { display: grid; gap: .7rem; margin-top: 1rem; }
+.private-request-form label { display: grid; gap: .3rem; }
+.private-request-form textarea { min-height: 5rem; }
+.private-quote { border-top: 1px solid #d6dfd6; margin-top: 1rem; padding-top: 1rem; }
