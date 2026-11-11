@@ -6,6 +6,7 @@ public sealed class BookingModule : IModule
     {
         services.AddScoped<BookingRepository>();
         services.AddScoped<PaymentService>();
+        services.AddScoped<IBookingStatisticsApi, BookingStatisticsService>();
     }
 
     public void MapEndpoints(IEndpointRouteBuilder endpoints) => BookingEndpoints.Map(endpoints);

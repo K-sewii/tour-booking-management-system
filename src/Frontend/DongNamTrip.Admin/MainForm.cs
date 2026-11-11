@@ -35,24 +35,25 @@ public sealed class MainForm : Form
             RowCount = 1,
             Margin = Padding.Empty
         };
-        shell.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 245));
+        shell.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 290));
         shell.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
+        var sidebarShell = new Panel { Dock = DockStyle.Fill, BackColor = Ui.Ink };
         var sidebar = new FlowLayoutPanel
         {
             Dock = DockStyle.Fill,
             BackColor = Ui.Ink,
-            Padding = new Padding(20, 26, 15, 15),
+            Padding = new Padding(16, 20, 10, 10),
             FlowDirection = FlowDirection.TopDown,
             WrapContents = false,
             AutoScroll = true,
             Margin = Padding.Empty
         };
-        var brand = Ui.Label("DongNamTrip", 21, true);
+        var brand = Ui.Label("DongNamTrip", 16, true);
         brand.ForeColor = Color.White;
         sidebar.Controls.Add(brand);
         var caption = Ui.Label("QUẢN TRỊ HÀNH TRÌNH", 9);
         caption.ForeColor = Color.FromArgb(178, 211, 190);
-        caption.Margin = new Padding(0, 5, 0, 35);
+        caption.Margin = new Padding(0, 5, 0, 20);
         sidebar.Controls.Add(caption);
 
         var body = new TableLayoutPanel
@@ -80,27 +81,41 @@ public sealed class MainForm : Form
         top.Controls.Add(account);
         body.Controls.Add(top, 0, 0);
         body.Controls.Add(content, 0, 1);
-        var status = Ui.Label("  SQL Server · Xác thực và phân quyền theo vai trò · Danh mục hiện vẫn là dữ liệu demo", 9);
+        var status = Ui.Label("  Xác thực và phân quyền theo vai trò", 9);
         status.Dock = DockStyle.Fill;
         body.Controls.Add(status, 0, 2);
-        shell.Controls.Add(sidebar, 0, 0);
+        sidebarShell.Controls.Add(sidebar);
+        shell.Controls.Add(sidebarShell, 0, 0);
         shell.Controls.Add(body, 1, 0);
         Controls.Add(shell);
 
-        void Nav(string title, Func<UserControl> factory)
+        Button? accountParent = null;
+        var childButtons = new List<Button>();
+        Button MakeNavButton(string title, bool child = false)
         {
             var button = Ui.Button(title);
             button.AutoSize = false;
-            button.Width = 200;
-            button.Height = 46;
+            button.Width = 250;
+            button.UseMnemonic = false;
+            button.Font = new Font("Segoe UI", child ? 9 : 9.5f);
+            button.Height = child ? 40 : 44;
+            button.Padding = new Padding(child ? 27 : 12, 4, 6, 4);
+            button.Margin = new Padding(0, 2, 0, 2);
             button.TextAlign = ContentAlignment.MiddleLeft;
             button.BackColor = Ui.Ink;
             button.ForeColor = Color.FromArgb(213, 232, 219);
             button.FlatAppearance.BorderSize = 0;
+            sidebar.Controls.Add(button);
+            return button;
+        }
+        void Nav(string title, Func<UserControl> factory, bool child = false)
+        {
+            var button = MakeNavButton(title, child);
             button.Click += (_, _) =>
             {
                 foreach (var navButton in navButtons)
                     navButton.BackColor = Ui.Ink;
+                if (accountParent is not null) accountParent.BackColor = child ? Color.FromArgb(31, 91, 79) : Ui.Ink;
                 button.BackColor = Ui.Green;
                 heading.Text = title;
                 foreach (Control old in content.Controls.Cast<Control>().ToArray())
@@ -114,7 +129,7 @@ public sealed class MainForm : Form
                 content.Controls.Add(screen);
             };
             navButtons.Add(button);
-            sidebar.Controls.Add(button);
+            if (child) childButtons.Add(button);
         }
 
         Nav("Tổng quan", () => new DashboardControl(api, session.User.Name));
@@ -127,18 +142,39 @@ public sealed class MainForm : Form
             Nav("Tour & khởi hành", () => new ToursControl(api));
             Nav("Đơn đặt tour", () => new ModuleControl("Đơn đặt tour", "Nhóm vận hành", ["Mã đơn", "Khách hàng", "Tour", "Tổng tiền", "Trạng thái"]));
             Nav("Tour riêng & báo giá", () => new PrivateToursControl(api, session.Token));
-            Nav("Tour riêng & báo giá", () => new ModuleControl("Yêu cầu tour riêng và báo giá", "Nhóm vận hành", ["Mã yêu cầu", "Khách hàng", "Ngày dự kiến", "Số khách", "Trạng thái"]));
         }
         if (Has(AppRoles.Finance))
             Nav("Tài chính", () => new ModuleControl("Thu, hoàn tiền và đối soát", "Nhóm tài chính", ["Mã giao dịch", "Đơn đặt", "Số tiền", "Trạng thái"]));
         if (Has(AppRoles.Admin, AppRoles.Editor, AppRoles.Publisher))
             Nav("Thuyết minh & audio", () => new NarrationsControl(api, session.Token, session.User.Roles.ToArray()));
         if (Has(AppRoles.Admin))
-            Nav("Tài khoản", () => new ModuleControl("Tài khoản và phân quyền", "Quản trị viên", ["Họ tên", "Email", "Vai trò", "Trạng thái"]));
+        {
+            accountParent = MakeNavButton("▾  Tài khoản và\n    phân quyền");
+            accountParent.Height = 62;
+            accountParent.Click += (_, _) =>
+            {
+                var expand = !childButtons[0].Visible;
+                foreach (var child in childButtons) child.Visible = expand;
+                accountParent.Text = (expand ? "▾  " : "▸  ") + "Tài khoản và\n    phân quyền";
+            };
+            Nav("Quản lý tài khoản", () => new AccountManagementControl(api, session.Token), true);
+            Nav("Nhật ký hoạt động", () => new AuditLogControl(api, session.Token), true);
+            Nav("Thống kê kinh doanh", () => new BusinessStatisticsControl(api, session.Token));
+        }
+        void FitSidebar()
+        {
+            var width = Math.Max(120, sidebar.ClientSize.Width - sidebar.Padding.Horizontal - SystemInformation.VerticalScrollBarWidth - 4);
+            foreach (var button in sidebar.Controls.OfType<Button>()) button.Width = width;
+        }
+        sidebar.Resize += (_, _) => FitSidebar();
+        FitSidebar();
 
         var logout = Ui.Button("Đăng xuất & đóng");
-        logout.Margin = new Padding(0, 30, 0, 0);
-        sidebar.Controls.Add(logout);
+        logout.Dock = DockStyle.Bottom;
+        logout.AutoSize = false;
+        logout.Height = 48;
+        logout.UseMnemonic = false;
+        sidebarShell.Controls.Add(logout);
         logout.Click += async (_, _) =>
         {
             var revoked = false;

@@ -1,12 +1,26 @@
 using DongNamTrip.Modules.Persistence;
 using DongNamTrip.Modules.Persistence.Entities;
 using Microsoft.EntityFrameworkCore;
+using DongNamTrip.Contracts;
 
 namespace DongNamTrip.Modules.Booking;
 
 /// <summary>Chỉ đọc/ghi DONDAT, GIAODICHTIEN và lựa chọn thanh toán của tài khoản.</summary>
 public sealed class BookingRepository(DongNamTripDbContext db)
 {
+    public async Task<AdminStatistics> StatisticsAsync(DateOnly from, DateOnly to, string? status, CancellationToken ct)
+    {
+        // SQL timestamps are UTC; business dates are Vietnam time (UTC+07:00).
+        var start = from.ToDateTime(TimeOnly.MinValue).AddHours(-7);
+        var end = to.AddDays(1).ToDateTime(TimeOnly.MinValue).AddHours(-7);
+        var orders = db.Dondat.AsNoTracking().Where(x => x.NgayDat >= start && x.NgayDat < end);
+        var statuses = await db.Dondat.AsNoTracking().Select(x => x.TrangThai).Distinct().OrderBy(x => x).ToListAsync(ct);
+        if (!string.IsNullOrWhiteSpace(status)) orders = orders.Where(x => x.TrangThai == status);
+        var grouped = await orders.GroupBy(x => x.TrangThai).Select(g => new { Status = g.Key, Count = g.Count(), Value = g.Sum(x => x.GiaChot) }).OrderBy(x => x.Status).ToListAsync(ct);
+        var rows = grouped.Select(x => new AdminStatisticsRow(x.Status, x.Count, x.Value)).ToList();
+        // No contract defines transaction types, so totals cannot yet be classified.
+        return new AdminStatistics(from, to, rows.Sum(x => x.OrderValue), null, null, null, rows, statuses);
+    }
     public Task<List<Dondat>> OrdersAsync(int accountId, CancellationToken ct) =>
         db.Dondat.AsNoTracking().Where(item => item.MaTk == accountId)
             .Include(item => item.Giaodichtien).OrderByDescending(item => item.NgayDat).ToListAsync(ct);

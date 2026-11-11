@@ -16,6 +16,8 @@ public sealed class AdministrationModule : IModule
         services.AddScoped<AccountAreaService>();
         services.AddScoped<AuditRepository>();
         services.AddScoped<AuditService>();
+        services.AddScoped<AdminAccountRepository>();
+        services.AddScoped<AdminAccountService>();
         services.AddScoped<IAdministrationApi>(sp => sp.GetRequiredService<AuditService>());
         services.AddSingleton<DevelopmentAdminBootstrapper>();
         services.AddSingleton<DevelopmentTestAccountsBootstrapper>();
