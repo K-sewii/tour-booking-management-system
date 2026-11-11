@@ -268,7 +268,8 @@ def run():
     other_items = request(API + '/api/itineraries', token=other['token'])
     assert all(item['id'] != trip['id'] for item in other_items), 'A SQL account must not inherit another account\'s demo itinerary.'
 
-    staff_email, _, staff = registration('Nhân viên đa vai trò')
+    staff_email, staff_password, staff = registration('Nhân viên đa vai trò')
+    original_customer_token = staff['token']
     sql_non_query(f'''
 INSERT INTO TAIKHOAN_VAITRO (MaTK, MaVaiTro)
 SELECT account.MaTK, role.MaVaiTro
@@ -277,8 +278,11 @@ CROSS JOIN VAITRO AS role
 WHERE account.Email = {sql_literal(staff_email)}
   AND role.TenVaiTro IN ('Admin', 'Editor');
 ''')
-    staff_me = request(API + '/api/auth/me', token=staff['token'])
-    assert set(staff_me['roles']) == {'Admin', 'Customer', 'Editor'}
+    assert request(API + '/api/auth/me', token=original_customer_token)['roles'] == ['Customer']
+    request(API + '/api/staff/private-tour-requests', token=original_customer_token, expected=403)
+    staff = request(API + '/api/auth/login', 'POST', {'email': staff_email, 'password': staff_password})
+    assert set(staff['user']['roles']) == {'Admin', 'Customer', 'Editor'}
+    assert set(request(API + '/api/auth/me', token=staff['token'])['roles']) == {'Admin', 'Customer', 'Editor'}
     planner = request(API + '/api/planner/catalog')
     assert len(planner['destinations']) >= 2
     request(API + f"/api/itineraries/{trip['id']}", token=other['token'], expected=404)
@@ -318,7 +322,12 @@ INNER JOIN TAIKHOAN AS account ON account.MaTK = assignment.MaTK
 INNER JOIN VAITRO AS role ON role.MaVaiTro = assignment.MaVaiTro
 WHERE account.Email = {sql_literal(staff_email)} AND role.TenVaiTro IN ('Admin', 'Editor');
 ''')
-    request(API + '/api/destinations', 'POST', {'name': 'Quyền đã bị gỡ', 'region': 'Tây Ninh', 'category': 'Văn hóa', 'address': 'Không lưu', 'description': 'Role bị gỡ phải có hiệu lực ngay.', 'visitMinutes': 60}, token=staff['token'], expected=403)
+    assert set(request(API + '/api/auth/me', token=staff['token'])['roles']) == {'Admin', 'Customer', 'Editor'}
+    request(API + '/api/staff/private-tour-requests', token=staff['token'])
+    after_revoke = request(API + '/api/auth/login', 'POST', {'email': staff_email, 'password': staff_password})
+    assert after_revoke['user']['roles'] == ['Customer']
+    assert request(API + '/api/auth/me', token=after_revoke['token'])['roles'] == ['Customer']
+    request(API + '/api/staff/private-tour-requests', token=after_revoke['token'], expected=403)
 
     locked_email, locked_password, locked = registration('Tài khoản khóa')
     sql_non_query(f"UPDATE TAIKHOAN SET TrangThai = 'Locked' WHERE Email = {sql_literal(locked_email)};")
@@ -349,7 +358,7 @@ WHERE account.Email = {sql_literal(staff_email)} AND role.TenVaiTro IN ('Admin',
 
     request(API + '/api/auth/logout', 'POST', token=customer_token, expected=204)
     request(API + '/api/auth/me', token=customer_token, expected=401)
-    print(f'PASS: {checks} functional HTTP checks; SQL registration, duplicate email, password, dynamic roles, lock, logout, ownership and Web login.')
+    print(f'PASS: {checks} functional HTTP checks; SQL registration, duplicate email, password, session role snapshots, lock, logout, ownership and Web login.')
 
 
 def run_expiry_checks(session_lifetime_seconds):
