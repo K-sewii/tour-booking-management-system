@@ -322,7 +322,7 @@ VALUES (N'SMOKE tour {suffix}', N'Tay Ninh', N'Van hoa', N'1 ngay', 1000, N'Tour
 SET @tour = SCOPE_IDENTITY();
 INSERT INTO dbo.TOUR_DIADIEM (MaTour, MaDD, NgayThu, ThuTu) VALUES (@tour, {place_id}, 1, 1);
 INSERT INTO dbo.LICHKHOIHANH (MaTour, NgayGioKhoiHanh, Gia, SucChua, SoChoDaGiu, TrangThai)
-VALUES (@tour, DATEADD(day, 3, SYSUTCDATETIME()), 1000, 10, 1, 'Draft');
+VALUES (@tour, DATEADD(day, 3, SYSUTCDATETIME()), 1000, 10, 1, 'Inactive');
 SET @lkh = SCOPE_IDENTITY();
 INSERT INTO dbo.DONDAT (MaTK, MaLKH, SoKhach, GiaChot, DieuKienHuy, TrangThai)
 SELECT MaTK, @lkh, 1, 1000, N'Kiem thu', 'Confirmed' FROM dbo.TAIKHOAN WHERE Email = {smoke.sql_literal(customer_email)};
