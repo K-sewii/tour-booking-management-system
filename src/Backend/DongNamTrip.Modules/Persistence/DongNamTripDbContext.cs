@@ -117,7 +117,7 @@ public partial class DongNamTripDbContext : DbContext
             entity.Property(e => e.TrangThai)
                 .HasMaxLength(20)
                 .IsUnicode(false)
-                .HasDefaultValue("Draft", "DF_BAOGIA_TrangThai");
+                .HasDefaultValue(DongNamTrip.Contracts.QuoteStatus.Sent, "DF_BAOGIA_TrangThai");
 
             entity.HasOne(d => d.MaPbNavigation).WithMany(p => p.Baogia)
                 .HasForeignKey(d => d.MaPb)
@@ -172,6 +172,9 @@ public partial class DongNamTripDbContext : DbContext
             entity.Property(e => e.DieuKienHuy).HasMaxLength(2000);
             entity.Property(e => e.GiaChot).HasColumnType("decimal(18, 0)");
             entity.Property(e => e.LyDoHuy).HasMaxLength(1000);
+            entity.Property(e => e.TrangThaiTruocHuy).HasMaxLength(20).IsUnicode(false);
+            entity.Property(e => e.KhoanCanThu).HasColumnType("decimal(18, 0)");
+            entity.Property(e => e.LienHe).HasMaxLength(250);
             entity.Property(e => e.MaBg).HasColumnName("MaBG");
             entity.Property(e => e.MaLkh).HasColumnName("MaLKH");
             entity.Property(e => e.MaTk).HasColumnName("MaTK");
@@ -243,6 +246,7 @@ public partial class DongNamTripDbContext : DbContext
             entity.Property(e => e.DonViTinh).HasMaxLength(50);
             entity.Property(e => e.MaBg).HasColumnName("MaBG");
             entity.Property(e => e.MoTa).HasMaxLength(500);
+            entity.Property(e => e.TrongGoi).HasDefaultValue(false, "DF_HANGMUCBAOGIA_TrongGoi");
 
             entity.HasOne(d => d.MaBgNavigation).WithMany(p => p.Hangmucbaogia)
                 .HasForeignKey(d => d.MaBg)
@@ -290,7 +294,7 @@ public partial class DongNamTripDbContext : DbContext
             entity.Property(e => e.TrangThai)
                 .HasMaxLength(20)
                 .IsUnicode(false)
-                .HasDefaultValue("Draft", "DF_LICHKHOIHANH_TrangThai");
+                .HasDefaultValue(DongNamTrip.Contracts.DepartureStatus.Open, "DF_LICHKHOIHANH_TrangThai");
 
             entity.HasOne(d => d.MaTourNavigation).WithMany(p => p.Lichkhoihanh)
                 .HasForeignKey(d => d.MaTour)

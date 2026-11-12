@@ -20,5 +20,7 @@ public partial class Hangmucbaogia
 
     public decimal DonGia { get; set; }
 
+    public bool TrongGoi { get; set; }
+
     public virtual Baogia MaBgNavigation { get; set; } = null!;
 }

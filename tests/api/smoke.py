@@ -170,6 +170,8 @@ def running_apps(session_lifetime_seconds=300, *, api_only=False, spa=False):
     environment['BootstrapAdmin__Enabled'] = 'false'
     environment['DevelopmentTestAccounts__Enabled'] = 'false'
     environment['Spa__Enabled'] = 'true' if spa else 'false'
+    environment['Booking__ExpiryIntervalMinutes'] = '0.05'  # workers tick every 3 s so tests can observe expiry
+    environment['Quotation__ExpiryIntervalMinutes'] = '0.05'
     environment['Logging__LogLevel__System.Net.Http'] = 'Warning'  # keep CI logs readable
     processes, logs = [], []
     try:
@@ -283,33 +285,7 @@ WHERE account.Email = {sql_literal(staff_email)}
     assert len(planner['destinations']) >= 2
     request(API + f"/api/itineraries/{trip['id']}", token=other['token'], expected=404)
     request(API + f"/api/itineraries/{trip['id']}", 'PUT', itinerary, token=other['token'], expected=404)
-    tour_request = request(API + f"/api/itineraries/{trip['id']}/requests", 'POST',
-                           {'contact': '0900000000', 'serviceNeeds': 'Xe và bữa trưa'}, token=customer_token)
-    assert tour_request['snapshot']['id'] == trip['id']
-    request(API + f"/api/private-tour-requests/{tour_request['id']}", token=other['token'], expected=404)
-    assert any(item['id'] == tour_request['id'] for item in request(API + '/api/staff/private-tour-requests', token=staff['token']))
-    quote_body = {'expiresAt': (datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(days=2)).isoformat(),
-                  'amountDue': 200000, 'cancellationTerms': 'Hoàn trước 48 giờ',
-                  'lines': [{'description': 'Dịch vụ tour riêng', 'unit': 'khách', 'quantity': 2, 'unitPrice': 500000}]}
-    request(API + f"/api/staff/private-tour-requests/{tour_request['id']}/quotes", 'POST', quote_body, token=staff['token'], expected=409)
-    request(API + f"/api/staff/private-tour-requests/{tour_request['id']}/verifications", 'POST',
-            {'item': 'Xe', 'supplier': 'Đơn vị thử', 'result': 'Available'}, token=staff['token'])
-    first = request(API + f"/api/staff/private-tour-requests/{tour_request['id']}/quotes", 'POST', quote_body, token=staff['token'])['quotes'][-1]
-    changed = {**itinerary, 'name': 'Lịch trình đã sửa'}
-    request(API + f"/api/itineraries/{trip['id']}", 'PUT', changed, token=customer_token)
-    request(API + f"/api/private-tour-requests/{tour_request['id']}/quotes/{first['id']}/accept", 'POST', {}, token=customer_token, expected=409)
-    updated = request(API + f"/api/itineraries/{trip['id']}/requests", 'POST',
-                      {'contact': '0900000000', 'serviceNeeds': 'Xe và bữa trưa'}, token=customer_token)
-    assert updated['id'] != tour_request['id']
-    request(API + f"/api/staff/private-tour-requests/{updated['id']}/verifications", 'POST',
-            {'item': 'Xe', 'supplier': 'Đơn vị thử', 'result': 'Available'}, token=staff['token'])
-    replaced = request(API + f"/api/staff/private-tour-requests/{updated['id']}/quotes", 'POST', quote_body, token=staff['token'])['quotes'][-1]
-    final_quote = request(API + f"/api/staff/private-tour-requests/{updated['id']}/quotes", 'POST', quote_body, token=staff['token'])['quotes'][-1]
-    request(API + f"/api/private-tour-requests/{updated['id']}/quotes/{replaced['id']}/accept", 'POST', {}, token=customer_token, expected=409)
-    order = request(API + f"/api/private-tour-requests/{updated['id']}/quotes/{final_quote['id']}/accept", 'POST', {}, token=customer_token)
-    assert order['quoteId'] == final_quote['id'] and order['agreedPrice'] == 1000000
-    assert request(API + f"/api/private-tour-requests/{updated['id']}/quotes/{final_quote['id']}/accept", 'POST', {}, token=customer_token)['id'] == order['id']
-    assert any(item['id'] == order['id'] for item in request(API + '/api/private-tour-orders', token=customer_token))
+    # Yêu cầu tour riêng và báo giá: xem quotation_flow.py.
     request(API + '/api/destinations', 'POST', {'name': 'Điểm kiểm tra quyền', 'region': 'Tây Ninh', 'category': 'Văn hóa', 'address': 'Chỉ bộ nhớ', 'description': 'Xác nhận Admin hoặc Editor được phép.', 'visitMinutes': 60}, token=staff['token'])
     sql_non_query(f'''
 DELETE assignment

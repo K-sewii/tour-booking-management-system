@@ -3,6 +3,7 @@ import { BrowserRouter, Link, Navigate, Route, Routes, useLocation } from 'react
 import { AuthProvider, useAuth } from '../auth/AuthContext';
 import { DestinationDetailPage } from '../features/destinations/DestinationDetailPage';
 import { DestinationsPage } from '../features/destinations/DestinationsPage';
+import { BookingsPage } from '../features/account/BookingsPage';
 import { FavoritesPage } from '../features/account/FavoritesPage';
 import { HomePage } from '../features/home/HomePage';
 import { ListenPage } from '../features/listen/ListenPage';
@@ -51,6 +52,8 @@ function Content() {
     <Route path="/Account/Security" element={<RequireAuth><SecurityPage/></RequireAuth>}/>
     <Route path="/Account/Payments" element={<RequireAuth><PaymentsPage/></RequireAuth>}/>
     <Route path="/Account/Payments/:id" element={<RequireAuth><PaymentsPage/></RequireAuth>}/>
+    <Route path="/Account/Bookings" element={<RequireAuth><BookingsPage/></RequireAuth>}/>
+    <Route path="/Account/Bookings/:id" element={<RequireAuth><BookingsPage/></RequireAuth>}/>
     <Route path="/Account/Favorites" element={<RequireAuth><FavoritesPage/></RequireAuth>}/>
     <Route path="/Account/Notices" element={<RequireAuth><NoticesPage/></RequireAuth>}/>
     <Route path="*" element={<div className="container section spa-state"><h1>Không tìm thấy trang.</h1><Link className="btn" to="/">Về trang chủ</Link></div>}/>

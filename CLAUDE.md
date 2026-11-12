@@ -107,6 +107,7 @@ Integration and browser runners:
 ```powershell
 python .\tests\api\smoke.py --start
 python .\tests\api\auth_screens.py --start
+python .\tests\api\catalog_admin.py --start   # also itinerary_check.py, booking_flow.py, quotation_flow.py, user_admin.py
 python .\tests\api\content_screens.py --start
 python .\tests\e2e\browser_runner.py
 python .\tests\spa\spa_runner.py
@@ -149,8 +150,8 @@ Architecture decision:
 | --- | --- | --- |
 | Catalog | SQL catalog, destination/tour search and details, reference estimates, destination administration, activities and activity slots | Shared persistence remains; an estimate does not create an order |
 | Itinerary | SQL personal itineraries and previews | Do not describe this as a complete private-tour quotation or booking workflow |
-| Booking | Account-owned order/transaction history and saved payment preference | No complete order creation, payment collection, refund or payment-gateway workflow |
-| Quotation | Registered module | No endpoints/services/repositories implemented yet |
+| Booking | Booking with seat holding, cancel requests, staff confirm/adjust/complete, receipts and refunds, hold-expiry worker | No payment gateway; refund amount is decided by staff |
+| Quotation | Private-tour requests, verification, quotes, accept/change-request, quote-expiry worker | None |
 | Narration | Narration editing, versions, translations, audio upload, publication status, authenticated listening and listen-right management | Do not infer a completed payment-to-listening entitlement workflow from the presence of listen-right endpoints |
 | Administration | SQL accounts, roles, account area, session management and audit support | API sessions remain in memory; direct DbContext access in SqlAuthentication is known debt |
 

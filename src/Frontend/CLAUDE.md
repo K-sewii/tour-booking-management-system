@@ -80,3 +80,9 @@ npm run build       # tsc -b && vite build → ..\DongNamTrip.Web\wwwroot\spa
 | Danh sách route lặp ở `App.tsx` và `Web/Program.cs` | Catch-all về `index.html` cho mọi GET HTML ngoài `/spa-api` |
 | `SpaBridgeController` lặp khối `catch → 503` | Gom vào filter/middleware |
 | Không code-splitting | `React.lazy` theo route khi bundle lớn hơn |
+
+## Luồng đặt tour, tour riêng và quản trị (đã có)
+
+- SPA: `TourDetailPage` (khung đặt tour theo lịch khởi hành), `BookingsPage` (`/Account/Bookings`), `TripsPage` (yêu cầu tour riêng, báo giá, kiểm tra lịch). Giá, số chỗ, khoản cần thu và hạn giữ chỗ do backend tính; SPA chỉ hiển thị.
+- Web BFF: route mới phải được thêm vào `AllowedProxy` (và `PublicCatalog` nếu công khai) trong `SpaBridgeController`, và vào regex fallback SPA trong `Web/Program.cs`.
+- WinForms: `ToursControl` (SCR16), `BookingsControl` (SCR17; menu "Đơn đặt tour" cho Admin/Operator, "Tài chính" cho Admin/Finance), `PrivateToursControl` (SCR18), `UsersControl` (SCR19), `DashboardControl` (SCR13). Đổi vai trò có hiệu lực sau khi người dùng đăng nhập lại.

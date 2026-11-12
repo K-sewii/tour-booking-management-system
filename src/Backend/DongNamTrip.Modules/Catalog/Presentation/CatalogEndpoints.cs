@@ -117,6 +117,17 @@ public static class CatalogEndpoints
             .Produces<TourDetail>()
             .Produces(StatusCodes.Status404NotFound);
 
+        tours.MapGet("/{id:int}/departures", async (
+            int id,
+            CatalogService catalog,
+            CancellationToken ct) =>
+            await catalog.DeparturesAsync(id, ct) is { } items
+                ? Results.Ok(items)
+                : Results.NotFound())
+            .WithSummary("List open departures of a published tour")
+            .Produces<List<DepartureInfo>>()
+            .Produces(StatusCodes.Status404NotFound);
+
         tours.MapGet("/{id:int}/estimate", async (
             int id,
             int guests,
