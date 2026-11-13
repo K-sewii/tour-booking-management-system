@@ -36,19 +36,26 @@ def run():
         request(f"{API}/api/admin/destinations/{created['id']}/status", 'POST', {'status': 'Published'}, token=ed)
         return created['id']
 
-    def slot(place_id, name, date, start, end):
+    def slot(place_id, name, date, start, end, expected=200):
         activity = request(API + '/api/admin/activities', 'POST', {'destinationId': place_id, 'name': f'Hoạt động {name} {suffix}', 'description': 'Kiểm thử',
                                                                     'durationMinutes': 60, 'conditions': 'Không', 'referenceFee': 100000}, token=ed)
         request(f"{API}/api/admin/activities/{activity['id']}/status", 'POST', {'status': 'Published'}, token=ed)
-        return request(f"{API}/api/admin/activities/{activity['id']}/slots", 'POST', {'date': date, 'start': start, 'end': end}, token=ed)['id']
+        result = request(f"{API}/api/admin/activities/{activity['id']}/slots", 'POST', {'date': date, 'start': start, 'end': end}, token=ed, expected=expected)
+        return result['id'] if expected == 200 else None
 
-    a = place('A', {'openTime': '08:00:00', 'closeTime': '17:00:00'})
+    # Create the early slot while the venue is open, then narrow its hours to
+    # represent a previously valid slot affected by a later schedule change.
+    a = place('A', {'openTime': '06:00:00', 'closeTime': '17:00:00'})
     b = place('B', {'openTime': '08:00:00', 'closeTime': '17:00:00'})
     c = place('C', {})
     start = day(5)
     s_a = slot(a, 'a', start, '09:00:00', '10:00:00')
     s_b = slot(b, 'b', start, '10:10:00', '11:10:00')       # cách s_a 10 phút < đệm 30 phút: Overlap
     s_early = slot(a, 'sớm', start, '06:00:00', '07:00:00')  # ngoài giờ mở cửa: OutOfHours
+    request(f'{API}/api/admin/destinations/{a}', 'PUT',
+            {'name': f'SMOKE Lịch A {suffix}', 'region': 'Tây Ninh', 'category': 'Văn hóa', 'address': 'Thử nghiệm',
+             'description': 'Địa điểm kiểm tra lịch.', 'visitMinutes': 60, 'openTime': '08:00:00', 'closeTime': '17:00:00'}, token=ed)
+    slot(a, 'không hợp lệ', start, '06:00:00', '07:00:00', expected=400)
     s_wrong = slot(b, 'lệch', day(7), '09:00:00', '10:00:00')  # ngày khác ngày thứ 1: WrongDate
     s_c = slot(c, 'c', start, '14:00:00', '15:00:00')
 

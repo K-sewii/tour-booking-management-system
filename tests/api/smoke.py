@@ -119,10 +119,17 @@ finally {{
     if ($connection) {{ $connection.Dispose() }}
 }}
 '''
-    encoded = base64.b64encode(script.encode('utf-16le')).decode()
     environment = os.environ.copy()
     environment['DONGNAMTRIP_TEST_CONNECTION'] = user_secrets_connection_string()
-    subprocess.run(['powershell', '-NoProfile', '-NonInteractive', '-OutputFormat', 'Text', '-EncodedCommand', encoded], cwd=ROOT, env=environment, check=True)
+    # A large cleanup can exceed Windows' command-line limit when encoded inline.
+    # Windows PowerShell requires a BOM to read Vietnamese SQL literals as UTF-8.
+    with tempfile.NamedTemporaryFile(mode='w', encoding='utf-8-sig', suffix='.ps1', delete=False) as temp_script:
+        temp_script.write(script)
+        script_path = Path(temp_script.name)
+    try:
+        subprocess.run(['powershell', '-NoProfile', '-NonInteractive', '-OutputFormat', 'Text', '-File', str(script_path)], cwd=ROOT, env=environment, check=True)
+    finally:
+        script_path.unlink(missing_ok=True)
 
 
 def sql_literal(value):

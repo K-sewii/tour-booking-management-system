@@ -201,7 +201,7 @@ def run():
     check(any('hết hạn' in note['title'] for note in request(API + '/api/account/notices', token=t2)), 'Customer must be notified about expiry.')
     request(f'{API}/api/account/bookings/{late}/cancel', 'POST', {'reason': 'x'}, token=t2, expected=409)
     late_dep = admin(f'/bookings/{late}', token=op)['detail']['booking']['requiredDeposit']
-    admin(f'/bookings/{late}/money', method='POST', token=fin, data={'kind': 'Receipt', 'amount': late_dep, 'reference': ref + 'L', 'at': now_iso()})
+    admin(f'/bookings/{late}/money', method='POST', token=fin, data={'kind': 'Receipt', 'amount': late_dep, 'reference': ref + 'L', 'at': now_iso()}, expected=201)
     check(admin(f'/bookings/{late}/confirm', method='POST', token=op)['status'] == 'Confirmed', 'Late payment must allow confirming an expired order.')
     check(departure(big)['held'] == held_before + 1, 'Late confirmation must hold the seat again.')
 
