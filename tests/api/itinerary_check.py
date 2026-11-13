@@ -47,7 +47,7 @@ def run():
     c = place('C', {})
     start = day(5)
     s_a = slot(a, 'a', start, '09:00:00', '10:00:00')
-    s_b = slot(b, 'b', start, '10:10:00', '11:00:00')       # cách s_a 10 phút < đệm 30 phút: Overlap
+    s_b = slot(b, 'b', start, '10:10:00', '11:10:00')       # cách s_a 10 phút < đệm 30 phút: Overlap
     s_early = slot(a, 'sớm', start, '06:00:00', '07:00:00')  # ngoài giờ mở cửa: OutOfHours
     s_wrong = slot(b, 'lệch', day(7), '09:00:00', '10:00:00')  # ngày khác ngày thứ 1: WrongDate
     s_c = slot(c, 'c', start, '14:00:00', '15:00:00')
