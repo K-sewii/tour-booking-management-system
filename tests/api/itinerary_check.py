@@ -47,8 +47,10 @@ def run():
     c = place('C', {})
     start = day(5)
     s_a = slot(a, 'a', start, '09:00:00', '10:00:00')
-    s_b = slot(b, 'b', start, '10:10:00', '11:00:00')       # cách s_a 10 phút < đệm 30 phút: Overlap
-    s_early = slot(a, 'sớm', start, '06:00:00', '07:00:00')  # ngoài giờ mở cửa: OutOfHours
+    s_b = slot(b, 'b', start, '10:10:00', '11:10:00')       # cách s_a 10 phút < đệm 30 phút: Overlap
+    # API không cho tạo suất ngoài giờ mở cửa; suất chỉ ra ngoài giờ khi địa điểm đổi giờ về sau, nên dời trực tiếp trong SQL: OutOfHours
+    s_early = slot(a, 'sớm', start, '08:00:00', '09:00:00')
+    smoke.sql_non_query(f"UPDATE SUAT SET GioBatDau = '06:00:00', GioKetThuc = '07:00:00' WHERE MaSuat = {s_early}")
     s_wrong = slot(b, 'lệch', day(7), '09:00:00', '10:00:00')  # ngày khác ngày thứ 1: WrongDate
     s_c = slot(c, 'c', start, '14:00:00', '15:00:00')
 
