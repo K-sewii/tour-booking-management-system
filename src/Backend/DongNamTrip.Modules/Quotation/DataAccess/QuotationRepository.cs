@@ -1,126 +1,97 @@
-using System.Data;
 using DongNamTrip.Contracts;
 using DongNamTrip.Modules.Persistence;
 using DongNamTrip.Modules.Persistence.Entities;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage;
 
 namespace DongNamTrip.Modules.Quotation;
 
-public enum QuotationWriteStatus { Saved, NotFound, Conflict, NeedsVerification, StaleItinerary }
-public sealed record QuotationWrite<T>(QuotationWriteStatus Status, T? Value = default);
-
-/// <summary>Persists private-tour requests, itinerary snapshots, verification, quotes and accepted orders.</summary>
+/// <summary>
+/// Ghi YEUCAUTOURRIENG, XACMINHDICHVU, BAOGIA, HANGMUCBAOGIA. Chỉ đọc PHIENBANLICHTRINH và LICHTRINH (để lọc theo chủ và lấy số phiên bản);
+/// mọi ghi vào lịch trình đi qua IItineraryApi.
+/// </summary>
 public sealed class QuotationRepository(DongNamTripDbContext db)
 {
-    public Task<List<int>> RequestIdsAsync(int accountId, bool staff, CancellationToken ct) =>
-        db.Yeucautourrieng.AsNoTracking().Where(item => staff || item.MaPbNavigation.MaLtNavigation.MaTk == accountId)
-            .OrderByDescending(item => item.NgayGui).Select(item => item.MaYc).ToListAsync(ct);
+    public Task<IDbContextTransaction> BeginAsync(CancellationToken ct) => db.Database.BeginTransactionAsync(ct);
 
-    public Task<Yeucautourrieng?> RequestAsync(int id, int accountId, bool staff, CancellationToken ct) =>
-        db.Yeucautourrieng.AsNoTracking()
-            .Include(item => item.MaPbNavigation).ThenInclude(version => version.MaLtNavigation).ThenInclude(trip => trip.MaTkNavigation)
-            .Include(item => item.Xacminhdichvu)
-            .Include(item => item.Baogia).ThenInclude(quote => quote.Hangmucbaogia)
-            .Include(item => item.Baogia).ThenInclude(quote => quote.Dondat)
-            .AsSplitQuery().SingleOrDefaultAsync(item => item.MaYc == id && (staff || item.MaPbNavigation.MaLtNavigation.MaTk == accountId), ct);
+    private static readonly string[] Open = [QuoteRequestStatus.Submitted, QuoteRequestStatus.Verifying, QuoteRequestStatus.Quoted];
 
-    public async Task<int> SubmitAsync(int itineraryId, string snapshotJson, int guests, PrivateTourRequestDraft draft, CancellationToken ct)
+    private IQueryable<Yeucautourrieng> Requests => db.Yeucautourrieng.AsNoTracking().Include(item => item.MaPbNavigation);
+
+    /// <summary>Yêu cầu đang mở (Submitted, Verifying, Quoted) của lịch trình thuộc tài khoản.</summary>
+    public Task<Yeucautourrieng?> OpenRequestAsync(int accountId, int itineraryId, CancellationToken ct) =>
+        Requests.Where(item => item.MaPbNavigation.MaLt == itineraryId && item.MaPbNavigation.MaLtNavigation.MaTk == accountId && Open.Contains(item.TrangThai))
+            .OrderByDescending(item => item.MaYc).FirstOrDefaultAsync(ct);
+
+    public async Task<int> AddRequestAsync(Yeucautourrieng row, CancellationToken ct)
     {
-        await using var transaction = await db.Database.BeginTransactionAsync(IsolationLevel.Serializable, ct);
-        var latest = await db.Phienbanlichtrinh.Where(item => item.MaLt == itineraryId)
-            .OrderByDescending(item => item.SoPhienBan).FirstOrDefaultAsync(ct);
-        var needs = draft.ServiceNeeds?.Trim();
-        if (latest?.NoiDungJson == snapshotJson)
-        {
-            var existing = await db.Yeucautourrieng.AsNoTracking().Where(item => item.MaPb == latest.MaPb
-                && item.LienHe == draft.Contact.Trim() && item.NhuCauDichVu == needs)
-                .OrderByDescending(item => item.MaYc).FirstOrDefaultAsync(ct);
-            if (existing is not null) return existing.MaYc;
-        }
-        var version = new Phienbanlichtrinh { MaLt = itineraryId, SoPhienBan = (latest?.SoPhienBan ?? 0) + 1,
-            ThoiDiemTao = DateTime.UtcNow, NoiDungJson = snapshotJson };
-        db.Phienbanlichtrinh.Add(version);
+        db.Yeucautourrieng.Add(row);
         await db.SaveChangesAsync(ct);
-        var request = new Yeucautourrieng { MaPb = version.MaPb, SoKhach = guests, LienHe = draft.Contact.Trim(),
-            NhuCauDichVu = needs, NgayGui = DateTime.UtcNow, TrangThai = "Submitted" };
-        db.Yeucautourrieng.Add(request);
-        await db.SaveChangesAsync(ct);
-        await transaction.CommitAsync(ct);
-        return request.MaYc;
+        return row.MaYc;
     }
 
-    public async Task<QuotationWrite<Xacminhdichvu>> VerifyAsync(int id, ServiceVerificationDraft draft, CancellationToken ct)
+    public Task<Yeucautourrieng?> RequestAsync(int id, CancellationToken ct) => Requests.FirstOrDefaultAsync(item => item.MaYc == id, ct);
+
+    public async Task<(List<Yeucautourrieng> Rows, int Total)> ListAsync(QuoteRequestFilter filter, int skip, int take, CancellationToken ct)
     {
-        await using var transaction = await db.Database.BeginTransactionAsync(IsolationLevel.Serializable, ct);
-        var request = await db.Yeucautourrieng.SingleOrDefaultAsync(item => item.MaYc == id, ct);
-        if (request is null) return new(QuotationWriteStatus.NotFound);
-        if (request.TrangThai == "Accepted") return new(QuotationWriteStatus.Conflict);
-        var item = new Xacminhdichvu { MaYc = id, HangMuc = draft.Item.Trim(), DonViCungCap = draft.Supplier.Trim(),
-            KetQua = draft.Result, GhiChu = draft.Note?.Trim(), ThoiDiem = DateTime.UtcNow };
-        db.Xacminhdichvu.Add(item);
-        request.TrangThai = draft.Result == "NeedsInfo" ? "NeedsInfo" : "Reviewing";
-        await db.SaveChangesAsync(ct);
-        await transaction.CommitAsync(ct);
-        return new(QuotationWriteStatus.Saved, item);
+        var query = Requests;
+        if (!string.IsNullOrWhiteSpace(filter.Status)) query = query.Where(item => item.TrangThai == filter.Status);
+        if (filter.From is { } from) query = query.Where(item => item.NgayGui >= from);
+        if (filter.To is { } to) query = query.Where(item => item.NgayGui <= to);
+        var total = await query.CountAsync(ct);
+        return (await query.OrderByDescending(item => item.MaYc).Skip(skip).Take(take).ToListAsync(ct), total);
     }
 
-    public async Task<QuotationWrite<int>> IssueAsync(int id, QuoteDraft draft, decimal total, CancellationToken ct)
+    public Task<List<Yeucautourrieng>> MineAsync(int accountId, CancellationToken ct) =>
+        Requests.Where(item => item.MaPbNavigation.MaLtNavigation.MaTk == accountId).OrderByDescending(item => item.MaYc).ToListAsync(ct);
+
+    public async Task<int?> OwnerAsync(int requestId, CancellationToken ct) =>
+        await db.Yeucautourrieng.AsNoTracking().Where(item => item.MaYc == requestId).Select(item => (int?)item.MaPbNavigation.MaLtNavigation.MaTk).FirstOrDefaultAsync(ct);
+
+    public async Task<bool> MoveRequestAsync(int id, string from, string to, CancellationToken ct) =>
+        await db.Yeucautourrieng.Where(item => item.MaYc == id && item.TrangThai == from)
+            .ExecuteUpdateAsync(set => set.SetProperty(item => item.TrangThai, to), ct) == 1;
+
+    public async Task<int> AddVerificationAsync(Xacminhdichvu row, CancellationToken ct)
     {
-        await using var transaction = await db.Database.BeginTransactionAsync(IsolationLevel.Serializable, ct);
-        var request = await db.Yeucautourrieng.SingleOrDefaultAsync(item => item.MaYc == id, ct);
-        if (request is null) return new(QuotationWriteStatus.NotFound);
-        if (request.TrangThai == "Accepted") return new(QuotationWriteStatus.Conflict);
-        if (!await db.Xacminhdichvu.AnyAsync(item => item.MaYc == id && item.KetQua == "Available", ct))
-            return new(QuotationWriteStatus.NeedsVerification);
-        var old = await db.Baogia.Where(item => item.MaYc == id && item.TrangThai == "Issued").ToListAsync(ct);
-        foreach (var item in old) item.TrangThai = "Replaced";
-        var quote = new Baogia { MaYc = id, MaPb = request.MaPb, TongGia = total, KhoanCanThu = draft.AmountDue,
-            DieuKienHuy = draft.CancellationTerms.Trim(), HanHieuLuc = draft.ExpiresAt.ToUniversalTime(), TrangThai = "Issued" };
+        db.Xacminhdichvu.Add(row);
+        await db.SaveChangesAsync(ct);
+        return row.MaXm;
+    }
+
+    public Task<List<Xacminhdichvu>> VerificationsAsync(int requestId, CancellationToken ct) =>
+        db.Xacminhdichvu.AsNoTracking().Where(item => item.MaYc == requestId).OrderBy(item => item.MaXm).ToListAsync(ct);
+
+    /// <summary>Thêm báo giá cùng hạng mục; null khi vi phạm UX_BAOGIA_MaYC_Sent (hai nhân viên phát hành đồng thời).</summary>
+    public async Task<int?> AddQuoteAsync(Baogia quote, IReadOnlyList<Hangmucbaogia> items, CancellationToken ct)
+    {
+        foreach (var item in items) quote.Hangmucbaogia.Add(item);
         db.Baogia.Add(quote);
-        await db.SaveChangesAsync(ct);
-        foreach (var line in draft.Lines)
-            db.Hangmucbaogia.Add(new Hangmucbaogia { MaBg = quote.MaBg, MoTa = line.Description.Trim(),
-                DonViTinh = line.Unit.Trim(), SoLuong = line.Quantity, DonGia = line.UnitPrice });
-        request.TrangThai = "Quoted";
-        await db.SaveChangesAsync(ct);
-        await transaction.CommitAsync(ct);
-        return new(QuotationWriteStatus.Saved, quote.MaBg);
+        try { await db.SaveChangesAsync(ct); return quote.MaBg; }
+        catch (DbUpdateException exception) when (DbErrors.IsDuplicateKey(exception)) { db.ChangeTracker.Clear(); return null; }
     }
 
-    public Task<Baogia?> QuoteAsync(int requestId, int quoteId, int accountId, CancellationToken ct) =>
-        db.Baogia.AsNoTracking().Include(item => item.Dondat)
-            .Include(item => item.MaYcNavigation).ThenInclude(request => request.MaPbNavigation)
-            .ThenInclude(version => version.MaLtNavigation)
-            .SingleOrDefaultAsync(item => item.MaBg == quoteId && item.MaYc == requestId
-                && item.MaYcNavigation.MaPbNavigation.MaLtNavigation.MaTk == accountId, ct);
+    /// <summary>Mã báo giá hiện tại (mới nhất chưa bị thay thế) của từng yêu cầu, một truy vấn cho cả danh sách.</summary>
+    public async Task<Dictionary<int, int>> CurrentQuoteIdsAsync(IReadOnlyCollection<int> requestIds, CancellationToken ct) =>
+        (await db.Baogia.AsNoTracking().Where(item => requestIds.Contains(item.MaYc) && item.TrangThai != QuoteStatus.Superseded)
+            .GroupBy(item => item.MaYc).Select(group => new { Request = group.Key, Quote = group.Max(item => item.MaBg) }).ToListAsync(ct))
+        .ToDictionary(item => item.Request, item => item.Quote);
 
-    public async Task<QuotationWrite<Dondat>> AcceptAsync(int requestId, int quoteId, int accountId, CancellationToken ct)
-    {
-        await using var transaction = await db.Database.BeginTransactionAsync(IsolationLevel.Serializable, ct);
-        var quote = await db.Baogia.Include(item => item.Dondat)
-            .Include(item => item.MaYcNavigation).ThenInclude(request => request.MaPbNavigation).ThenInclude(version => version.MaLtNavigation)
-            .SingleOrDefaultAsync(item => item.MaBg == quoteId && item.MaYc == requestId, ct);
-        if (quote is null || quote.MaYcNavigation.MaPbNavigation.MaLtNavigation.MaTk != accountId)
-            return new(QuotationWriteStatus.NotFound);
-        if (quote.Dondat is { } existing) return new(QuotationWriteStatus.Saved, existing);
-        if (quote.TrangThai != "Issued" || quote.HanHieuLuc <= DateTime.UtcNow)
-            return new(QuotationWriteStatus.Conflict);
-        var snapshot = System.Text.Json.JsonSerializer.Deserialize<Contracts.Itinerary>(
-            quote.MaYcNavigation.MaPbNavigation.NoiDungJson,
-            new System.Text.Json.JsonSerializerOptions(System.Text.Json.JsonSerializerDefaults.Web));
-        if (snapshot is null || snapshot.UpdatedAt != quote.MaYcNavigation.MaPbNavigation.MaLtNavigation.NgayCapNhat)
-            return new(QuotationWriteStatus.StaleItinerary);
-        var order = new Dondat { MaTk = accountId, MaBg = quoteId, SoKhach = quote.MaYcNavigation.SoKhach,
-            GiaChot = quote.TongGia, DieuKienHuy = quote.DieuKienHuy, TrangThai = "Pending", NgayDat = DateTime.UtcNow };
-        db.Dondat.Add(order);
-        quote.TrangThai = "Accepted";
-        quote.MaYcNavigation.TrangThai = "Accepted";
-        await db.SaveChangesAsync(ct);
-        await transaction.CommitAsync(ct);
-        return new(QuotationWriteStatus.Saved, order);
-    }
+    public Task<List<Baogia>> QuotesAsync(int requestId, CancellationToken ct) =>
+        db.Baogia.AsNoTracking().Include(item => item.Hangmucbaogia).Where(item => item.MaYc == requestId).OrderBy(item => item.MaBg).ToListAsync(ct);
 
-    public Task<List<Dondat>> OrdersAsync(int accountId, CancellationToken ct) =>
-        db.Dondat.AsNoTracking().Where(item => item.MaTk == accountId && item.MaBg != null)
-            .OrderByDescending(item => item.NgayDat).ToListAsync(ct);
+    public Task<Baogia?> QuoteAsync(int id, CancellationToken ct) =>
+        db.Baogia.AsNoTracking().Include(item => item.Hangmucbaogia).FirstOrDefaultAsync(item => item.MaBg == id, ct);
+
+    /// <summary>Báo giá Sent của yêu cầu chuyển sang Superseded.</summary>
+    public Task<int> SupersedeAsync(int requestId, CancellationToken ct) =>
+        db.Baogia.Where(item => item.MaYc == requestId && item.TrangThai == QuoteStatus.Sent)
+            .ExecuteUpdateAsync(set => set.SetProperty(item => item.TrangThai, QuoteStatus.Superseded), ct);
+
+    public async Task<bool> MoveQuoteAsync(int id, string from, string to, CancellationToken ct) =>
+        await db.Baogia.Where(item => item.MaBg == id && item.TrangThai == from)
+            .ExecuteUpdateAsync(set => set.SetProperty(item => item.TrangThai, to), ct) == 1;
+
+    public Task<List<Baogia>> ExpiredQuotesAsync(DateTime now, CancellationToken ct) =>
+        db.Baogia.AsNoTracking().Where(item => item.TrangThai == QuoteStatus.Sent && item.HanHieuLuc < now).ToListAsync(ct);
 }

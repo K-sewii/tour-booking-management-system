@@ -163,7 +163,7 @@ public sealed class SqlAuthService(
                 HoTen = name,
                 Email = email,
                 SoDienThoai = phoneNumber,
-                TrangThai = "Active"
+                TrangThai = AccountStatus.Active
             };
             account.MatKhauBam = passwordHasher.HashPassword(account, input.Password);
 
@@ -243,7 +243,7 @@ public sealed class SqlAuthService(
         .Include(account => account.TaikhoanVaitro)
         .ThenInclude(assignment => assignment.MaVaiTroNavigation);
 
-    private static bool IsActive(Taikhoan account) => string.Equals(account.TrangThai, "Active", StringComparison.OrdinalIgnoreCase);
+    private static bool IsActive(Taikhoan account) => string.Equals(account.TrangThai, AccountStatus.Active, StringComparison.OrdinalIgnoreCase);
 
     private static AuthenticatedUser ToUser(Taikhoan account) => new(
         account.MaTk,
@@ -397,7 +397,7 @@ public sealed class DevelopmentAdminBootstrapper(
             {
                 HoTen = string.IsNullOrWhiteSpace(name) ? "Development administrator" : name,
                 Email = email,
-                TrangThai = "Active"
+                TrangThai = AccountStatus.Active
             };
             account.MatKhauBam = passwordHasher.HashPassword(account, password);
             db.Taikhoan.Add(account);
@@ -524,7 +524,7 @@ public sealed class DevelopmentTestAccountsBootstrapper(
             {
                 HoTen = specification.Name,
                 Email = specification.Email,
-                TrangThai = "Active"
+                TrangThai = AccountStatus.Active
             };
             account.MatKhauBam = passwordHasher.HashPassword(account, password);
             db.Taikhoan.Add(account);

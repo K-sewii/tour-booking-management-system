@@ -51,7 +51,7 @@ app.Use(async (context, next) =>
     if (spaEnabled && File.Exists(spaIndex) && HttpMethods.IsGet(context.Request.Method)
         && !context.Request.Query.ContainsKey("legacy")
         && context.Request.Headers.Accept.ToString().Contains("text/html", StringComparison.OrdinalIgnoreCase)
-        && (path == "/" || Regex.IsMatch(path, @"^/(Account/(Login|Register|Profile|Security|Payments(/[0-9]+)?|Favorites|Notices)|Tours(/Details/[0-9]+)?|Destinations(/Details/[0-9]+)?|Planner|Trips|Listen)/?$", RegexOptions.IgnoreCase)))
+        && (path == "/" || Regex.IsMatch(path, @"^/(Account/(Login|Register|Profile|Security|Payments(/[0-9]+)?|Bookings(/[0-9]+)?|Favorites|Notices)|Tours(/Details/[0-9]+)?|Destinations(/Details/[0-9]+)?|Planner|Trips|Listen)/?$", RegexOptions.IgnoreCase)))
     {
         context.Response.ContentType = "text/html; charset=utf-8";
         await context.Response.SendFileAsync(spaIndex);

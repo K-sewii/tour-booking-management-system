@@ -5,6 +5,14 @@ namespace DongNamTrip.Admin;
 /// <summary>Hàm hỗ trợ dùng chung cho các màn hình quản trị của Vương (SCR14, SCR15, SCR20).</summary>
 internal static class Kit
 {
+    public static bool HandleExpiredSession(Control owner, Exception error)
+    {
+        if (error is not HttpRequestException { StatusCode: System.Net.HttpStatusCode.Unauthorized } || owner.IsDisposed) return false;
+        MessageBox.Show(owner, "Phiên đăng nhập đã kết thúc hoặc quyền đã thay đổi. Vui lòng đăng nhập lại.", "Phiên đã kết thúc", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+        if (owner.FindForm() is MainForm main) main.EndSession();
+        return true;
+    }
+
     public static string Status(string code) => DongNamTrip.Contracts.ContentStatus.Label(code);
 
     public static string Describe(Exception error) => error switch

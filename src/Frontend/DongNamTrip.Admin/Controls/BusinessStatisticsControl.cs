@@ -15,6 +15,7 @@ public sealed class BusinessStatisticsControl : UserControl
     private readonly Label[] statKpis = [Ui.Label("—", 13, true), Ui.Label("—", 13, true), Ui.Label("—", 13, true), Ui.Label("—", 13, true), Ui.Label("—", 13, true)];
     private readonly DataGridView statistics = Ui.Grid();
     private readonly Label statisticsInfo = Ui.Label("", 9);
+    private readonly Label requestInfo = Ui.Label("", 9);
     private readonly Label empty = new() { Dock = DockStyle.Fill, BackColor = Color.White, ForeColor = Ui.Muted, TextAlign = ContentAlignment.MiddleCenter, Visible = false };
 
     public BusinessStatisticsControl(TripApiClient api, string token)
@@ -26,7 +27,7 @@ public sealed class BusinessStatisticsControl : UserControl
         statsLayout.Controls.Add(Bar(Ui.Label("Từ ngày"), from, Ui.Label("Đến ngày"), to, Ui.Label("Trạng thái"), orderStatus, apply), 0, 1);
         statsLayout.Controls.Add(Cards(statKpis, "Tổng số đơn đặt tour", "Tổng giá trị đơn", "Tiền đã thu", "Tiền đã hoàn", "Lượt nghe audio"), 0, 2);
         var tableContent = new Panel { Dock = DockStyle.Fill }; tableContent.Controls.Add(statistics); tableContent.Controls.Add(empty); empty.BringToFront();
-        statsLayout.Controls.Add(tableContent, 0, 3); statsLayout.Controls.Add(statisticsInfo, 0, 4);
+        statsLayout.Controls.Add(tableContent, 0, 3); statsLayout.Controls.Add(Bar(statisticsInfo, requestInfo), 0, 4);
         Controls.Add(statsLayout);
         StyleGrid(statistics);
         var today = DateTime.UtcNow.AddHours(7).Date; from.Value = new DateTime(today.Year, today.Month, 1); to.Value = from.Value.AddMonths(1).AddDays(-1);
@@ -37,6 +38,7 @@ public sealed class BusinessStatisticsControl : UserControl
     private async Task LoadStatistics()
     {
         foreach (var value in statKpis) value.Text = "Đang tải…";
+        requestInfo.Text = "";
         statistics.DataSource = null;
         if (from.Value.Date > to.Value.Date) { foreach (var value in statKpis) value.Text = "Chưa tải"; statisticsInfo.Text = ""; empty.Text = "Từ ngày phải không sau đến ngày."; empty.Visible = true; return; }
         apply.Enabled = false; statisticsInfo.Text = "Đang tải…"; empty.Text = "Đang tải thống kê…"; empty.Visible = true;
@@ -52,10 +54,21 @@ public sealed class BusinessStatisticsControl : UserControl
             statistics.DataSource = result.Rows.Select(x => new { Trạng_thái = x.Status, Số_đơn = x.Orders, Giá_trị = x.OrderValue }).ToList();
             foreach (DataGridViewColumn column in statistics.Columns) column.HeaderText = column.HeaderText.Replace("_", " ");
             if (statistics.Columns["Giá_trị"] is { } moneyColumn) moneyColumn.DefaultCellStyle.Format = "N0";
-            statisticsInfo.Text = result.Rows.Count == 0 ? "" : "Theo ngày đặt; múi giờ Việt Nam (UTC+7).";
+            statisticsInfo.Text = "Đơn theo ngày đặt; thu/hoàn theo ngày giao dịch, không lọc theo trạng thái đơn. Múi giờ Việt Nam (UTC+7).";
             empty.Text = "◯\r\nKhông có đơn phù hợp\r\nHãy thử khoảng thời gian hoặc trạng thái khác."; empty.Visible = result.Rows.Count == 0;
+            try
+            {
+                var operations = await api.StatsAsync(from.Value.Date, to.Value.Date, null, token);
+                if (!IsDisposed)
+                {
+                    var requests = operations.Requests.Count == 0 ? "Không có yêu cầu tour riêng" :
+                        "Yêu cầu tour riêng: " + string.Join(" · ", operations.Requests.Select(x => $"{QuoteRequestStatus.Label(x.Status)}: {x.Count:N0}"));
+                    requestInfo.Text = $"Giá trị đơn chưa hủy/hết hạn: {operations.OrderValue:N0} đ · {requests}";
+                }
+            }
+            catch (Exception e) when (e is HttpRequestException or TaskCanceledException) { if (!Kit.HandleExpiredSession(this, e) && !IsDisposed) requestInfo.Text = "Không tải được thống kê yêu cầu tour riêng: " + Kit.Describe(e); }
         }
-        catch (Exception e) when (e is HttpRequestException or TaskCanceledException) { if (!IsDisposed) { foreach (var value in statKpis) value.Text = "Lỗi tải"; statisticsInfo.Text = ""; empty.Text = Kit.Describe(e) + " Hãy chọn Áp dụng để thử lại."; empty.Visible = true; } }
+        catch (Exception e) when (e is HttpRequestException or TaskCanceledException) { if (!Kit.HandleExpiredSession(this, e) && !IsDisposed) { foreach (var value in statKpis) value.Text = "Lỗi tải"; statisticsInfo.Text = ""; empty.Text = Kit.Describe(e) + " Hãy chọn Áp dụng để thử lại."; empty.Visible = true; } }
         finally { if (!IsDisposed) apply.Enabled = true; }
     }
 

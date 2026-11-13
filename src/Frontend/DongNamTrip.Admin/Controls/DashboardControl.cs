@@ -1,10 +1,12 @@
 using DongNamTrip.Client;
+using DongNamTrip.Contracts;
 
 namespace DongNamTrip.Admin;
 
+/// <summary>SCR13: tổng quan. Admin xem thêm thống kê vận hành và nhật ký thao tác (UC24).</summary>
 public sealed class DashboardControl : UserControl
 {
-    public DashboardControl(TripApiClient api, string userName)
+    public DashboardControl(TripApiClient api, string userName, string token, bool isAdmin)
     {
         var layout = new TableLayoutPanel
         {
@@ -19,9 +21,18 @@ public sealed class DashboardControl : UserControl
         layout.Controls.Add(Ui.Label($"Chào {userName}, dữ liệu dưới đây được đọc từ API.", 12));
         var metrics = new FlowLayoutPanel { Dock = DockStyle.Fill };
         layout.Controls.Add(metrics);
-        layout.Controls.Add(Ui.Label("Điểm đến trong danh mục", 15, true));
+        layout.Controls.Add(Ui.Label(isAdmin ? "Điểm đến và nhật ký" : "Điểm đến trong danh mục", 15, true));
         var grid = Ui.Grid();
-        layout.Controls.Add(grid);
+        if (isAdmin)
+        {
+            var tabs = new TabControl { Dock = DockStyle.Fill };
+            var places = new TabPage("Điểm đến");
+            places.Controls.Add(grid);
+            tabs.TabPages.Add(places);
+            tabs.TabPages.Add(AuditPage(api, token));
+            layout.Controls.Add(tabs);
+        }
+        else layout.Controls.Add(grid);
         Controls.Add(layout);
         Load += async (_, _) => await Ui.RunAsync(this, async () =>
         {
@@ -57,5 +68,33 @@ public sealed class DashboardControl : UserControl
                 Tham_quan_phút = destination.VisitMinutes
             }).ToList();
         });
+    }
+
+    private TabPage AuditPage(TripApiClient api, string token)
+    {
+        var page = new TabPage("Nhật ký thao tác");
+        var grid = Ui.Grid();
+        var objectType = new ComboBox { DropDownStyle = ComboBoxStyle.DropDownList, Width = 200 };
+        objectType.Items.Add("(Mọi đối tượng)");
+        objectType.Items.AddRange(["TOUR", "LICHKHOIHANH", "DONDAT", "GIAODICHTIEN", "YEUCAUTOURRIENG", "XACMINHDICHVU", "BAOGIA", "TAIKHOAN", "DIADIEM", "HOATDONG", "SUAT"]);
+        objectType.SelectedIndex = 0;
+        var load = Ui.Button("Tải nhật ký", true);
+        var older = Ui.Button("Trang sau");
+        var newer = Ui.Button("Trang trước");
+        var info = Ui.Label("");
+        var top = new FlowLayoutPanel { Dock = DockStyle.Top, Height = 56 };
+        top.Controls.AddRange([objectType, load, newer, older, info]);
+        page.Controls.Add(grid); page.Controls.Add(top);
+        var number = 1;
+        async Task Reload()
+        {
+            var result = await api.AuditAsync(new AuditFilter(null, null, objectType.SelectedIndex <= 0 ? null : objectType.Text, null, number, 25), token);
+            grid.DataSource = result.Items.Select(x => new { Thời_điểm = x.At, Người_thực_hiện = x.ActorName, Thao_tác = x.Action, Đối_tượng = x.ObjectType, Mã = x.ObjectId, Lý_do = x.Reason }).ToList();
+            info.Text = $"Trang {result.Page} · {result.Total} dòng (chỉ đọc)";
+        }
+        load.Click += async (_, _) => { number = 1; await Ui.RunAsync(this, Reload); };
+        older.Click += async (_, _) => { number++; await Ui.RunAsync(this, Reload); };
+        newer.Click += async (_, _) => { number = Math.Max(1, number - 1); await Ui.RunAsync(this, Reload); };
+        return page;
     }
 }

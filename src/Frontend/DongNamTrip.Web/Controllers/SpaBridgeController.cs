@@ -20,11 +20,11 @@ public sealed class SpaBridgeController(TripApiClient api, IHttpClientFactory cl
     private readonly ITimeLimitedDataProtector profileProof = protection.CreateProtector("SCR21.ProfileLoaded").ToTimeLimitedDataProtector();
     private string? Token => User.FindFirst("api_token")?.Value;
     private static readonly Regex AllowedProxy = new(
-        @"^(meta|tours(/search|/[0-9]+(/estimate)?)?|destinations(/search|/[0-9]+)?|listen(/audio/[0-9]+)?|planner/(catalog|tours/[0-9]+)|itineraries(/preview|/[0-9]+(/requests)?)?|private-tour-requests(/[0-9]+(/quotes/[0-9]+/accept)?)?|private-tour-orders|auth/(password|sessions(/[A-Fa-f0-9]{24})?)|account/(payments(/[0-9]+)?|payment-choice|collections|favorites/(tour|destination)/[0-9]+|activity(/[0-9]+)?|notices(/[0-9]+/read)?|preferences))$",
+        @"^(meta|tours(/search|/[0-9]+(/estimate|/departures)?)?|destinations(/search|/[0-9]+)?|listen(/audio/[0-9]+)?|planner/(catalog|tours/[0-9]+)|itineraries(/preview|/check|/[0-9]+(/check)?)?|auth/(password|sessions(/[A-Fa-f0-9]{24})?)|account/(payments(/[0-9]+)?|payment-choice|bookings(/[0-9]+(/cancel)?)?|quote-requests(/[0-9]+(/cancel)?)?|quotes/[0-9]+/(accept|change-request|program)|collections|favorites/(tour|destination)/[0-9]+|activity(/[0-9]+)?|notices(/[0-9]+/read)?|preferences))$",
         RegexOptions.Compiled | RegexOptions.CultureInvariant);
 
     private static readonly Regex PublicCatalog = new(
-        @"^(meta|tours(/search|/[0-9]+(/estimate)?)?|destinations(/search|/[0-9]+)?|planner/(catalog|tours/[0-9]+)|itineraries/preview)$",
+        @"^(meta|tours(/search|/[0-9]+(/estimate|/departures)?)?|destinations(/search|/[0-9]+)?|planner/(catalog|tours/[0-9]+)|itineraries/preview)$",
         RegexOptions.Compiled | RegexOptions.CultureInvariant);
 
     [HttpGet("csrf")]

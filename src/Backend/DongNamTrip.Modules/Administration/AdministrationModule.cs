@@ -18,13 +18,21 @@ public sealed class AdministrationModule : IModule
         services.AddScoped<AuditService>();
         services.AddScoped<AdminAccountRepository>();
         services.AddScoped<AdminAccountService>();
+        services.AddScoped<UserAdminRepository>();
+        services.AddScoped<UserAdminService>();
+        services.AddScoped<StatisticsRepository>();
+        services.AddScoped<StatisticsService>();
         services.AddScoped<IAdministrationApi>(sp => sp.GetRequiredService<AuditService>());
         services.AddSingleton<DevelopmentAdminBootstrapper>();
         services.AddSingleton<DevelopmentTestAccountsBootstrapper>();
         services.AddAuthentication("SqlBearer").AddScheme<AuthenticationSchemeOptions, SqlAuthenticationHandler>("SqlBearer", _ => { });
     }
 
-    public void MapEndpoints(IEndpointRouteBuilder endpoints) => AdministrationEndpoints.Map(endpoints);
+    public void MapEndpoints(IEndpointRouteBuilder endpoints)
+    {
+        AdministrationEndpoints.Map(endpoints);
+        UserAdminEndpoints.Map(endpoints);
+    }
 
     public static async Task EnsureDevelopmentAccountsAsync(IServiceProvider services, IHostEnvironment environment)
     {

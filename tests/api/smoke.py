@@ -170,6 +170,8 @@ def running_apps(session_lifetime_seconds=300, *, api_only=False, spa=False):
     environment['BootstrapAdmin__Enabled'] = 'false'
     environment['DevelopmentTestAccounts__Enabled'] = 'false'
     environment['Spa__Enabled'] = 'true' if spa else 'false'
+    environment['Booking__ExpiryIntervalMinutes'] = '0.05'  # workers tick every 3 s so tests can observe expiry
+    environment['Quotation__ExpiryIntervalMinutes'] = '0.05'
     environment['Logging__LogLevel__System.Net.Http'] = 'Warning'  # keep CI logs readable
     processes, logs = [], []
     try:
@@ -264,12 +266,14 @@ def run():
     itinerary = {'name': 'Lịch trình SQL identity', 'startDate': tomorrow, 'guests': 2, 'destinationIds': [places[0]['id'], places[-1]['id']]}
     trip = request(API + '/api/itineraries', 'POST', itinerary, token=customer_token)
     assert trip['userId'] == customer['user']['id']
-    other_email, _, other = registration('Khách khác')
+    other_email, other_password, other = registration('Khách khác')
     other_items = request(API + '/api/itineraries', token=other['token'])
     assert all(item['id'] != trip['id'] for item in other_items), 'A SQL account must not inherit another account\'s demo itinerary.'
 
     staff_email, staff_password, staff = registration('Nhân viên đa vai trò')
     original_customer_token = staff['token']
+    request(API + '/api/admin/quote-requests', token=original_customer_token, expected=403)
+    # Bootstrap an admin for this isolated test database; application changes use its API below.
     sql_non_query(f'''
 INSERT INTO TAIKHOAN_VAITRO (MaTK, MaVaiTro)
 SELECT account.MaTK, role.MaVaiTro
@@ -278,56 +282,37 @@ CROSS JOIN VAITRO AS role
 WHERE account.Email = {sql_literal(staff_email)}
   AND role.TenVaiTro IN ('Admin', 'Editor');
 ''')
-    assert request(API + '/api/auth/me', token=original_customer_token)['roles'] == ['Customer']
-    request(API + '/api/staff/private-tour-requests', token=original_customer_token, expected=403)
     staff = request(API + '/api/auth/login', 'POST', {'email': staff_email, 'password': staff_password})
     assert set(staff['user']['roles']) == {'Admin', 'Customer', 'Editor'}
     assert set(request(API + '/api/auth/me', token=staff['token'])['roles']) == {'Admin', 'Customer', 'Editor'}
+    # A role change through administration revokes existing sessions immediately.
+    target_id = other['user']['id']
+    request(API + f'/api/admin/users/{target_id}/roles', 'PUT', {'roles': ['Customer', 'Operator']}, token=staff['token'])
+    request(API + '/api/auth/me', token=other['token'], expected=401)
+    other = request(API + '/api/auth/login', 'POST', {'email': other_email, 'password': other_password})
+    assert set(other['user']['roles']) == {'Customer', 'Operator'}
+    request(API + f'/api/admin/users/{target_id}/roles', 'PUT', {'roles': ['Customer']}, token=staff['token'])
+    request(API + '/api/auth/me', token=other['token'], expected=401)
+    other = request(API + '/api/auth/login', 'POST', {'email': other_email, 'password': other_password})
+    assert other['user']['roles'] == ['Customer']
+    request(API + '/api/admin/quote-requests', token=other['token'], expected=403)
+    request(API + f'/api/admin/accounts/{target_id}/roles', 'PUT', {'roles': ['Customer', 'Operator'], 'expectedRoles': ['Customer']}, token=staff['token'], expected=204)
+    request(API + '/api/auth/me', token=other['token'], expected=401)
+    other = request(API + '/api/auth/login', 'POST', {'email': other_email, 'password': other_password})
+    assert set(other['user']['roles']) == {'Customer', 'Operator'}
+    request(API + f'/api/admin/accounts/{target_id}/roles', 'PUT', {'roles': ['Customer'], 'expectedRoles': ['Customer']}, token=staff['token'], expected=409)
+    request(API + f'/api/admin/accounts/{target_id}/roles', 'PUT', {'roles': ['Customer'], 'expectedRoles': ['Customer', 'Operator']}, token=staff['token'], expected=204)
+    request(API + '/api/auth/me', token=other['token'], expected=401)
+    other = request(API + '/api/auth/login', 'POST', {'email': other_email, 'password': other_password})
+    assert other['user']['roles'] == ['Customer']
+    request(API + f"/api/admin/users/{staff['user']['id']}/roles", 'PUT', {'roles': ['Customer']}, token=staff['token'], expected=409)
     planner = request(API + '/api/planner/catalog')
     assert len(planner['destinations']) >= 2
     request(API + f"/api/itineraries/{trip['id']}", token=other['token'], expected=404)
     request(API + f"/api/itineraries/{trip['id']}", 'PUT', itinerary, token=other['token'], expected=404)
-    tour_request = request(API + f"/api/itineraries/{trip['id']}/requests", 'POST',
-                           {'contact': '0900000000', 'serviceNeeds': 'Xe và bữa trưa'}, token=customer_token)
-    assert tour_request['snapshot']['id'] == trip['id']
-    request(API + f"/api/private-tour-requests/{tour_request['id']}", token=other['token'], expected=404)
-    assert any(item['id'] == tour_request['id'] for item in request(API + '/api/staff/private-tour-requests', token=staff['token']))
-    quote_body = {'expiresAt': (datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(days=2)).isoformat(),
-                  'amountDue': 200000, 'cancellationTerms': 'Hoàn trước 48 giờ',
-                  'lines': [{'description': 'Dịch vụ tour riêng', 'unit': 'khách', 'quantity': 2, 'unitPrice': 500000}]}
-    request(API + f"/api/staff/private-tour-requests/{tour_request['id']}/quotes", 'POST', quote_body, token=staff['token'], expected=409)
-    request(API + f"/api/staff/private-tour-requests/{tour_request['id']}/verifications", 'POST',
-            {'item': 'Xe', 'supplier': 'Đơn vị thử', 'result': 'Available'}, token=staff['token'])
-    first = request(API + f"/api/staff/private-tour-requests/{tour_request['id']}/quotes", 'POST', quote_body, token=staff['token'])['quotes'][-1]
-    changed = {**itinerary, 'name': 'Lịch trình đã sửa'}
-    request(API + f"/api/itineraries/{trip['id']}", 'PUT', changed, token=customer_token)
-    request(API + f"/api/private-tour-requests/{tour_request['id']}/quotes/{first['id']}/accept", 'POST', {}, token=customer_token, expected=409)
-    updated = request(API + f"/api/itineraries/{trip['id']}/requests", 'POST',
-                      {'contact': '0900000000', 'serviceNeeds': 'Xe và bữa trưa'}, token=customer_token)
-    assert updated['id'] != tour_request['id']
-    request(API + f"/api/staff/private-tour-requests/{updated['id']}/verifications", 'POST',
-            {'item': 'Xe', 'supplier': 'Đơn vị thử', 'result': 'Available'}, token=staff['token'])
-    replaced = request(API + f"/api/staff/private-tour-requests/{updated['id']}/quotes", 'POST', quote_body, token=staff['token'])['quotes'][-1]
-    final_quote = request(API + f"/api/staff/private-tour-requests/{updated['id']}/quotes", 'POST', quote_body, token=staff['token'])['quotes'][-1]
-    request(API + f"/api/private-tour-requests/{updated['id']}/quotes/{replaced['id']}/accept", 'POST', {}, token=customer_token, expected=409)
-    order = request(API + f"/api/private-tour-requests/{updated['id']}/quotes/{final_quote['id']}/accept", 'POST', {}, token=customer_token)
-    assert order['quoteId'] == final_quote['id'] and order['agreedPrice'] == 1000000
-    assert request(API + f"/api/private-tour-requests/{updated['id']}/quotes/{final_quote['id']}/accept", 'POST', {}, token=customer_token)['id'] == order['id']
-    assert any(item['id'] == order['id'] for item in request(API + '/api/private-tour-orders', token=customer_token))
+    # Yêu cầu tour riêng và báo giá: xem quotation_flow.py.
     request(API + '/api/destinations', 'POST', {'name': 'Điểm kiểm tra quyền', 'region': 'Tây Ninh', 'category': 'Văn hóa', 'address': 'Chỉ bộ nhớ', 'description': 'Xác nhận Admin hoặc Editor được phép.', 'visitMinutes': 60}, token=staff['token'])
-    sql_non_query(f'''
-DELETE assignment
-FROM TAIKHOAN_VAITRO AS assignment
-INNER JOIN TAIKHOAN AS account ON account.MaTK = assignment.MaTK
-INNER JOIN VAITRO AS role ON role.MaVaiTro = assignment.MaVaiTro
-WHERE account.Email = {sql_literal(staff_email)} AND role.TenVaiTro IN ('Admin', 'Editor');
-''')
-    assert set(request(API + '/api/auth/me', token=staff['token'])['roles']) == {'Admin', 'Customer', 'Editor'}
-    request(API + '/api/staff/private-tour-requests', token=staff['token'])
-    after_revoke = request(API + '/api/auth/login', 'POST', {'email': staff_email, 'password': staff_password})
-    assert after_revoke['user']['roles'] == ['Customer']
-    assert request(API + '/api/auth/me', token=after_revoke['token'])['roles'] == ['Customer']
-    request(API + '/api/staff/private-tour-requests', token=after_revoke['token'], expected=403)
+    request(API + '/api/admin/quote-requests', token=staff['token'])
 
     locked_email, locked_password, locked = registration('Tài khoản khóa')
     sql_non_query(f"UPDATE TAIKHOAN SET TrangThai = 'Locked' WHERE Email = {sql_literal(locked_email)};")
@@ -358,7 +343,7 @@ WHERE account.Email = {sql_literal(staff_email)} AND role.TenVaiTro IN ('Admin',
 
     request(API + '/api/auth/logout', 'POST', token=customer_token, expected=204)
     request(API + '/api/auth/me', token=customer_token, expected=401)
-    print(f'PASS: {checks} functional HTTP checks; SQL registration, duplicate email, password, session role snapshots, lock, logout, ownership and Web login.')
+    print(f'PASS: {checks} functional HTTP checks; registration, role-change session revocation, lock, logout, ownership and Web login.')
 
 
 def run_expiry_checks(session_lifetime_seconds):

@@ -3,7 +3,7 @@ using DongNamTrip.Modules.Catalog;
 
 namespace DongNamTrip.Modules.Itinerary;
 
-public sealed class ItineraryService(ItineraryRepository repository, ICatalogApi catalog) : IItineraryApi
+public sealed class ItineraryService(ItineraryRepository repository, ICatalogApi catalog, ScheduleChecker checker, ItineraryVersionService versions) : IItineraryApi
 {
     public Task<PlannerCatalog> CatalogAsync(CancellationToken ct) => catalog.PlannerCatalogAsync(ct);
     public Task<ItineraryStopDraft[]?> TourTemplateAsync(int tourId, CancellationToken ct) => catalog.TourTemplateAsync(tourId, ct);
@@ -35,7 +35,7 @@ public sealed class ItineraryService(ItineraryRepository repository, ICatalogApi
         var slotIds = stops.SelectMany(stop => stop.SlotIds).ToArray();
         if (slotIds.Length != slotIds.Distinct().Count()) return Op.Invalid("Một suất chỉ được chọn một lần.");
         var slots = await catalog.SlotsAsync(slotIds, ct);
-        if (slots.Count != slotIds.Length || slots.Any(slot => slot.Status != "Published" ||
+        if (slots.Count != slotIds.Length || slots.Any(slot => slot.Status != ContentStatus.Published ||
             !stops.Any(stop => stop.DestinationId == slot.DestinationId && stop.SlotIds.Contains(slot.Id)
                 && slot.Date == draft.StartDate.AddDays(stop.Day - 1))))
             return Op.Invalid("Suất phải đã công bố, thuộc điểm đã chọn và đúng ngày dự kiến.");
@@ -44,31 +44,55 @@ public sealed class ItineraryService(ItineraryRepository repository, ICatalogApi
         return Op.Ok((await GetAsync(savedId.Value, accountId, ct))!);
     }
 
+    public Task<OpResult<ItineraryVersionRef>> CreateVersionAsync(int itineraryId, int accountId, CancellationToken ct) => versions.CreateVersionAsync(itineraryId, accountId, ct);
+    public Task<ItineraryVersion?> VersionAsync(int versionId, CancellationToken ct) => versions.VersionAsync(versionId, ct);
+    public Task<ItineraryCheck> CheckVersionAsync(int versionId, CancellationToken ct) => versions.CheckVersionAsync(versionId, ct);
+    public Task<List<ProgramStop>> ProgramAsync(int versionId, CancellationToken ct) => versions.ProgramAsync(versionId, ct);
+
+    /// <summary>Kiểm tra lịch trình đã lưu của chính chủ (UC07); 404 nếu không phải của khách.</summary>
+    public async Task<OpResult<ItineraryCheck>> CheckAsync(int accountId, int id, CancellationToken ct)
+    {
+        var row = await repository.GetAsync(id, accountId, ct);
+        if (row is null) return Op.NotFound("Không tìm thấy lịch trình của bạn.");
+        var places = await catalog.DestinationsAsync(row.Stops.Select(stop => stop.DestinationId).ToArray(), ct);
+        return Op.Ok(await CheckStopsAsync(row.StartDate, row.Stops, [], places, ct));
+    }
+
+    /// <summary>Kiểm tra nháp tạm của khách chưa đăng nhập (UC07); chỉ cảnh báo, không từ chối chọn trùng.</summary>
+    public async Task<OpResult<ItineraryCheck>> CheckDraftAsync(DraftCheckRequest request, CancellationToken ct)
+    {
+        var stops = NormalizeStops(request.Draft);
+        if (stops is null) return Op.Invalid("Nháp cần 1–12 điểm khác nhau và thứ tự hợp lệ.");
+        var places = await catalog.DestinationsAsync(stops.Select(stop => stop.DestinationId).ToArray(), ct);
+        if (places.Count != stops.Length) return Op.Invalid("Địa điểm không tồn tại hoặc chưa công bố.");
+        return Op.Ok(await CheckStopsAsync(request.Draft.StartDate, stops, request.Picks ?? [], places, ct));
+    }
+
+    public async Task<OpResult<bool>> DeleteAsync(int accountId, int id, CancellationToken ct)
+    {
+        if (await repository.GetAsync(id, accountId, ct) is null) return Op.NotFound("Không tìm thấy lịch trình của bạn.");
+        if (await repository.HasRequestsAsync(id, ct)) return Op.Conflict("Lịch trình đã có yêu cầu tour riêng nên không xóa được.");
+        return await repository.DeleteAsync(id, accountId, ct) ? Op.Ok(true) : Op.NotFound("Không tìm thấy lịch trình của bạn.");
+    }
+
+    private async Task<ItineraryCheck> CheckStopsAsync(DateOnly startDate, IReadOnlyList<ItineraryStopDraft> stops, IReadOnlyList<SlotPick> extraPicks,
+        IReadOnlyList<Destination> places, CancellationToken ct)
+    {
+        var hours = await catalog.HoursAsync(stops.Select(stop => stop.DestinationId).ToArray(), ct);
+        var visit = places.ToDictionary(place => place.Id, place => place.VisitMinutes);
+        var plans = stops.Select(stop => new StopPlan(stop.DestinationId, stop.Day, stop.Order, visit.GetValueOrDefault(stop.DestinationId),
+            hours.GetValueOrDefault(stop.DestinationId)?.Opens, hours.GetValueOrDefault(stop.DestinationId)?.Closes)).ToList();
+        var picks = stops.SelectMany(stop => (stop.SlotIds ?? []).Select(slot => new SlotPick(stop.DestinationId, slot, stop.Note))).Concat(extraPicks).ToList();
+        var slots = await catalog.SlotDetailsAsync(picks.Select(pick => pick.SlotId).Distinct().ToArray(), ct);
+        return checker.Check(startDate, plans, slots, picks);
+    }
+
     private async Task<Contracts.Itinerary> BuildAsync(ItineraryData row, CancellationToken ct)
     {
         var places = await catalog.DestinationsAsync(row.Stops.Select(stop => stop.DestinationId).ToArray(), ct);
         var byId = places.ToDictionary(place => place.Id);
-        var slotIds = row.Stops.SelectMany(stop => stop.SlotIds).Distinct().ToArray();
-        var slots = await catalog.SlotsAsync(slotIds, ct);
-        var bySlot = slots.ToDictionary(slot => slot.Id);
-        var warnings = new List<string>();
-        foreach (var stop in row.Stops)
-        {
-            foreach (var slotId in stop.SlotIds)
-            {
-                if (!bySlot.TryGetValue(slotId, out var slot)) { warnings.Add($"Suất #{slotId} không còn tồn tại."); continue; }
-                if (slot.Date != row.StartDate.AddDays(stop.Day - 1)) warnings.Add($"Suất #{slotId} không đúng ngày thứ {stop.Day}.");
-                if (slot.Status != "Published") warnings.Add($"Suất #{slotId} đã ngừng công bố.");
-            }
-        }
-        foreach (var day in slots.GroupBy(slot => slot.Date))
-        {
-            var entries = day.ToArray();
-            for (var i = 0; i < entries.Length; i++)
-                for (var j = i + 1; j < entries.Length; j++)
-                    if (entries[i].StartsAt < entries[j].EndsAt && entries[j].StartsAt < entries[i].EndsAt)
-                        warnings.Add($"Các suất #{entries[i].Id} và #{entries[j].Id} trùng giờ.");
-        }
+        var check = await CheckStopsAsync(row.StartDate, row.Stops, [], places, ct);
+        var warnings = check.Warnings.Select(warning => warning.Message).ToList();
         if (row.Stops.GroupBy(stop => stop.Day).Any(group => group.Count() > 1))
             warnings.Add("Chưa có dữ liệu thời gian di chuyển giữa các điểm; cần điều hành xác minh.");
         return new(row.Id, row.UserId, row.Name, row.StartDate, row.Guests,

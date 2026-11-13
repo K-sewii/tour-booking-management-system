@@ -67,7 +67,7 @@ public sealed class AuditLogControl : UserControl
         }
         catch (Exception e) when (e is HttpRequestException or TaskCanceledException)
         {
-            if (version == auditVersion && !IsDisposed) { auditItems = []; audit.DataSource = null; more = false; auditInfo.Text = Kit.Describe(e); }
+            if (!Kit.HandleExpiredSession(this, e) && version == auditVersion && !IsDisposed) { auditItems = []; audit.DataSource = null; more = false; auditInfo.Text = Kit.Describe(e); }
         }
         finally { if (version == auditVersion && !IsDisposed) { previous.Enabled = page > 1; next.Enabled = more; auditRefresh.Enabled = true; auditDetails.Enabled = auditItems.Count > 0; } }
     }

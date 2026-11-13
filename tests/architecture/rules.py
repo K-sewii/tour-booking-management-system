@@ -8,7 +8,7 @@
 6. BusinessLogic does not use DbContext/EF Core directly; it goes through a Repository in DataAccess
    (known debt: LEGACY_DB_IN_BUSINESS_LOGIC, shrink the list, never grow it).
 7. Endpoints are registered through MapGroup, not endpoints.MapGet/MapPost/... on the root builder.
-8. Contract strings (item kinds, activity scopes, payment methods) and rate-limit names come from constants
+8. Contract strings (item kinds, activity scopes, payment methods, status values) and rate-limit names come from constants
    (DongNamTrip.Contracts Vocabulary.cs, RateLimits.cs), not string literals.
 9. Every module folder has a <Name>Module.cs that is registered in Api/Program.cs.
 10. SPA: no localStorage, no fetch() outside api/client.ts (see src/Frontend/CLAUDE.md).
@@ -34,7 +34,19 @@ layer_names = {m: {layer: {n for f in fs if layer_of(m, f) == layer for n in DEC
 
 # Legacy exceptions, relative to the Modules folder. Remove entries when the file is refactored to use a Repository.
 LEGACY_DB_IN_BUSINESS_LOGIC = {'Administration/BusinessLogic/SqlAuthentication.cs'}
+# Tables each module may write (ADR-001: only the owning module writes a table; other modules may read through the shared context).
+TABLE_OWNER = {
+    'Catalog': {'Diadiem', 'Hoatdong', 'Suat', 'Tour', 'TourDiadiem', 'Lichkhoihanh'},
+    'Itinerary': {'Lichtrinh', 'LichtrinhDiadiem', 'LichtrinhSuat', 'Phienbanlichtrinh'},
+    'Booking': {'Dondat', 'Giaodichtien', 'AccountPaymentChoices'},
+    'Quotation': {'Yeucautourrieng', 'Xacminhdichvu', 'Baogia', 'Hangmucbaogia'},
+    'Narration': {'Thuyetminh', 'Bandich', 'Tepaudio', 'Quyennghe', 'Ngonngu'},
+    'Administration': {'Taikhoan', 'Vaitro', 'TaikhoanVaitro', 'Nhatkythaotac', 'AccountFavorites', 'AccountActivities', 'AccountPreferences', 'AccountNotices'},
+}
+WRITE_VERB = re.compile(r'\.(?:Add|AddRange|AddAsync|AddRangeAsync|Remove|RemoveRange|ExecuteUpdateAsync|ExecuteDeleteAsync)\(')
+DB_SET = re.compile(r'\bdb\.(\w+)')
 CONTRACT_LITERALS = re.compile(r'"(?:tour|destination|search|viewed|bank_transfer|cash)"')
+STATUS_LITERALS = re.compile(r'"(?:Draft|Published|Inactive|Open|Closed|Pending|Confirmed|CancelRequested|Cancelled|Expired|Completed|Submitted|Verifying|Quoted|Accepted|Sent|Superseded|Receipt|Refund|Available|Unavailable|Substitute|Active|Locked)"')
 ROOT_MAP = re.compile(r'\bendpoints\.Map(?:Get|Post|Put|Delete|Patch)\(')
 RATE_LIMIT_LITERAL = re.compile(r'RequireRateLimiting\("')
 EF_USE = re.compile(r'\bDongNamTripDbContext\b|using\s+Microsoft\.EntityFrameworkCore\b')
@@ -70,6 +82,15 @@ for module, paths in files.items():
             errors.append(f'{rel}: BusinessLogic must not use DbContext/EF Core; add a method to the module Repository (DataAccess)')
         if CONTRACT_LITERALS.search(text):
             errors.append(f'{rel}: use constants from DongNamTrip.Contracts (ItemKinds, ActivityKinds, ActivityScopes, PaymentMethods), not string literals')
+        if STATUS_LITERALS.search(text):
+            errors.append(f'{rel}: status/kind strings come from Contracts Vocabulary.cs (OrderStatus, QuoteStatus, ...), not string literals')
+        if layer == 'DataAccess':
+            for statement in text.split(';'):
+                if WRITE_VERB.search(statement):
+                    for table in DB_SET.findall(statement)[:1]:
+                        owner = next((m for m, tables in TABLE_OWNER.items() if table in tables), None)
+                        if owner is not None and owner != module:
+                            errors.append(f'{rel}: {module} must not write table set db.{table} (owned by {owner}); go through {owner}\'s I*Api port')
         if RATE_LIMIT_LITERAL.search(text):
             errors.append(f'{rel}: use RateLimits.* constants in RequireRateLimiting')
 

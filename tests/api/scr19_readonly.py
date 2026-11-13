@@ -53,7 +53,7 @@ for kind in ("staff", "customer", "system"):
     assert len(audit["items"]) <= 50
 assert request("/api/admin/accounts/audit?actorType=customer", admin)[1]["items"] == []
 code, stats = request("/api/admin/accounts/statistics?from=2026-01-01&to=2026-12-31", admin)
-assert code == 200 and stats["orderValue"] == 0 and stats["collected"] is None and stats["refunded"] is None and stats["listens"] is None and stats["rows"] == [], stats
+assert code == 200 and stats["orderValue"] == 0 and stats["collected"] == 0 and stats["refunded"] == 0 and stats["listens"] is None and stats["rows"] == [], stats
 assert request("/api/admin/accounts/statistics?from=2026-12-31&to=2026-01-01", admin)[0] == 400
 assert request("/api/admin/accounts/statistics?from=0001-01-01&to=0001-01-01", admin)[0] == 400
 assert request("/api/admin/accounts/statistics?from=9999-12-31&to=9999-12-31", admin)[0] == 400

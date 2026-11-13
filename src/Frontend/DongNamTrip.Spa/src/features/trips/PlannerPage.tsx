@@ -2,7 +2,7 @@ import { useEffect, useState, type FormEvent } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router';
 import { api, messageFor } from '../../api/client';
 import { useLoad } from '../../api/useLoad';
-import type { Destination, Itinerary, ItineraryPreview, Paged, PlannerCatalog } from '../../api/types';
+import type { Destination, Itinerary, ItineraryCheck, ItineraryPreview, Paged, PlannerCatalog } from '../../api/types';
 import { loadMeta, useMeta } from '../../api/meta';
 import { useAuth } from '../../auth/AuthContext';
 import { art, Failure, Loading } from '../../components/Catalog';
@@ -48,8 +48,20 @@ export function PlannerPage() {
   const selected = preview.data?.places || [];
   function detail(id: number): StopDetail { return draft.details[id] || { day: 1, note: '', slotIds: [] }; }
   function updateDetail(id: number, change: Partial<StopDetail>) { setDraft(current => ({ ...current, details: { ...current.details, [id]: { ...(current.details[id] || { day: 1, note: '', slotIds: [] }), ...change } } })); }
-  function updateIds(ids: number[]) { setDraft(current => ({ ...current, ids })); }
+  const [check, setCheck] = useState<ItineraryCheck | null>(null);
+  const [checking, setChecking] = useState(false);
+  function updateIds(ids: number[]) { setCheck(null); setDraft(current => ({ ...current, ids })); }
   function move(index: number, delta: number) { const ids = [...draft.ids]; [ids[index], ids[index + delta]] = [ids[index + delta], ids[index]]; updateIds(ids); }
+  function draftBody() {
+    const stops = draft.ids.map((id, index) => ({ destinationId: id, day: detail(id).day, order: index + 1, note: detail(id).note, slotIds: detail(id).slotIds }));
+    return { name: draft.name.trim(), startDate: draft.startDate, guests: draft.guests, destinationIds: draft.ids, departurePoint: draft.departurePoint || null, transport: draft.transport || null, budget: draft.budget ? Number(draft.budget) : null, stops };
+  }
+  async function checkDraft() {
+    setError(''); setChecking(true);
+    try { setCheck(await api.post<ItineraryCheck>('proxy/itineraries/check', { draft: draftBody() })); }
+    catch (caught) { setCheck(null); setError(messageFor(caught)); }
+    finally { setChecking(false); }
+  }
   async function submit(event: FormEvent) {
     event.preventDefault(); setError('');
     if (!draft.ids.length) { setError('Bạn cần chọn ít nhất một địa điểm.'); return; }
@@ -60,8 +72,7 @@ export function PlannerPage() {
     if (!user) { setError('Đăng nhập để lưu lịch trình. Bản nháp được giữ trong tab này.'); return; }
     setBusy(true);
     try {
-      const stops = draft.ids.map((id, index) => ({ destinationId: id, day: detail(id).day, order: index + 1, note: detail(id).note, slotIds: detail(id).slotIds }));
-      const body = { name: draft.name.trim(), startDate: draft.startDate, guests: draft.guests, destinationIds: draft.ids, departurePoint: draft.departurePoint || null, transport: draft.transport || null, budget: draft.budget ? Number(draft.budget) : null, stops };
+      const body = draftBody();
       if (itineraryId) await api.put<Itinerary>('proxy/itineraries/' + itineraryId, body);
       else await api.post<Itinerary>('proxy/itineraries', body);
       sessionStorage.removeItem(draftKey); navigate('/Trips');
@@ -88,6 +99,8 @@ export function PlannerPage() {
           {!selected.length && <div className="planner-empty"><span>↖</span><b>Bắt đầu từ một nơi bạn thích.</b><p>Nhấn dấu + để thêm điểm đầu tiên.</p></div>}
           <p className="hint">Tổng tham quan: {preview.data?.totalVisitMinutes ?? 0} phút. Chưa bao gồm di chuyển.</p>
           <p className="notice small-notice">Suất là mong muốn, chưa giữ chỗ. Điều hành sẽ xác minh trước khi báo giá.</p>
+          {user && draft.ids.length > 0 && <button type="button" className="btn outline full" disabled={checking} onClick={() => void checkDraft()}>{checking ? 'Đang kiểm tra…' : 'Kiểm tra lịch'}</button>}
+          {check && <p role="status" className="hint">{check.fits ? 'Lịch phù hợp' : 'Lịch còn cảnh báo'}{check.complete ? '' : ' (chưa đủ dữ liệu để kết luận)'}: {check.warnings.length === 0 ? 'không có cảnh báo.' : check.warnings.map(warning => warning.message).join(' ')}</p>}
           <button type="submit" className="btn full" disabled={busy}>{busy ? 'Đang lưu lịch trình…' : itineraryId ? 'Cập nhật lịch trình ↗' : 'Lưu lịch trình ↗'}</button><p id="planner-message" role="status" aria-live="polite">{error}</p>
           {!user && error && <Link className="text-link" to="/Account/Login?returnUrl=%2FPlanner">Đăng nhập để lưu →</Link>}
           <button type="button" className="reset-link" onClick={() => { setDraft({ name: '', startDate: nextWeek(), guests: 2, ids: [], departurePoint: '', transport: '', budget: '', details: {} }); setError(''); }}>Làm mới lịch trình</button>

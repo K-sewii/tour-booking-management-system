@@ -49,9 +49,12 @@ jobs:
       - name: Check architecture rules
         run: python tests/architecture/rules.py
 
+      - name: Unit tests (pure business classes)
+        run: dotnet test tests/DongNamTrip.Modules.Tests --configuration Release --no-restore
+
   web-api:
     runs-on: windows-2022
-    timeout-minutes: 20
+    timeout-minutes: 40
     env:
       ASPNETCORE_ENVIRONMENT: Development
       DOTNET_ENVIRONMENT: Development
@@ -134,6 +137,14 @@ jobs:
 
       - name: Run HTTP and SQL smoke tests
         run: python tests/api/smoke.py --start
+
+      - name: Run tour, itinerary, booking, quotation and administration tests
+        shell: powershell
+        run: |
+          foreach ($test in @('catalog_admin', 'itinerary_check', 'booking_flow', 'quotation_flow', 'user_admin')) {
+            python "tests/api/$test.py" --start
+            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          }
 
       - name: Run SCR02/SCR03 authentication tests
         run: python tests/api/auth_screens.py --start

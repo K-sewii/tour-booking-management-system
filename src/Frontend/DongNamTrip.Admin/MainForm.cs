@@ -132,19 +132,20 @@ public sealed class MainForm : Form
             if (child) childButtons.Add(button);
         }
 
-        Nav("Tổng quan", () => new DashboardControl(api, session.User.Name));
+        Nav("Tổng quan", () => new DashboardControl(api, session.User.Name, session.Token, Has(AppRoles.Admin)));
         if (Has(AppRoles.Admin, AppRoles.Editor))
             Nav("Địa điểm", () => new DestinationsControl(api, session.Token));
         if (Has(AppRoles.Admin, AppRoles.Operator, AppRoles.Editor))
             Nav("Hoạt động & suất", () => new ActivitiesControl(api, session.Token));
         if (Has(AppRoles.Admin, AppRoles.Operator))
         {
-            Nav("Tour & khởi hành", () => new ToursControl(api));
-            Nav("Đơn đặt tour", () => new ModuleControl("Đơn đặt tour", "Nhóm vận hành", ["Mã đơn", "Khách hàng", "Tour", "Tổng tiền", "Trạng thái"]));
+            Nav("Tour & khởi hành", () => new ToursControl(api, session.Token));
+            Nav("Đơn đặt tour", () => new BookingsControl(api, session.Token, handleOrders: true, handleMoney: false));
             Nav("Tour riêng & báo giá", () => new PrivateToursControl(api, session.Token));
         }
-        if (Has(AppRoles.Finance))
-            Nav("Tài chính", () => new ModuleControl("Thu, hoàn tiền và đối soát", "Nhóm tài chính", ["Mã giao dịch", "Đơn đặt", "Số tiền", "Trạng thái"]));
+        // Admin có đủ quyền (kể cả Finance); Operator chỉ thấy khi được cấp thêm Finance. Đổi vai trò kết thúc phiên hiện tại.
+        if (Has(AppRoles.Admin, AppRoles.Finance))
+            Nav("Tài chính", () => new BookingsControl(api, session.Token, handleOrders: false, handleMoney: true));
         if (Has(AppRoles.Admin, AppRoles.Editor, AppRoles.Publisher))
             Nav("Thuyết minh & audio", () => new NarrationsControl(api, session.Token, session.User.Roles.ToArray()));
         if (Has(AppRoles.Admin))

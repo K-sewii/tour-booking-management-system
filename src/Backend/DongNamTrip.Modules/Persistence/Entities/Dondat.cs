@@ -30,6 +30,14 @@ public partial class Dondat
 
     public DateTime NgayDat { get; set; }
 
+    public string? TrangThaiTruocHuy { get; set; }
+
+    public DateOnly? NgayDi { get; set; }
+
+    public decimal? KhoanCanThu { get; set; }
+
+    public string? LienHe { get; set; }
+
     public virtual ICollection<Giaodichtien> Giaodichtien { get; set; } = new List<Giaodichtien>();
 
     public virtual Baogia? MaBgNavigation { get; set; }

@@ -1,7 +1,7 @@
 namespace DongNamTrip.Modules;
 
-/// <summary>Kết quả nghiệp vụ để Presentation đổi sang HTTP: Ok, Invalid (400), Forbidden (403), NotFound (404), Conflict (409).</summary>
-public enum OpStatus { Ok, Invalid, Forbidden, NotFound, Conflict }
+/// <summary>Kết quả nghiệp vụ để Presentation đổi sang HTTP: Ok, Invalid (400), Forbidden (403), NotFound (404), Conflict (409), Unprocessable (422).</summary>
+public enum OpStatus { Ok, Invalid, Forbidden, NotFound, Conflict, Unprocessable }
 
 /// <summary>Thất bại chưa gắn kiểu giá trị; đổi ngầm sang <see cref="OpResult{T}"/> (xem <see cref="Op"/>).</summary>
 public readonly record struct OpFailure(OpStatus Status, string Message);
@@ -17,6 +17,9 @@ public sealed record OpResult<T>(T? Value, OpStatus Status, string? Message = nu
     public static implicit operator OpResult<T>(OpFailure failure) => new(default, failure.Status, failure.Message);
 }
 
+/// <summary>Giá trị kèm cờ "vừa tạo" để endpoint trả 201 (mới) hoặc 200 (đã có).</summary>
+public sealed record Fresh<T>(T Value, bool IsNew);
+
 public static class Op
 {
     public static OpResult<T> Ok<T>(T value) => new(value, OpStatus.Ok);
@@ -24,6 +27,7 @@ public static class Op
     public static OpFailure Forbidden(string message) => new(OpStatus.Forbidden, message);
     public static OpFailure NotFound(string message) => new(OpStatus.NotFound, message);
     public static OpFailure Conflict(string message) => new(OpStatus.Conflict, message);
+    public static OpFailure Unprocessable(string message) => new(OpStatus.Unprocessable, message);
 
     /// <summary>Xung đột nhưng vẫn trả dữ liệu cho client (ví dụ yêu cầu xác nhận).</summary>
     public static OpResult<T> Conflict<T>(string message, T value) => new(value, OpStatus.Conflict, message);

@@ -19,7 +19,7 @@ public static class AdministrationEndpoints
     {
         admin.MapGet("/", async (string? query, string? role, AdminAccountService service, CancellationToken ct) => Results.Ok(await service.AccountsAsync(query, role, ct)));
         admin.MapGet("/paged", async (string? group, string? query, string? role, string? status, int? page, AdminAccountService service, CancellationToken ct) =>
-            group is not ("staff" or "customer") || status is not (null or "" or "Active" or "Locked") || page is < 1 or > 1000000
+            group is not ("staff" or "customer") || status is not (null or "" or AccountStatus.Active or AccountStatus.Locked) || page is < 1 or > 1000000
                 ? Results.BadRequest() : Results.Ok(await service.AccountPageAsync(group, query, role, status, page ?? 1, ct)))
             .WithSummary("Danh sách tài khoản theo nhóm, bộ lọc và trang").Produces<AdminAccountPage>().Produces(400).Produces(401).Produces(403);
         admin.MapGet("/roles", async (AdminAccountService service, CancellationToken ct) => Results.Ok(await service.RolesAsync(ct)));

@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 import { Link, NavLink } from 'react-router';
 
 const menu = [
-  ['/Account/Profile', 'Hồ sơ tài khoản'], ['/Trips', 'Chuyến đi của tôi'],
+  ['/Account/Profile', 'Hồ sơ tài khoản'], ['/Trips', 'Chuyến đi của tôi'], ['/Account/Bookings', 'Đơn đặt tour'],
   ['/Account/Security', 'Bảo mật tài khoản'], ['/Account/Payments', 'Thanh toán và hoàn tiền'],
   ['/Account/Favorites', 'Yêu thích và lịch sử'], ['/Account/Notices', 'Thông báo và tùy chọn'],
 ];

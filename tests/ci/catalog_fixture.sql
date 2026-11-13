@@ -45,3 +45,19 @@ FROM @links l
 JOIN TOUR t ON t.TenTour = l.Tour
 JOIN DIADIEM d ON d.TenDD = l.Place
 WHERE NOT EXISTS (SELECT 1 FROM TOUR_DIADIEM x WHERE x.MaTour = t.MaTour AND x.MaDD = d.MaDD);
+
+-- Lịch khởi hành Open cho mọi tour đã công bố (test đặt chỗ). Idempotent theo (tour, giờ khởi hành).
+-- Lịch thứ hai của tour đầu tiên chỉ còn 1 chỗ (SucChua 5, đã giữ 4) để test tranh chỗ.
+DECLARE @dep TABLE (Ten NVARCHAR(200), Ngay INT, Gia DECIMAL(18,0), SucChua INT, DaGiu INT);
+INSERT INTO @dep VALUES
+(N'Sài Gòn: những góc phố thân quen', 30, 690000, 20, 0),
+(N'Sài Gòn: những góc phố thân quen', 31, 690000, 5, 4),
+(N'Tây Ninh: hẹn nhau trên tầng mây', 30, 890000, 20, 0),
+(N'Vũng Tàu: một ngày cùng biển', 30, 790000, 20, 0),
+(N'Cát Tiên: đi giữa màu xanh', 30, 1690000, 20, 0),
+(N'Bình Dương: sắc màu làng nghề', 30, 590000, 20, 0);
+
+INSERT INTO LICHKHOIHANH (MaTour, NgayGioKhoiHanh, Gia, SucChua, SoChoDaGiu, TrangThai)
+SELECT t.MaTour, DATEADD(HOUR, 8, CAST(DATEADD(DAY, d.Ngay, CAST(SYSUTCDATETIME() AS date)) AS datetime2)), d.Gia, d.SucChua, d.DaGiu, 'Open'
+FROM @dep d JOIN TOUR t ON t.TenTour = d.Ten AND t.TrangThai = 'Published'
+WHERE NOT EXISTS (SELECT 1 FROM LICHKHOIHANH l WHERE l.MaTour = t.MaTour AND l.SucChua = d.SucChua AND l.TrangThai IN ('Open', 'Closed'));

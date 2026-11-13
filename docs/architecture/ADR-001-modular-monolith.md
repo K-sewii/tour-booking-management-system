@@ -35,14 +35,14 @@ Ràng buộc: DB schema do nhóm cung cấp, README cấm tự tạo/đổi sche
 
 | Module | Phân hệ | Use case | Bảng sở hữu |
 | --- | --- | --- | --- |
-| `Catalog` | PH1 Quản lý danh mục du lịch | UC03, UC04, UC14, UC15 | `DIADIEM`, `HOATDONG`, `SUAT` |
-| `Itinerary` | PH2 Lịch trình cá nhân | UC05–UC09 | `LICHTRINH`, `LICHTRINH_DIADIEM`, `LICHTRINH_SUAT`, `PHIENBANLICHTRINH`, `YEUCAUTOURRIENG` |
-| `Booking` | PH3 Tour và đơn đặt | UC02, UC10–UC13, UC16, UC20 | `TOUR`, `TOUR_DIADIEM`, `LICHKHOIHANH`, `DONDAT`, `GIAODICHTIEN`, `TAIKHOAN_THANHTOAN` |
-| `Quotation` | PH4 Xác minh và báo giá | UC09–xác nhận, UC21–22 | `XACMINHDICHVU`, `BAOGIA`, `HANGMUCBAOGIA` |
+| `Catalog` | PH1 Quản lý danh mục du lịch (kèm tour và lịch khởi hành) | UC02, UC03, UC04, UC14, UC15, UC16 | `DIADIEM`, `HOATDONG`, `SUAT`, `TOUR`, `TOUR_DIADIEM`, `LICHKHOIHANH` |
+| `Itinerary` | PH2 Lịch trình cá nhân | UC05–UC09 | `LICHTRINH`, `LICHTRINH_DIADIEM`, `LICHTRINH_SUAT`, `PHIENBANLICHTRINH` |
+| `Booking` | PH3 Đơn đặt và thu hoàn | UC11–UC13, UC19, UC20 | `DONDAT`, `GIAODICHTIEN`, `TAIKHOAN_THANHTOAN` |
+| `Quotation` | PH4 Yêu cầu tour riêng, xác minh và báo giá | UC09, UC10, UC17, UC18 | `YEUCAUTOURRIENG`, `XACMINHDICHVU`, `BAOGIA`, `HANGMUCBAOGIA` |
 | `Narration` | PH5 Thuyết minh đa ngôn ngữ | thuyết minh, dịch, TTS | `NGONNGU`, `THUYETMINH`, `BANDICH`, `TEPAUDIO`, `QUYENNGHE` |
 | `Administration` | PH6 Quản trị hệ thống | UC01 + khu tài khoản SCR21–25 | `TAIKHOAN`, `VAITRO`, `TAIKHOAN_VAITRO`, `NHATKYTHAOTAC`, `TAIKHOAN_YEUTHICH/LICHSU/TUYCHON/THONGBAO`, phiên đăng nhập |
 
-Ghi chú gán bảng (cần nhóm xác nhận): `QUYENNGHE` (quyền nghe, gắn đơn + tài khoản) đặt ở `Narration` vì là quyền truy cập nội dung; `GIAODICHTIEN` ở `Booking` theo sơ đồ PH3 (UC20); `NHATKYTHAOTAC` ghi từ mọi module nhưng sở hữu bởi `Administration`.
+Ghi chú gán bảng (theo đặc tả sáu module): `TOUR`, `TOUR_DIADIEM`, `LICHKHOIHANH` thuộc `Catalog` (Booking giữ và trả chỗ qua `ICatalogApi`); `YEUCAUTOURRIENG` thuộc `Quotation` (Quotation tạo phiên bản lịch trình qua `IItineraryApi`). `rules.py` kiểm tra mỗi module chỉ ghi bảng của mình. Các ghi chú còn lại: `QUYENNGHE` (quyền nghe, gắn đơn + tài khoản) đặt ở `Narration` vì là quyền truy cập nội dung; `GIAODICHTIEN` ở `Booking` theo sơ đồ PH3 (UC20); `NHATKYTHAOTAC` ghi từ mọi module nhưng sở hữu bởi `Administration`.
 
 ### 2. Cấu trúc thư mục
 
@@ -143,12 +143,12 @@ Chọn A (một project `DongNamTrip.Modules`) vì ít thư mục nhất mà v�
 
 | Module | Đã có | Chưa có / giới hạn |
 | --- | --- | --- |
-| `Catalog` | Repository SQL cho `DIADIEM`, `TOUR`, `TOUR_DIADIEM`; danh sách/tìm kiếm/chi tiết/estimate; quản trị địa điểm, hoạt động và suất hoạt động | Chưa tách DbContext/schema; các bảng PH1 khác chưa có endpoint riêng |
-| `Itinerary` | Repository SQL cho `LICHTRINH*`, preview công khai và danh sách/tạo lịch trình của tài khoản; đọc Catalog qua `ICatalogApi` | Chưa có các use case private-tour request/suất đầy đủ |
-| `Booking` | Repository SQL đọc `DONDAT`/`GIAODICHTIEN` của chính tài khoản, và lưu lựa chọn `bank_transfer`/`cash` | Không tạo đơn, giữ chỗ, charge, refund hay cổng thanh toán; lựa chọn chỉ là preference |
-| `Administration` | Xác thực SQL, tài khoản/khu vực tài khoản qua repository, role policy; `SqlSessionStore` giữ token Bearer trong bộ nhớ | `SqlAuthentication` vẫn truy cập DbContext trực tiếp và chưa tách repository |
-| `Quotation` | Class module được host đăng ký | Không endpoint/service/repository |
-| `Narration` | Biên tập thuyết minh, phiên bản, bản dịch, tải audio lên, trạng thái công bố; nghe có xác thực và quản lý quyền nghe | Chưa tích hợp luồng Booking/thanh toán; không có tự động cấp quyền nghe sau thanh toán |
+| `Catalog` | Danh sách/tìm kiếm/chi tiết/estimate tour; quản trị địa điểm, hoạt động, suất; quản trị tour, điểm dừng và lịch khởi hành (UC16); giữ và trả chỗ nguyên tử cho Booking | Chưa tách DbContext/schema |
+| `Itinerary` | Lập, sửa, xóa lịch trình; chọn suất mong muốn; `ScheduleChecker` kiểm tra xung đột (UC07); phiên bản bất biến cho báo giá | Thời gian di chuyển giữa các chặng chưa có dữ liệu (tính 0) |
+| `Booking` | Đặt tour có giữ chỗ, hủy, xác nhận, điều chỉnh, hoàn thành, ghi thu/hoàn, hết hạn giữ chỗ (`HoldExpiryWorker`); tạo đơn tour riêng từ báo giá | Chưa có cổng thanh toán; số hoàn do nhân viên quyết định |
+| `Administration` | Xác thực SQL, khu tài khoản, nhật ký, thông báo; quản lý người dùng, vai trò, nhật ký chỉ đọc, thống kê (UC24) | `SqlAuthentication` vẫn truy cập DbContext trực tiếp |
+| `Quotation` | Yêu cầu tour riêng, tiếp nhận, xác minh, phát hành báo giá, chấp nhận/đề nghị đổi, hết hạn báo giá (`QuoteExpiryWorker`) | Chưa có |
+| `Narration` | Biên tập thuyết minh, bản dịch, audio, nghe; Booking cấp và thu hồi quyền nghe qua `INarrationApi` khi xác nhận/hủy đơn | Chưa có |
 
 Catalog và Itinerary **không còn dùng `DemoStore`**. Mọi module vẫn dùng chung `DongNamTripDbContext`, nên quyết định đích “DbContext riêng” chưa hoàn thành. OpenAPI tích hợp hiện chỉ được map trong Development; Swagger UI đọc cùng tài liệu tích hợp, không phải một generator thứ hai.
 
