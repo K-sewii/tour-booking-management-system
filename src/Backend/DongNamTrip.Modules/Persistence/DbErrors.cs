@@ -7,7 +7,7 @@ namespace DongNamTrip.Modules.Persistence;
 public static class DbErrors
 {
     /// <summary>Vi phạm khóa chính hoặc ràng buộc UNIQUE (SQL Server 2601/2627).</summary>
-    public static bool IsDuplicateKey(DbUpdateException exception) =>
+    public static bool IsDuplicateKey(Exception exception) =>
         exception.GetBaseException() is SqlException { Number: 2601 or 2627 };
 
     /// <summary>Vi phạm khóa ngoại (SQL Server 547), ví dụ xóa bản ghi còn được tham chiếu.</summary>

@@ -67,4 +67,41 @@ public sealed class ItineraryRepository(DongNamTripDbContext db)
             stops.Select(stop => new ItineraryStopDraft { DestinationId = stop.MaDd, Day = stop.NgayThu, Order = stop.ThuTu,
                 Note = stop.GhiChu, SlotIds = slots.Where(slot => slot.MaDd == stop.MaDd).OrderBy(slot => slot.MaSuat).Select(slot => slot.MaSuat).ToArray() }).ToArray());
     }
+
+    public Task<Microsoft.EntityFrameworkCore.Storage.IDbContextTransaction> BeginAsync(CancellationToken ct) => db.Database.BeginTransactionAsync(ct);
+
+    /// <summary>Khóa dòng LICHTRINH bằng UPDLOCK trong giao dịch của người gọi; false nếu không phải lịch trình của tài khoản.</summary>
+    public async Task<bool> LockAsync(int id, int accountId, CancellationToken ct) =>
+        await db.Lichtrinh.FromSqlInterpolated($"SELECT * FROM dbo.LICHTRINH WITH (UPDLOCK, ROWLOCK) WHERE MaLT = {id} AND MaTK = {accountId}")
+            .AsNoTracking().AnyAsync(ct);
+
+    public async Task<ItineraryVersionRef> AddVersionAsync(int id, string json, CancellationToken ct)
+    {
+        var latest = await db.Phienbanlichtrinh.Where(item => item.MaLt == id).MaxAsync(item => (int?)item.SoPhienBan, ct) ?? 0;
+        var row = new Phienbanlichtrinh { MaLt = id, SoPhienBan = latest + 1, ThoiDiemTao = DateTime.UtcNow, NoiDungJson = json };
+        db.Phienbanlichtrinh.Add(row);
+        await db.SaveChangesAsync(ct);
+        return new ItineraryVersionRef(row.MaPb, row.SoPhienBan, row.ThoiDiemTao);
+    }
+
+    public async Task<ItineraryVersion?> VersionAsync(int versionId, CancellationToken ct) =>
+        await db.Phienbanlichtrinh.AsNoTracking().Where(item => item.MaPb == versionId)
+            .Select(item => new ItineraryVersion(item.MaPb, item.MaLt, item.MaLtNavigation.MaTk, item.SoPhienBan, item.MaLtNavigation.NgayDi, item.MaLtNavigation.SoKhach, item.NoiDungJson))
+            .FirstOrDefaultAsync(ct);
+
+    /// <summary>Chỉ đọc YEUCAUTOURRIENG (module Quotation ghi): lịch trình đã có yêu cầu thì không xóa được.</summary>
+    public Task<bool> HasRequestsAsync(int id, CancellationToken ct) =>
+        db.Yeucautourrieng.AnyAsync(item => item.MaPbNavigation.MaLt == id, ct);
+
+    public async Task<bool> DeleteAsync(int id, int accountId, CancellationToken ct)
+    {
+        await using var transaction = await db.Database.BeginTransactionAsync(ct);
+        if (!await db.Lichtrinh.AnyAsync(item => item.MaLt == id && item.MaTk == accountId, ct)) return false;
+        await db.LichtrinhSuat.Where(item => item.MaLt == id).ExecuteDeleteAsync(ct);
+        await db.LichtrinhDiadiem.Where(item => item.MaLt == id).ExecuteDeleteAsync(ct);
+        await db.Phienbanlichtrinh.Where(item => item.MaLt == id).ExecuteDeleteAsync(ct);
+        await db.Lichtrinh.Where(item => item.MaLt == id).ExecuteDeleteAsync(ct);
+        await transaction.CommitAsync(ct);
+        return true;
+    }
 }

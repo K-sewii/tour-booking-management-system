@@ -49,6 +49,9 @@ jobs:
       - name: Check architecture rules
         run: python tests/architecture/rules.py
 
+      - name: Unit tests (pure business classes)
+        run: dotnet test tests/DongNamTrip.Modules.Tests --configuration Release --no-restore
+
   web-api:
     runs-on: windows-2022
     timeout-minutes: 20

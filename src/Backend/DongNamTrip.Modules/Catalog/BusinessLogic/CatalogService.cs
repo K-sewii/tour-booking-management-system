@@ -2,7 +2,7 @@ using DongNamTrip.Contracts;
 
 namespace DongNamTrip.Modules.Catalog;
 
-public sealed class CatalogService(CatalogRepository repository) : ICatalogApi
+public sealed class CatalogService(CatalogRepository repository, TimeProvider time) : ICatalogApi
 {
     public ClientRules Rules() => new(
         CatalogOptions.Regions.Select(region => new RegionOption(region, CatalogOptions.IllustrationFor(region))).ToArray(), CatalogOptions.Categories,
@@ -66,6 +66,40 @@ public sealed class CatalogService(CatalogRepository repository) : ICatalogApi
     };
 
     public Task<bool> PlaceExistsAsync(int id, CancellationToken ct) => repository.PlaceExistsAsync(id, ct);
+
+    private DateTime Now => time.GetLocalNow().DateTime;
+
+    /// <summary>Lịch Open của tour Published, chưa khởi hành; null nếu tour không tồn tại hoặc chưa công bố.</summary>
+    public async Task<List<DepartureInfo>?> DeparturesAsync(int tourId, CancellationToken ct) =>
+        await repository.TourVisibleAsync(tourId, ct) ? await repository.DeparturesAsync(tourId, Now, ct) : null;
+
+    public Task<List<SlotDetail>> SlotDetailsAsync(IReadOnlyCollection<int> slotIds, CancellationToken ct) =>
+        slotIds.Count == 0 ? Task.FromResult(new List<SlotDetail>()) : repository.SlotDetailsAsync(slotIds, ct);
+
+    public Task<Dictionary<int, DestinationHours>> HoursAsync(IReadOnlyCollection<int> destinationIds, CancellationToken ct) =>
+        destinationIds.Count == 0 ? Task.FromResult(new Dictionary<int, DestinationHours>()) : repository.HoursAsync(destinationIds, ct);
+
+    public Task<List<ProgramStop>> ProgramAsync(int tourId, CancellationToken ct) => repository.TourProgramAsync(tourId, ct);
+    public Task<Dictionary<int, string>> PlaceNamesAsync(IReadOnlyCollection<int> ids, CancellationToken ct) => repository.PlaceNamesAsync(ids, ct);
+
+    public async Task<DepartureInfo?> DepartureAsync(int id, CancellationToken ct) =>
+        (await repository.DeparturesAsync([id], ct)).GetValueOrDefault(id);
+
+    public Task<Dictionary<int, DepartureInfo>> DeparturesAsync(IReadOnlyCollection<int> ids, CancellationToken ct) =>
+        ids.Count == 0 ? Task.FromResult(new Dictionary<int, DepartureInfo>()) : repository.DeparturesAsync(ids, ct);
+
+    public async Task<HoldResult> HoldSeatsAsync(int departureId, int guests, CancellationToken ct)
+    {
+        if (guests > 0 && await repository.TryHoldAsync(departureId, guests, Now, ct) == 1)
+            return new HoldResult(SeatHold.Held, (await repository.StateAsync(departureId, ct))!.Remaining);
+        var state = await repository.StateAsync(departureId, ct);
+        if (state is null) return new HoldResult(SeatHold.NotFound, 0);
+        if (state.Capacity - state.Held < guests) return new HoldResult(SeatHold.Full, state.Remaining);
+        return new HoldResult(SeatHold.Closed, state.Remaining);
+    }
+
+    public Task ReleaseSeatsAsync(int departureId, int guests, CancellationToken ct) =>
+        guests <= 0 ? Task.CompletedTask : repository.ReleaseAsync(departureId, guests, ct);
 
     public async Task<Dictionary<int, string>> NamesAsync(string kind, IReadOnlyCollection<int> ids, CancellationToken ct) => kind switch
     {

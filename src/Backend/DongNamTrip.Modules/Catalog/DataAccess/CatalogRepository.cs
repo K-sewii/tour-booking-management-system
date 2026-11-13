@@ -10,7 +10,7 @@ namespace DongNamTrip.Modules.Catalog;
 public sealed class CatalogRepository(DongNamTripDbContext db)
 {
     // Trạng thái bản ghi: Draft, Published, Inactive. Chỉ Published hiển thị công khai.
-    public const string Published = "Published";
+    private const string Published = ContentStatus.Published;
 
     private IQueryable<Diadiem> VisiblePlaces => db.Diadiem.AsNoTracking().Where(item => item.TrangThai == Published);
     private IQueryable<TourRow> VisibleTours => db.Tour.AsNoTracking().Where(item => item.TrangThai == Published);
@@ -50,6 +50,14 @@ public sealed class CatalogRepository(DongNamTripDbContext db)
         db.Suat.AsNoTracking().Where(item => ids.Contains(item.MaSuat))
             .Select(item => new PlannerSlot(item.MaSuat, item.MaHd, item.MaHdNavigation.MaDd, item.Ngay, item.GioBatDau, item.GioKetThuc, item.TrangThai))
             .ToListAsync(ct);
+
+    public async Task<List<ProgramStop>> TourProgramAsync(int tourId, CancellationToken ct) =>
+        (await db.TourDiadiem.AsNoTracking().Where(item => item.MaTour == tourId).OrderBy(item => item.NgayThu).ThenBy(item => item.ThuTu)
+            .Select(item => new { item.NgayThu, item.MaDdNavigation.TenDd }).ToListAsync(ct))
+        .Select(item => new ProgramStop(item.NgayThu, item.TenDd)).ToList();
+
+    public async Task<Dictionary<int, string>> PlaceNamesAsync(IReadOnlyCollection<int> ids, CancellationToken ct) =>
+        ids.Count == 0 ? [] : await db.Diadiem.AsNoTracking().Where(item => ids.Contains(item.MaDd)).ToDictionaryAsync(item => item.MaDd, item => item.TenDd, ct);
 
     public async Task<Dictionary<int, string>> TourNamesAsync(IReadOnlyCollection<int> ids, CancellationToken ct) =>
         await VisibleTours.Where(item => ids.Contains(item.MaTour)).ToDictionaryAsync(item => item.MaTour, item => item.TenTour, ct);
@@ -140,4 +148,61 @@ public sealed class CatalogRepository(DongNamTripDbContext db)
         return rows.Select(row => new TourDto(row.MaTour, row.TenTour, row.KhuVuc, row.LoaiHinh, row.ThoiLuong, row.GiaThamKhao, row.TomTat,
             CatalogOptions.IllustrationFor(row.KhuVuc), links.Where(link => link.MaTour == row.MaTour).Select(link => link.MaDd).ToArray())).ToList();
     }
+
+    // ---- Lịch khởi hành và giữ chỗ (UC11, UC16) ----
+
+    public async Task<List<DepartureInfo>> DeparturesAsync(int tourId, DateTime now, CancellationToken ct) =>
+        (await db.Lichkhoihanh.AsNoTracking().Include(item => item.MaTourNavigation)
+            .Where(item => item.MaTour == tourId && item.TrangThai == DepartureStatus.Open && item.NgayGioKhoiHanh > now
+                && item.MaTourNavigation.TrangThai == Published)
+            .OrderBy(item => item.NgayGioKhoiHanh).ToListAsync(ct))
+        .Select(ToInfo).ToList();
+
+    public async Task<Dictionary<int, DepartureInfo>> DeparturesAsync(IReadOnlyCollection<int> ids, CancellationToken ct) =>
+        (await db.Lichkhoihanh.AsNoTracking().Include(item => item.MaTourNavigation)
+            .Where(item => ids.Contains(item.MaLkh)).ToListAsync(ct)).ToDictionary(item => item.MaLkh, ToInfo);
+
+    private static DepartureInfo ToInfo(Lichkhoihanh row) => new(row.MaLkh, row.MaTour, row.MaTourNavigation.TenTour, row.NgayGioKhoiHanh, row.Gia,
+        row.SucChua, row.SoChoDaGiu, Math.Max(0, row.SucChua - row.SoChoDaGiu), row.TrangThai, row.MaTourNavigation.DieuKienHuy);
+
+    public async Task<bool> TourVisibleAsync(int tourId, CancellationToken ct) => await VisibleTours.AnyAsync(item => item.MaTour == tourId, ct);
+
+    public async Task<List<SlotDetail>> SlotDetailsAsync(IReadOnlyCollection<int> ids, CancellationToken ct) =>
+        (await db.Suat.AsNoTracking().Where(item => ids.Contains(item.MaSuat))
+            .Select(item => new { item.MaSuat, item.MaHd, item.MaHdNavigation.TenHd, item.MaHdNavigation.MaDd, item.Ngay, item.GioBatDau, item.GioKetThuc, item.TrangThai })
+            .ToListAsync(ct))
+        .Select(item => new SlotDetail(item.MaSuat, item.MaHd, item.TenHd, item.MaDd, item.Ngay, item.GioBatDau, item.GioKetThuc, item.TrangThai,
+            (int)(item.GioKetThuc - item.GioBatDau).TotalMinutes)).ToList();
+
+    public async Task<Dictionary<int, DestinationHours>> HoursAsync(IReadOnlyCollection<int> destinationIds, CancellationToken ct) =>
+        (await db.Diadiem.AsNoTracking().Where(item => destinationIds.Contains(item.MaDd)).ToListAsync(ct))
+            .ToDictionary(item => item.MaDd, item => new DestinationHours(item.GioMoCua, item.GioDongCua, item.ThoiLuongPhut));
+
+    /// <summary>Một lệnh UPDATE có điều kiện: hai yêu cầu tranh chỗ cuối thì chỉ một dòng được cập nhật. Trả số dòng bị ảnh hưởng (0 hoặc 1).</summary>
+    public Task<int> TryHoldAsync(int departureId, int guests, DateTime now, CancellationToken ct) =>
+        db.Lichkhoihanh
+            .Where(item => item.MaLkh == departureId && item.TrangThai == DepartureStatus.Open && item.NgayGioKhoiHanh > now
+                && item.SoChoDaGiu + guests <= item.SucChua
+                && db.Tour.Any(tour => tour.MaTour == item.MaTour && tour.TrangThai == Published))
+            .ExecuteUpdateAsync(set => set
+                .SetProperty(item => item.SoChoDaGiu, item => item.SoChoDaGiu + guests)
+                .SetProperty(item => item.TrangThai, item => item.SoChoDaGiu + guests == item.SucChua ? DepartureStatus.Closed : DepartureStatus.Open), ct);
+
+    /// <summary>Trừ chỗ đã giữ; lịch đang Closed mà hết đầy thì về Open, lịch Inactive giữ nguyên trạng thái.</summary>
+    public Task<int> ReleaseAsync(int departureId, int guests, CancellationToken ct) =>
+        db.Lichkhoihanh.Where(item => item.MaLkh == departureId && item.SoChoDaGiu >= guests)
+            .ExecuteUpdateAsync(set => set
+                .SetProperty(item => item.SoChoDaGiu, item => item.SoChoDaGiu - guests)
+                .SetProperty(item => item.TrangThai, item => item.TrangThai == DepartureStatus.Closed && item.SoChoDaGiu - guests < item.SucChua
+                    ? DepartureStatus.Open : item.TrangThai), ct);
+
+    public async Task<DepartureState?> StateAsync(int departureId, CancellationToken ct) =>
+        await db.Lichkhoihanh.AsNoTracking().Where(item => item.MaLkh == departureId)
+            .Select(item => new DepartureState(item.TrangThai, item.SucChua, item.SoChoDaGiu, item.NgayGioKhoiHanh, item.MaTourNavigation.TrangThai == Published))
+            .FirstOrDefaultAsync(ct);
+}
+
+public sealed record DepartureState(string Status, int Capacity, int Held, DateTime StartsAt, bool TourPublished)
+{
+    public int Remaining => Math.Max(0, Capacity - Held);
 }

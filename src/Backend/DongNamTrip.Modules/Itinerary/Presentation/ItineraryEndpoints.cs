@@ -19,7 +19,17 @@ public static class ItineraryEndpoints
         itineraries.MapGet("/preview", (int[]? ids, ItineraryService service, CancellationToken ct) => service.PreviewAsync(ids ?? [], ct))
             .WithSummary("Preview selected destinations").Produces<ItineraryPreview>();
 
+        itineraries.MapPost("/check", async (DraftCheckRequest request, ItineraryService service, CancellationToken ct) =>
+            ToHttp(await service.CheckDraftAsync(request, ct)))
+            .WithSummary("Check a temporary draft for schedule conflicts").Produces<ItineraryCheck>().Produces(StatusCodes.Status400BadRequest);
+
         var mine = itineraries.MapGroup("").RequireAuthorization();
+        mine.MapGet("/{id:int}/check", async (int id, ClaimsPrincipal user, ItineraryService service, CancellationToken ct) =>
+            ToHttp(await service.CheckAsync(AccountId(user), id, ct)))
+            .WithSummary("Check one of my itineraries for schedule conflicts").Produces<ItineraryCheck>().Produces(StatusCodes.Status404NotFound);
+        mine.MapDelete("/{id:int}", async (int id, ClaimsPrincipal user, ItineraryService service, CancellationToken ct) =>
+            ToHttp(await service.DeleteAsync(AccountId(user), id, ct), _ => Results.NoContent()))
+            .WithSummary("Delete one of my itineraries").Produces(StatusCodes.Status204NoContent).Produces(StatusCodes.Status404NotFound).Produces(StatusCodes.Status409Conflict);
         mine.MapGet("", (ClaimsPrincipal user, ItineraryService service, CancellationToken ct) => service.ListAsync(AccountId(user), ct))
             .WithSummary("List my itineraries").Produces<List<Contracts.Itinerary>>().Produces(StatusCodes.Status401Unauthorized);
         mine.MapGet("/{id:int}", async (int id, ClaimsPrincipal user, ItineraryService service, CancellationToken ct) =>
