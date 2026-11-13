@@ -7,6 +7,33 @@ namespace DongNamTrip.Modules.Administration;
 
 public sealed class AuditRepository(DongNamTripDbContext db)
 {
+    // These actions are emitted by staff-authorized endpoints; role snapshots do not exist for other historic rows.
+    private static readonly string[] StaffAuditActions = [
+        "Đổi vai trò", "Đổi trạng thái", "Khóa tài khoản", "Mở khóa tài khoản", "Tạo tài khoản nhân viên", "Đặt lại mật khẩu",
+        "Tạo tour", "Sửa tour", "Sửa điểm dừng tour", "Công bố tour", "Ngừng tour", "Tạo lịch khởi hành", "Sửa lịch khởi hành", "Ngừng lịch khởi hành",
+        "Xác nhận đơn", "Điều chỉnh đơn", "Duyệt hủy đơn", "Từ chối hủy đơn", "Ghi nhận thu", "Ghi nhận hoàn", "Hoàn thành đơn",
+        "Tiếp nhận yêu cầu", "Ghi xác minh dịch vụ", "Phát hành báo giá", "Hủy yêu cầu tour riêng", "Tạo địa điểm", "Sửa địa điểm", "Công bố địa điểm", "Ngừng công bố địa điểm", "Xóa bản nháp địa điểm",
+        "Tạo hoạt động", "Sửa hoạt động", "Công bố hoạt động", "Tạm ngừng hoạt động", "Tạo suất", "Sửa suất", "Công bố suất", "Tạm ngừng suất"
+    ];
+    public async Task<AdminAuditPage> AuditAsync(int page, string? actorType, DateOnly? from, DateOnly? to, string? query, CancellationToken ct)
+    {
+        // These account mutations are written only by the Admin-protected account endpoints.
+        // Other historic entries have no role snapshot; current account roles are not evidence.
+        var source = db.Nhatkythaotac.AsNoTracking();
+        if (actorType == "staff") source = source.Where(x => x.MaTk != null && StaffAuditActions.Contains(x.HanhDong) && (x.HanhDong != "Đổi trạng thái" || x.LoaiDoiTuong == "TAIKHOAN"));
+        else if (actorType == "system") source = source.Where(x => x.MaTk == null && x.HanhDong == "SeedCatalogPublicData" && x.LoaiDoiTuong == "Catalog" && x.MaDoiTuong == "PublicCatalog.20261028");
+        else if (actorType == "customer") source = source.Where(x => false); // No customer business-audit source with actor snapshots yet.
+        if (!string.IsNullOrWhiteSpace(query)) { var term = query.Trim(); source = source.Where(x => x.HanhDong.Contains(term) || (x.MaTkNavigation != null && x.MaTkNavigation.HoTen.Contains(term))); }
+        if (from is not null) { var start = from.Value.ToDateTime(TimeOnly.MinValue).AddHours(-7); source = source.Where(x => x.ThoiDiem >= start); }
+        if (to is not null) { var end = to.Value.AddDays(1).ToDateTime(TimeOnly.MinValue).AddHours(-7); source = source.Where(x => x.ThoiDiem < end); }
+        var count = await source.CountAsync(ct);
+        var rows = await source.OrderByDescending(x => x.ThoiDiem).ThenByDescending(x => x.MaNk).Skip((page - 1) * 50).Take(51)
+            .Select(x => new AdminAuditRow(x.MaNk, x.ThoiDiem, x.MaTkNavigation == null ? (x.MaTk == null && x.HanhDong == "SeedCatalogPublicData" && x.LoaiDoiTuong == "Catalog" && x.MaDoiTuong == "PublicCatalog.20261028" ? "Hệ thống" : "Không xác định") : x.MaTkNavigation.HoTen, x.HanhDong, x.LoaiDoiTuong, x.MaDoiTuong, x.LyDo, x.LoaiDoiTuong == "TAIKHOAN" && x.HanhDong == "Đổi vai trò" ? x.DuLieuTruoc : null, x.LoaiDoiTuong == "TAIKHOAN" && x.HanhDong == "Đổi vai trò" ? x.DuLieuSau : null,
+                x.MaTk != null && StaffAuditActions.Contains(x.HanhDong) && (x.HanhDong != "Đổi trạng thái" || x.LoaiDoiTuong == "TAIKHOAN") ? "staff" : x.MaTk == null && x.HanhDong == "SeedCatalogPublicData" && x.LoaiDoiTuong == "Catalog" && x.MaDoiTuong == "PublicCatalog.20261028" ? "system" : "unknown",
+                x.LoaiDoiTuong == "TEPAUDIO" && x.HanhDong == "Tạo audio lỗi" ? "Tạo audio thất bại" : null)).ToListAsync(ct);
+        return new AdminAuditPage(rows.Take(50).ToList(), rows.Count > 50, Math.Max(1, (count + 49) / 50), count);
+    }
+
     public async Task AddAsync(int? actorId, string action, string objectType, string objectId, string? reason, string? before, string? after, CancellationToken ct)
     {
         db.Nhatkythaotac.Add(new Nhatkythaotac
@@ -63,7 +90,7 @@ public sealed class AuditRepository(DongNamTripDbContext db)
     {
         var names = await NamesAsync(rows.Where(item => item.MaTk is not null).Select(item => item.MaTk!.Value).Distinct().ToArray(), ct);
         return rows.Select(item => new AuditRow(item.MaNk, item.MaTk,
-            item.MaTk is { } id && names.TryGetValue(id, out var name) ? name : "Hệ thống",
+            item.MaTk is { } id ? (names.TryGetValue(id, out var name) ? name : "Không xác định") : "Hệ thống",
             item.ThoiDiem, item.HanhDong, item.LoaiDoiTuong, item.MaDoiTuong ?? "", item.LyDo, item.DuLieuTruoc, item.DuLieuSau)).ToList();
     }
 }

@@ -25,6 +25,8 @@ def run():
     _, _, c2 = smoke.registration('Khách báo giá 2')
     grant_roles(op_email, ['Operator'])
     op = request(API + '/api/auth/login', 'POST', {'email': op_email, 'password': 'SmokePass!2026'})['token']
+    grant_roles(op_email, ['Admin'])
+    audit_token = request(API + '/api/auth/login', 'POST', {'email': op_email, 'password': 'SmokePass!2026'})['token']
     t1, t2 = c1['token'], c2['token']
     admin = lambda path, **kw: request(API + '/api/admin/quote-requests' + path, **kw)
     mine = lambda path, **kw: request(API + '/api/account' + path, **kw)
@@ -81,6 +83,8 @@ def run():
     admin(f'/{rid}/quotes', method='POST', token=op, data=quote_form(deposit=99999999), expected=422)
     admin(f'/{rid}/quotes', method='POST', token=op, data=quote_form(validUntil=iso(days=-1)), expected=422)
     q1 = admin(f'/{rid}/quotes', method='POST', token=op, data=quote_form(), expected=201)
+    staff_audit = request(API + '/api/admin/audit/scr19?actorType=staff&page=1', token=audit_token)
+    check(any(row['objectType'] == 'BAOGIA' and row['objectId'] == str(q1['id']) and row['action'] == 'Phát hành báo giá' for row in staff_audit['items']), 'SCR19 must show staff quotation audit.')
     check(q1['status'] == 'Sent' and q1['total'] == 2000000, f'Included items must not be added twice: {q1}.')
     check(mine(f'/quote-requests/{rid}', token=t1)['request']['status'] == 'Quoted', 'Issuing must move the request to Quoted.')
     q2 = admin(f'/{rid}/quotes', method='POST', token=op, data=quote_form(deposit=600000), expected=201)

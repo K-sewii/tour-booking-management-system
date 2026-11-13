@@ -9,7 +9,6 @@ public sealed class BookingModule : IModule
         services.TryAddSingleton(TimeProvider.System);
         services.AddScoped<BookingRepository>();
         services.AddScoped<PaymentService>();
-        services.AddScoped<IBookingStatisticsApi, BookingStatisticsService>();
         services.AddScoped<BookingService>();
         services.AddScoped<IBookingApi>(sp => sp.GetRequiredService<BookingService>());
         services.AddScoped<BookingAdminService>();

@@ -11,7 +11,7 @@ public record AdminDeparture(int Id, int TourId, DateTime StartsAt, decimal Pric
 public record TourForm(string Name, string Region, string Category, string Duration, decimal ReferencePrice, string Summary, string? CancelPolicy);
 public record TourStopForm(int DestinationId, int Day, int Order);
 public record DepartureForm(DateTime StartsAt, decimal Price, int Capacity);
-public record StatusRequest(string Status, string? Reason = null);
+public record StatusRequest(string Status, string? Reason = null, string? ExpectedStatus = null);
 
 /// <summary>Kết quả giữ chỗ (đặt trong Contracts để Booking dùng được mà không vi phạm quy tắc liên module).</summary>
 public enum SeatHold { Held, Full, Closed, NotFound }

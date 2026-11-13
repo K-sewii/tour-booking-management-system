@@ -17,6 +17,39 @@ public sealed class UserAdminRepository(DongNamTripDbContext db)
         (await db.Database.SqlQueryRaw<int>("DECLARE @r int; EXEC @r = sp_getapplock @Resource = 'DongNamTrip.AdminChanges', @LockMode = 'Exclusive', @LockOwner = 'Transaction', @LockTimeout = 5000; SELECT @r AS Value;")
             .ToListAsync(ct)).Single() >= 0;
 
+    public Task<List<string>> RolesAsync(CancellationToken ct) => db.Vaitro.AsNoTracking().OrderBy(x => x.TenVaiTro).Select(x => x.TenVaiTro).ToListAsync(ct);
+
+    public async Task<List<AdminAccount>> AccountsAsync(string? query, string? role, CancellationToken ct)
+    {
+        var source = db.Taikhoan.AsNoTracking().Include(x => x.TaikhoanVaitro).ThenInclude(x => x.MaVaiTroNavigation).AsQueryable();
+        if (!string.IsNullOrWhiteSpace(query)) { var q = query.Trim(); source = source.Where(x => x.HoTen.Contains(q) || x.Email.Contains(q)); }
+        if (!string.IsNullOrWhiteSpace(role)) source = source.Where(x => x.TaikhoanVaitro.Any(r => r.MaVaiTroNavigation.TenVaiTro == role));
+        var accounts = await source.OrderBy(x => x.HoTen).ThenBy(x => x.MaTk).ToListAsync(ct);
+        return accounts.Select(x => new AdminAccount(x.MaTk, x.HoTen, x.Email, x.TrangThai, x.TaikhoanVaitro.Select(r => r.MaVaiTroNavigation.TenVaiTro).Order().ToArray())).ToList();
+    }
+
+    public async Task<AdminAccountPage> AccountPageAsync(string group, string? query, string? role, string? status, int page, CancellationToken ct)
+    {
+        var staff = new[] { AppRoles.Admin, AppRoles.Operator, AppRoles.Editor, AppRoles.Finance, AppRoles.Publisher };
+        var source = db.Taikhoan.AsNoTracking().Where(x => group == "staff"
+            ? x.TaikhoanVaitro.Any(r => staff.Contains(r.MaVaiTroNavigation.TenVaiTro))
+            : x.TaikhoanVaitro.Any(r => r.MaVaiTroNavigation.TenVaiTro == AppRoles.Customer)
+                && !x.TaikhoanVaitro.Any(r => r.MaVaiTroNavigation.TenVaiTro != AppRoles.Customer));
+        if (!string.IsNullOrWhiteSpace(query)) { var q = query.Trim(); source = source.Where(x => x.HoTen.Contains(q) || x.Email.Contains(q)); }
+        if (!string.IsNullOrWhiteSpace(role)) source = source.Where(x => x.TaikhoanVaitro.Any(r => r.MaVaiTroNavigation.TenVaiTro == role));
+        var active = await source.CountAsync(x => x.TrangThai == AccountStatus.Active, ct);
+        var locked = await source.CountAsync(x => x.TrangThai == AccountStatus.Locked, ct);
+        var groupTotal = await source.CountAsync(ct);
+        if (!string.IsNullOrWhiteSpace(status)) source = source.Where(x => x.TrangThai == status);
+        var count = await source.CountAsync(ct);
+        var pages = Math.Max(1, (count + 49) / 50);
+        page = Math.Min(page, pages);
+        var rows = await source.Include(x => x.TaikhoanVaitro).ThenInclude(x => x.MaVaiTroNavigation)
+            .OrderBy(x => x.HoTen).ThenBy(x => x.MaTk).Skip((page - 1) * 50).Take(50).ToListAsync(ct);
+        return new(rows.Select(x => new AdminAccount(x.MaTk, x.HoTen, x.Email, x.TrangThai,
+            x.TaikhoanVaitro.Select(r => r.MaVaiTroNavigation.TenVaiTro).Order().ToArray(), x.SoDienThoai, x.NgayTao)).ToList(), groupTotal, active, locked, page, pages, count);
+    }
+
     public async Task<(List<AdminUser> Rows, int Total)> ListAsync(UserFilter filter, int skip, int take, CancellationToken ct)
     {
         var query = db.Taikhoan.AsNoTracking().AsQueryable();

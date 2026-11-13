@@ -12,6 +12,7 @@ public static class AdministrationEndpoints
     {
         MapAuthentication(endpoints.MapGroup("/api/auth").WithTags("Administration"));
         MapAccountArea(endpoints.MapGroup("/api/account").RequireAuthorization().WithTags("Administration"));
+        // Compatibility aliases for existing clients; remove in a later release after migration to /api/admin/users, /api/admin/audit and /api/admin/stats.
         MapAdmin(endpoints.MapGroup("/api/admin/accounts").RequireAuthorization(policy => policy.RequireRole(AppRoles.Admin)).WithTags("Administration"));
     }
 
@@ -19,19 +20,17 @@ public static class AdministrationEndpoints
     {
         admin.MapGet("/", async (string? query, string? role, AdminAccountService service, CancellationToken ct) => Results.Ok(await service.AccountsAsync(query, role, ct)));
         admin.MapGet("/paged", async (string? group, string? query, string? role, string? status, int? page, AdminAccountService service, CancellationToken ct) =>
-            group is not ("staff" or "customer") || status is not (null or "" or AccountStatus.Active or AccountStatus.Locked) || page is < 1 or > 1000000
-                ? Results.BadRequest() : Results.Ok(await service.AccountPageAsync(group, query, role, status, page ?? 1, ct)))
+            ToHttp(await service.AccountPageAsync(group, query, role, status, page, ct)))
             .WithSummary("Danh sách tài khoản theo nhóm, bộ lọc và trang").Produces<AdminAccountPage>().Produces(400).Produces(401).Produces(403);
         admin.MapGet("/roles", async (AdminAccountService service, CancellationToken ct) => Results.Ok(await service.RolesAsync(ct)));
         admin.MapGet("/audit", async (int? page, string? actorType, DateOnly? from, DateOnly? to, string? query, AdminAccountService service, CancellationToken ct) =>
-            page is < 1 or > 1000000 || actorType is not (null or "" or "staff" or "customer" or "system") || from > to || from == DateOnly.MinValue || to == DateOnly.MaxValue
-                ? Results.BadRequest() : Results.Ok(await service.AuditAsync(page ?? 1, actorType, from, to, query, ct)));
+            ToHttp(await service.AuditAsync(page, actorType, from, to, query, ct)));
         admin.MapGet("/statistics", async (DateOnly? from, DateOnly? to, string? status, AdminAccountService service, CancellationToken ct) =>
         {
             var today = DateOnly.FromDateTime(DateTime.UtcNow.AddHours(7));
             var start = from ?? new DateOnly(today.Year, today.Month, 1);
             var end = to ?? new DateOnly(today.Year, today.Month, DateTime.DaysInMonth(today.Year, today.Month));
-            return start > end || start == DateOnly.MinValue || end == DateOnly.MaxValue ? Results.BadRequest() : Results.Ok(await service.StatisticsAsync(start, end, status, ct));
+            return ToHttp(await service.StatisticsAsync(start, end, status, ct));
         }).WithSummary("Statistics by Vietnam business date and order status").Produces<AdminStatistics>().Produces(400).Produces(401).Produces(403);
         admin.MapPut("/{id:int}/roles", async (int id, AdminRoleUpdate input, ClaimsPrincipal user, AdminAccountService service, CancellationToken ct) => MutationResult(await service.RolesAsync(id, AccountId(user), input, ct)));
         admin.MapPut("/{id:int}/status", async (int id, AdminStatusUpdate input, ClaimsPrincipal user, AdminAccountService service, CancellationToken ct) => MutationResult(await service.StatusAsync(id, AccountId(user), input, ct)));

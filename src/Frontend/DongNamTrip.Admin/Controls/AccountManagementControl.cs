@@ -54,7 +54,13 @@ public sealed class AccountManagementControl : UserControl
         accounts.SelectionChanged += (_, _) => UpdateButtons();
         edit.Click += async (_, _) => await EditRoles();
         promote.Click += async (_, _) => { if (Kit.Confirm(this, "Cấp quyền nhân viên cho khách hàng này? Hãy chọn vai trò trong hộp thoại tiếp theo.")) await EditRoles(); };
-        details.Click += (_, _) => { if (Selected is { } selected) MessageBox.Show(this, $"Mã: {selected.Id}\nHọ tên: {selected.Name}\nEmail: {selected.Email}\nĐiện thoại: {selected.Phone ?? "—"}\nVai trò: {string.Join(", ", selected.Roles)}\nTrạng thái: {(selected.Status == "Active" ? "Hoạt động" : selected.Status == "Locked" ? "Bị khóa" : selected.Status)}", "Thông tin tài khoản"); };
+        details.Click += async (_, _) => await Ui.RunAsync(this, async () =>
+        {
+            if (Selected is not { } selected) return;
+            var detail = await api.AdminUserAsync(selected.Id, token);
+            var actions = string.Join(Environment.NewLine, detail.RecentActions.Select(x => $"{x.At.AddHours(7):dd/MM/yyyy HH:mm} · {x.Action} · {x.ObjectType} {x.ObjectId}"));
+            MessageBox.Show(this, $"Mã: {detail.User.Id}\nHọ tên: {detail.User.FullName}\nEmail: {detail.User.Email}\nĐiện thoại: {detail.User.Phone ?? "—"}\nVai trò: {string.Join(", ", detail.User.Roles)}\nTrạng thái: {AccountStatus.Label(detail.User.Status)}\nNgày tạo: {detail.User.CreatedAt.AddHours(7):dd/MM/yyyy HH:mm}\nPhiên đang mở: {detail.ActiveSessions}\n\nThao tác gần đây:\n{actions}", "Thông tin tài khoản");
+        });
         status.Click += async (_, _) => await ChangeStatus();
         create.Click += async (_, _) => await Ui.RunAsync(this, async () =>
         {
@@ -79,7 +85,7 @@ public sealed class AccountManagementControl : UserControl
     private void UpdateButtons() { edit.Visible = group.SelectedIndex == 0; promote.Visible = group.SelectedIndex == 1; edit.Enabled = promote.Enabled = details.Enabled = status.Enabled = reset.Enabled = !loadingAccounts && Selected is not null; }
     private async Task Initialize()
     {
-        try { roles = await api.AdminRolesAsync(token); if (IsDisposed) return; role.Items.Add("Mọi vai trò"); role.Items.AddRange(roles.Cast<object>().ToArray()); role.SelectedIndex = 0; }
+        try { roles = await api.UserRolesAsync(token); if (IsDisposed) return; role.Items.Add("Mọi vai trò"); role.Items.AddRange(roles.Cast<object>().ToArray()); role.SelectedIndex = 0; }
         catch (Exception e) when (e is HttpRequestException or TaskCanceledException) { if (!Kit.HandleExpiredSession(this, e) && !IsDisposed) info.Text = Kit.Describe(e); }
     }
     private async Task LoadAccounts()
@@ -89,16 +95,18 @@ public sealed class AccountManagementControl : UserControl
         refresh.Enabled = edit.Enabled = promote.Enabled = details.Enabled = status.Enabled = false; info.Text = "Đang tải…";
         try
         {
-            var result = await api.AdminAccountPageAsync(group.SelectedIndex == 0 ? "staff" : "customer", search.Text.Trim(), group.SelectedIndex == 0 && role.SelectedIndex > 0 ? role.Text : "", accountStatus.SelectedIndex == 1 ? "Active" : accountStatus.SelectedIndex == 2 ? "Locked" : "", accountPage, token);
+            var result = await api.GroupedUsersAsync(group.SelectedIndex == 0 ? "staff" : "customer", search.Text.Trim(), group.SelectedIndex == 0 && role.SelectedIndex > 0 ? role.Text : "", accountStatus.SelectedIndex == 1 ? "Active" : accountStatus.SelectedIndex == 2 ? "Locked" : "", accountPage, token);
             if (version != requestVersion || IsDisposed) return;
             items = result.Items; accountPage = result.Page; accountPages = result.TotalPages;
             accountKpis[0].Text = result.Total.ToString("N0"); accountKpis[1].Text = result.Active.ToString("N0"); accountKpis[2].Text = result.Locked.ToString("N0");
-            accounts.DataSource = items.Select(x => new AccountRow(x.Id, x.Name, x.Email, string.Join(", ", x.Roles), x.Phone ?? "—", x.Status == "Active" ? "Hoạt động" : x.Status == "Locked" ? "Bị khóa" : x.Status)).ToList();
+            accounts.DataSource = items.Select(x => new AccountRow(x.Id, x.Name, x.Email, string.Join(", ", x.Roles), x.Phone ?? "—", x.Status == "Active" ? "Hoạt động" : x.Status == "Locked" ? "Bị khóa" : x.Status, x.CreatedAt.AddHours(7).ToString("dd/MM/yyyy HH:mm"))).ToList();
             accounts.Columns[nameof(AccountRow.Id)]!.HeaderText = "Mã tài khoản";
             accounts.Columns[nameof(AccountRow.Họ_tên)]!.HeaderText = "Họ tên";
             accounts.Columns[nameof(AccountRow.Vai_trò)]!.HeaderText = "Vai trò"; accounts.Columns[nameof(AccountRow.Vai_trò)]!.Visible = group.SelectedIndex == 0;
             accounts.Columns[nameof(AccountRow.Phone)]!.HeaderText = "Số điện thoại"; accounts.Columns[nameof(AccountRow.Phone)]!.Visible = group.SelectedIndex == 1;
             accounts.Columns[nameof(AccountRow.Status)]!.HeaderText = "Trạng thái"; accounts.Columns[nameof(AccountRow.Email)]!.FillWeight = 150;
+            accounts.Columns[nameof(AccountRow.CreatedAt)]!.HeaderText = "Ngày tạo";
+            foreach (DataGridViewRow row in accounts.Rows) if (row.DataBoundItem is AccountRow item && items.Any(x => x.Id == item.Id && x.Status == AccountStatus.Locked)) row.DefaultCellStyle.ForeColor = Color.Gray;
             info.Text = items.Count == 0 ? (search.Text.Trim().Length == 0 && (group.SelectedIndex == 1 || role.SelectedIndex <= 0) && accountStatus.SelectedIndex == 0 ? "Chưa có tài khoản trong nhóm này." : "Không có tài khoản phù hợp với bộ lọc.") : $"{items.Count} bản ghi trên trang";
             accountPageInfo.Text = $"Tổng {result.FilteredTotal:N0} bản ghi · Trang {accountPage}/{accountPages}";
         }
@@ -109,9 +117,16 @@ public sealed class AccountManagementControl : UserControl
     {
         var selected = Selected; if (selected is null) return;
         var target = selected.Status == "Active" ? "Locked" : "Active";
-        if (!Kit.Confirm(this, $"{(target == "Locked" ? "Khóa" : "Mở khóa")} tài khoản {selected.Name}?")) return;
+        string? reason = null;
+        if (target == AccountStatus.Locked)
+        {
+            using var dialog = new ReasonDialog($"Khóa tài khoản {selected.Email}", "Lý do khóa (không bắt buộc)", required: false);
+            if (dialog.ShowDialog(this) != DialogResult.OK) return;
+            reason = string.IsNullOrWhiteSpace(dialog.Reason) ? null : dialog.Reason;
+        }
+        else if (!Kit.Confirm(this, $"Mở khóa tài khoản {selected.Name}?")) return;
         status.Enabled = edit.Enabled = false;
-        try { await api.SetAdminStatusAsync(selected.Id, new(target, selected.Status), token); await LoadAccounts(); }
+        try { await api.SetUserStatusCheckedAsync(selected.Id, target, reason, selected.Status, token); await LoadAccounts(); }
         catch (Exception e) when (e is HttpRequestException or TaskCanceledException) { if (!Kit.HandleExpiredSession(this, e)) { Kit.Warn(this, Kit.Describe(e)); UpdateButtons(); } }
     }
     private async Task EditRoles()
@@ -131,10 +146,10 @@ public sealed class AccountManagementControl : UserControl
             if (group.SelectedIndex == 1 && !chosen.Any(x => x is AppRoles.Admin or AppRoles.Operator or AppRoles.Editor or AppRoles.Finance or AppRoles.Publisher)) { Kit.Warn(dialog, "Hãy chọn ít nhất một vai trò nhân viên."); return; }
             if (!Kit.Confirm(dialog, "Xác nhận cập nhật vai trò? Mọi phiên của tài khoản sẽ kết thúc và người dùng cần đăng nhập lại.")) return;
             save.Enabled = cancel.Enabled = false;
-            try { await api.SetAdminRolesAsync(selected.Id, new(chosen, selected.Roles), token); dialog.DialogResult = DialogResult.OK; dialog.Close(); }
+            try { await api.SetUserRolesCheckedAsync(selected.Id, chosen, selected.Roles, token); dialog.DialogResult = DialogResult.OK; dialog.Close(); }
             catch (Exception e) when (e is HttpRequestException or TaskCanceledException) { if (!Kit.HandleExpiredSession(this, e)) { Kit.Warn(dialog, Kit.Describe(e)); save.Enabled = cancel.Enabled = true; } }
         };
         if (dialog.ShowDialog(this) == DialogResult.OK) { MessageBox.Show(this, "Đã cập nhật vai trò. Các phiên của tài khoản đã kết thúc; người dùng cần đăng nhập lại.", "Thành công"); await LoadAccounts(); }
     }
-    private sealed record AccountRow(int Id, string Họ_tên, string Email, string Vai_trò, string Phone, string Status);
+    private sealed record AccountRow(int Id, string Họ_tên, string Email, string Vai_trò, string Phone, string Status, string CreatedAt);
 }

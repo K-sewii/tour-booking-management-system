@@ -36,7 +36,7 @@ try:
     assert request('/api/auth/me', updated['token'])[0] == 401
     code, current = request('/api/auth/login', body={'email': email, 'password': password})
     assert code == 200 and current['user']['roles'] == ['Customer']
-    assert request(path + '/status', admin, {'status': 'Locked', 'expectedStatus': 'Active'}, 'PUT')[0] == 204
+    assert request(path + '/status', admin, {'status': 'Locked', 'expectedStatus': 'Active', 'reason': 'Kiểm thử alias'}, 'PUT')[0] == 204
     assert request('/api/auth/me', customer_token)[0] == 401
     assert request('/api/auth/me', updated['token'])[0] == 401
     assert request('/api/auth/me', current['token'])[0] == 401
@@ -47,6 +47,7 @@ try:
     entries = request('/api/admin/accounts/audit?page=1', admin)[1]['items']
     changes = [x for x in entries if x['objectType'] == 'TAIKHOAN' and x['objectId'] == str(account)]
     assert len(changes) == 4, len(changes)
+    assert any(x['reason'] == 'Kiểm thử alias' for x in changes)
     staff_entries = request('/api/admin/accounts/audit?actorType=staff&page=1', admin)[1]['items']
     assert len([x for x in staff_entries if x['objectType'] == 'TAIKHOAN' and x['objectId'] == str(account) and x['actorType'] == 'staff']) == 4
     # Both API surfaces write through the same role rules and stale-write check.

@@ -25,7 +25,7 @@ public sealed class BusinessStatisticsControl : UserControl
         statsLayout.RowStyles.Add(new RowStyle(SizeType.AutoSize)); statsLayout.RowStyles.Add(new RowStyle(SizeType.AutoSize)); statsLayout.RowStyles.Add(new RowStyle(SizeType.AutoSize)); statsLayout.RowStyles.Add(new RowStyle(SizeType.Percent, 100)); statsLayout.RowStyles.Add(new RowStyle(SizeType.AutoSize));
         statsLayout.Controls.Add(Ui.Label("Tổng quan kinh doanh", 17, true), 0, 0);
         statsLayout.Controls.Add(Bar(Ui.Label("Từ ngày"), from, Ui.Label("Đến ngày"), to, Ui.Label("Trạng thái"), orderStatus, apply), 0, 1);
-        statsLayout.Controls.Add(Cards(statKpis, "Tổng số đơn đặt tour", "Tổng giá trị đơn", "Tiền đã thu", "Tiền đã hoàn", "Lượt nghe audio"), 0, 2);
+        statsLayout.Controls.Add(Cards(statKpis, "Tổng số đơn đặt tour", "Giá trị đơn hiệu lực", "Tiền đã thu", "Tiền đã hoàn", "Lượt nghe audio"), 0, 2);
         var tableContent = new Panel { Dock = DockStyle.Fill }; tableContent.Controls.Add(statistics); tableContent.Controls.Add(empty); empty.BringToFront();
         statsLayout.Controls.Add(tableContent, 0, 3); statsLayout.Controls.Add(Bar(statisticsInfo, requestInfo), 0, 4);
         Controls.Add(statsLayout);
@@ -45,28 +45,19 @@ public sealed class BusinessStatisticsControl : UserControl
         try
         {
             var selected = orderStatus.SelectedIndex <= 0 ? "" : orderStatus.Text;
-            var result = await api.AdminStatisticsAsync(DateOnly.FromDateTime(from.Value), DateOnly.FromDateTime(to.Value), selected, token);
+            var result = await api.StatsAsync(from.Value.Date, to.Value.Date, selected, token);
             if (IsDisposed) return;
-            orderStatus.Items.Clear(); orderStatus.Items.Add("Mọi trạng thái"); orderStatus.Items.AddRange(result.Statuses.Cast<object>().ToArray());
+            orderStatus.Items.Clear(); orderStatus.Items.Add("Mọi trạng thái"); orderStatus.Items.AddRange(OrderStatus.All.Cast<object>().ToArray());
             orderStatus.SelectedIndex = selected.Length == 0 ? 0 : Math.Max(0, orderStatus.Items.IndexOf(selected));
             string Money(decimal? amount) => amount?.ToString("N0", System.Globalization.CultureInfo.GetCultureInfo("vi-VN")) ?? "Chưa xác định";
-            statKpis[0].Text = result.Rows.Sum(x => (long)x.Orders).ToString("N0"); statKpis[1].Text = Money(result.OrderValue) + " đ"; statKpis[2].Text = result.Collected is null ? "Chưa xác định" : Money(result.Collected) + " đ"; statKpis[3].Text = result.Refunded is null ? "Chưa xác định" : Money(result.Refunded) + " đ"; statKpis[4].Text = result.Listens?.ToString("N0") ?? "Chưa ghi nhận";
-            statistics.DataSource = result.Rows.Select(x => new { Trạng_thái = x.Status, Số_đơn = x.Orders, Giá_trị = x.OrderValue }).ToList();
+            statKpis[0].Text = result.Orders.Sum(x => (long)x.Count).ToString("N0"); statKpis[1].Text = Money(result.OrderValue) + " đ"; statKpis[2].Text = Money(result.Received) + " đ"; statKpis[3].Text = Money(result.Refunded) + " đ"; statKpis[4].Text = "Chưa ghi nhận";
+            statistics.DataSource = result.Orders.Select(x => new { Trạng_thái = x.Status, Số_đơn = x.Count, Giá_trị = x.OrderValue }).ToList();
             foreach (DataGridViewColumn column in statistics.Columns) column.HeaderText = column.HeaderText.Replace("_", " ");
-            if (statistics.Columns["Giá_trị"] is { } moneyColumn) moneyColumn.DefaultCellStyle.Format = "N0";
+            if (statistics.Columns["Giá_trị"] is { } moneyColumn) { moneyColumn.HeaderText = "Giá trị đơn hiệu lực"; moneyColumn.DefaultCellStyle.Format = "N0"; }
             statisticsInfo.Text = "Đơn theo ngày đặt; thu/hoàn theo ngày giao dịch, không lọc theo trạng thái đơn. Múi giờ Việt Nam (UTC+7).";
-            empty.Text = "◯\r\nKhông có đơn phù hợp\r\nHãy thử khoảng thời gian hoặc trạng thái khác."; empty.Visible = result.Rows.Count == 0;
-            try
-            {
-                var operations = await api.StatsAsync(from.Value.Date, to.Value.Date, null, token);
-                if (!IsDisposed)
-                {
-                    var requests = operations.Requests.Count == 0 ? "Không có yêu cầu tour riêng" :
-                        "Yêu cầu tour riêng: " + string.Join(" · ", operations.Requests.Select(x => $"{QuoteRequestStatus.Label(x.Status)}: {x.Count:N0}"));
-                    requestInfo.Text = $"Giá trị đơn chưa hủy/hết hạn: {operations.OrderValue:N0} đ · {requests}";
-                }
-            }
-            catch (Exception e) when (e is HttpRequestException or TaskCanceledException) { if (!Kit.HandleExpiredSession(this, e) && !IsDisposed) requestInfo.Text = "Không tải được thống kê yêu cầu tour riêng: " + Kit.Describe(e); }
+            empty.Text = "◯\r\nKhông có đơn phù hợp\r\nHãy thử khoảng thời gian hoặc trạng thái khác."; empty.Visible = result.Orders.Count == 0;
+            requestInfo.Text = result.Requests.Count == 0 ? "Không có yêu cầu tour riêng" :
+                "Yêu cầu tour riêng: " + string.Join(" · ", result.Requests.Select(x => $"{QuoteRequestStatus.Label(x.Status)}: {x.Count:N0}"));
         }
         catch (Exception e) when (e is HttpRequestException or TaskCanceledException) { if (!Kit.HandleExpiredSession(this, e) && !IsDisposed) { foreach (var value in statKpis) value.Text = "Lỗi tải"; statisticsInfo.Text = ""; empty.Text = Kit.Describe(e) + " Hãy chọn Áp dụng để thử lại."; empty.Visible = true; } }
         finally { if (!IsDisposed) apply.Enabled = true; }

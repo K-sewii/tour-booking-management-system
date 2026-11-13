@@ -167,13 +167,14 @@ internal sealed class ReasonDialog : Form
     private readonly TextBox reason = new() { Multiline = true, Height = 90, Width = 400 };
     public string Reason => reason.Text.Trim();
 
-    public ReasonDialog(string title, string prompt = "Lý do")
+    public ReasonDialog(string title, string prompt = "Lý do", bool required = true)
     {
         Text = title; Size = new Size(480, 300); StartPosition = FormStartPosition.CenterParent;
         var layout = new FlowLayoutPanel { Dock = DockStyle.Fill, FlowDirection = FlowDirection.TopDown, WrapContents = false, Padding = new Padding(20) };
         layout.Controls.Add(Ui.Label(prompt)); layout.Controls.Add(reason);
         var ok = Ui.Button("Đồng ý", true);
-        ok.Click += (_, _) => { if (Reason.Length == 0) { MessageBox.Show(this, "Cần nhập lý do."); return; } DialogResult = DialogResult.OK; };
-        layout.Controls.Add(ok); Controls.Add(layout);
+        ok.Click += (_, _) => { if (required && Reason.Length == 0) { MessageBox.Show(this, "Cần nhập lý do."); return; } DialogResult = DialogResult.OK; };
+        var cancel = Ui.Button("Hủy"); cancel.DialogResult = DialogResult.Cancel;
+        layout.Controls.Add(ok); layout.Controls.Add(cancel); Controls.Add(layout); AcceptButton = ok; CancelButton = cancel;
     }
 }
