@@ -14,7 +14,12 @@ public sealed class ListenService(ListenRepository repository, AudioFileStore fi
         var now = DateTime.UtcNow;
         var until = await repository.ActiveUntilAsync(accountId, now, ct);
         if (until.Count == 0)
-            return new ListenCatalog(false, null, await repository.EverHadRightAsync(accountId, ct) ? Expired : NoRight, []);
+        {
+            var message = await repository.NextStartAsync(accountId, now, ct) is { } start
+                ? $"Quyền nghe thuyết minh của bạn sẽ bắt đầu từ {start:dd/MM/yyyy}."
+                : await repository.EverHadRightAsync(accountId, ct) ? Expired : NoRight;
+            return new ListenCatalog(false, null, message, []);
+        }
         var destinations = await repository.AllowedDestinationsAsync(accountId, now, ct);
         var tracks = destinations.Count == 0 ? [] : await repository.TracksAsync(destinations, ct);
         return new ListenCatalog(true, until.Max(), tracks.Count == 0 ? "Chuyến đi của bạn chưa có thuyết minh được công bố." : "",
@@ -51,6 +56,6 @@ public sealed class ListenService(ListenRepository repository, AudioFileStore fi
     public async Task RevokeListenRightAsync(int orderId, int actorId, CancellationToken ct)
     {
         foreach (var removed in await repository.RemoveRightsAsync(orderId, ct))
-            await administration.RecordAsync(new AuditEntry(actorId, "Thu hồi quyền nghe", "QUYENNGHE", orderId, null, removed, null), ct);
+            await administration.RecordAsync(new AuditEntry(actorId, "Thu hồi quyền nghe", "QUYENNGHE", removed.Id, null, removed.Grant, null), ct);
     }
 }

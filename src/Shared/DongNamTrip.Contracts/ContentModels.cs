@@ -133,6 +133,13 @@ public class NarrationForm
     public string Source { get; set; } = "";
 }
 
+/// <summary>Chỉ dùng cho việc tạo phiên bản mới từ một thuyết minh đã có (không cần chọn lại địa điểm/tiêu đề).</summary>
+public class NewVersionForm
+{
+    [Required(ErrorMessage = "Vui lòng nhập nội dung thuyết minh."), StringLength(20000, ErrorMessage = "Nội dung tối đa 20000 ký tự.")]
+    public string Source { get; set; } = "";
+}
+
 public class TranslationForm
 {
     [Required(ErrorMessage = "Vui lòng chọn ngôn ngữ."), StringLength(10)]

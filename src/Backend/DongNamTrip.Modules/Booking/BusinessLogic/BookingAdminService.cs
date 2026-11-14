@@ -12,9 +12,14 @@ public sealed class BookingAdminService(BookingRepository repository, BookingSer
 {
     private const string OrderType = "DONDAT";
     private const string MoneyType = "GIAODICHTIEN";
+    private static readonly TimeSpan VnOffset = TimeSpan.FromHours(7);
 
     private DateTime Now => time.GetLocalNow().DateTime;
     private DateOnly Today => DateOnly.FromDateTime(Now);
+
+    /// <summary>Gộp ngày lịch (giờ Việt Nam) với giờ trong ngày rồi quy đổi sang UTC theo UTC+7 cố định.</summary>
+    private static DateTime VnDateTimeToUtc(DateOnly date, TimeOnly timeOfDay) =>
+        DateTime.SpecifyKind(date.ToDateTime(timeOfDay) - VnOffset, DateTimeKind.Utc);
 
     public async Task<PagedResult<AdminBooking>> ListAsync(BookingFilter filter, CancellationToken ct)
     {
@@ -58,8 +63,10 @@ public sealed class BookingAdminService(BookingRepository repository, BookingSer
             return Op.Conflict("Đơn vừa được cập nhật bởi người khác; vui lòng tải lại.");
         if (order.NgayDi is { } tripDate)
         {
-            var window = new ListenRightGrant(id, order.MaTk, tripDate.AddDays(-1).ToDateTime(TimeOnly.MinValue),
-                tripDate.AddDays(configuration.GetValue("Booking:ListenDays", 7)).ToDateTime(new TimeOnly(23, 59, 59)));
+            // NgayDi là ngày lịch (giờ Việt Nam, UTC+7); quy đổi cố định sang UTC, không phụ thuộc múi giờ máy chủ chạy API.
+            var from = VnDateTimeToUtc(tripDate.AddDays(-1), TimeOnly.MinValue);
+            var to = VnDateTimeToUtc(tripDate.AddDays(configuration.GetValue("Booking:ListenDays", 7)), new TimeOnly(23, 59, 59));
+            var window = new ListenRightGrant(id, order.MaTk, from, to);
             var grant = await narration.GrantListenRightAsync(window, actor, ct);
             if (!grant.IsOk) return Op.Conflict("Không cấp được quyền nghe thuyết minh: " + grant.Message);
         }
