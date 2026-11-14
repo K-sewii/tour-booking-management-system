@@ -293,6 +293,10 @@ INSERT INTO dbo.LICHTRINH_SUAT (MaLT, MaSuat, MaDD) VALUES (@lt, {slot_id}, {pla
     request(translation_status, 'POST', {'status': 'Pending'}, token=ed)
     request(translation_status, 'POST', {'status': 'Approved'}, token=ed, expected=403)
     request(translation_status, 'POST', {'status': 'Approved'}, token=pub)
+    request(translation_status, 'POST', {'status': 'Draft'}, token=ed, expected=403)
+    request(translation_status, 'POST', {'status': 'Draft'}, token=pub)
+    request(translation_status, 'POST', {'status': 'Pending'}, token=ed)
+    request(translation_status, 'POST', {'status': 'Approved'}, token=pub)
 
     audio_url = f'{API}/api/admin/translations/{translation_id}/audio'
     request(audio_url, 'POST', {'voice': 'Test Voice', 'wavBase64': '###'}, token=ed, expected=400)
