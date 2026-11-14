@@ -316,6 +316,9 @@ INSERT INTO dbo.LICHTRINH_SUAT (MaLT, MaSuat, MaDD) VALUES (@lt, {slot_id}, {pla
     request_bytes(f'{API}/api/admin/audio/{audio_id}/file', token=cu, expected=403)
     version = request(f'{narrations}/{narration_id}/versions', 'POST', {**narration_form, 'source': 'Nội dung phiên bản 2.'}, token=ed)
     check(version['version'] == 2 and version['status'] == 'Draft', 'A new version must be version 2 Draft.')
+    only_source = request(f'{narrations}/{narration_id}/versions', 'POST', {'source': 'Chỉ gửi nội dung.'}, token=ed)
+    check(only_source['version'] == 3 and only_source['status'] == 'Draft', 'A new version must only need the source text.')
+    request(f'{narrations}/{narration_id}/versions', 'POST', {'source': ''}, token=ed, expected=400)
     request(f'{narrations}/{narration_id}', 'PUT', {**narration_form, 'source': 'Sửa trực tiếp'}, token=ed, expected=409)
 
     # ---- SCR11: nghe thuyết minh (chuyến đi, thời hạn nghe, quyền truy cập tệp) ----
