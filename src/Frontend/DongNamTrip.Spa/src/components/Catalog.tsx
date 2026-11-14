@@ -3,6 +3,8 @@ import type { Destination, Tour } from '../api/types';
 
 export const price = (amount: number) => `${new Intl.NumberFormat('vi-VN').format(amount)} ₫`;
 export const dateTime = (value: string) => new Date(value).toLocaleString('vi-VN', { timeZone: 'UTC', hour12: false }) + ' UTC';
+// Hạn nghe thuyết minh do backend tính theo ngày giờ Việt Nam (UTC+7) rồi lưu UTC: hiển thị lại theo giờ Việt Nam để khách đọc đúng "hết ngày".
+export const vnDateTime = (value: string) => new Date(value).toLocaleString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh', hour12: false }) + ' (giờ Việt Nam)';
 export const art = (illustration: string) => `/images/${illustration}.svg`;
 
 export function TourCard({ tour }: { tour: Tour }) {
