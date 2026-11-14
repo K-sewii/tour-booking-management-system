@@ -45,11 +45,9 @@ public sealed class AccountAreaRepository(DongNamTripDbContext db)
     /// <summary>Trả false chỉ khi thông báo không tồn tại/không thuộc tài khoản; gọi lại trên thông báo đã đọc vẫn trả true (idempotent).</summary>
     public async Task<bool> MarkNoticeReadAsync(int accountId, long id, DateTime readAt, CancellationToken ct)
     {
-        if (!await db.AccountNotices.AsNoTracking().AnyAsync(x => x.Id == id && x.AccountId == accountId, ct))
-            return false;
-        await db.AccountNotices.Where(x => x.Id == id && x.AccountId == accountId && x.ReadAt == null)
+        var updated = await db.AccountNotices.Where(x => x.Id == id && x.AccountId == accountId && x.ReadAt == null)
             .ExecuteUpdateAsync(setters => setters.SetProperty(x => x.ReadAt, readAt), ct);
-        return true;
+        return updated > 0 || await db.AccountNotices.AsNoTracking().AnyAsync(x => x.Id == id && x.AccountId == accountId, ct);
     }
 
     /// <summary>Null nếu tài khoản chưa lưu tùy chọn nào.</summary>
