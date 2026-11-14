@@ -365,6 +365,13 @@ SELECT @don;
     expired = request(API + '/api/listen', token=cu)
     check(expired['hasAccess'] is False and 'hết hạn' in expired['message'], 'An expired right must say so.')
     request(f'{API}/api/listen/audio/{audio_id}', token=cu, expected=403)
+    # Quyền chưa tới hạn: báo ngày bắt đầu theo giờ Việt Nam (UTC+7), không phải "hết hạn".
+    start = (now + datetime.timedelta(days=2)).replace(microsecond=0)
+    request(rights, 'POST', {**grant, 'from': iso(start), 'to': iso(start + datetime.timedelta(days=3))}, token=op)
+    upcoming = request(API + '/api/listen', token=cu)
+    expected_day = (start + datetime.timedelta(hours=7)).strftime('%d/%m/%Y')
+    check(upcoming['hasAccess'] is False and 'hết hạn' not in upcoming['message'] and expected_day in upcoming['message'], 'A not-yet-valid right must announce its start date in Vietnam time.')
+    request(f'{API}/api/listen/audio/{audio_id}', token=cu, expected=403)
 
 
 if __name__ == '__main__':
