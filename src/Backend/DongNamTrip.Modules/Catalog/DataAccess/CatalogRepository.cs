@@ -16,7 +16,7 @@ public sealed class CatalogRepository(DongNamTripDbContext db)
     private IQueryable<TourRow> VisibleTours => db.Tour.AsNoTracking().Where(item => item.TrangThai == Published);
 
     private static Destination ToDto(Diadiem row) =>
-        new(row.MaDd, row.TenDd, row.KhuVuc, row.LoaiHinh, row.DiaChi, row.MoTa, row.ThoiLuongPhut, CatalogOptions.IllustrationFor(row.KhuVuc), row.TrangThai);
+        new(row.MaDd, row.TenDd, row.KhuVuc, row.LoaiHinh, row.DiaChi, row.MoTa, row.ThoiLuongPhut, CatalogOptions.IllustrationFor(row.KhuVuc), row.TrangThai, row.AnhMinhHoa);
 
     public Task<bool> PlaceExistsAsync(int id, CancellationToken ct) => db.Diadiem.AnyAsync(item => item.MaDd == id, ct);
 
@@ -83,7 +83,8 @@ public sealed class CatalogRepository(DongNamTripDbContext db)
             a.Suat.Where(s => s.TrangThai == Published && s.Ngay >= today).OrderBy(s => s.Ngay).ThenBy(s => s.GioBatDau)
                 .Select(s => new SlotInfo(s.MaSuat, s.MaHd, s.Ngay, s.GioBatDau, s.GioKetThuc, s.TrangThai)).ToList())).ToList();
         return new DestinationDetail(place.MaDd, place.TenDd, place.KhuVuc, place.LoaiHinh, place.DiaChi, place.MoTa, place.ThoiLuongPhut,
-            CatalogOptions.IllustrationFor(place.KhuVuc), place.TrangThai, place.GioMoCua, place.GioDongCua, place.ViDo, place.KinhDo, mapped);
+            CatalogOptions.IllustrationFor(place.KhuVuc), place.TrangThai, place.GioMoCua, place.GioDongCua, place.ViDo, place.KinhDo, mapped,
+            place.AnhMinhHoa);
     }
 
     public async Task<(List<Destination> Items, int Total)> SearchDestinationsAsync(string? q, string? region, string? category, int skip, int take, CancellationToken ct)

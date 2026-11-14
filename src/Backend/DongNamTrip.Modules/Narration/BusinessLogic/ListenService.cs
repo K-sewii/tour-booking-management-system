@@ -14,7 +14,12 @@ public sealed class ListenService(ListenRepository repository, AudioFileStore fi
         var now = DateTime.UtcNow;
         var until = await repository.ActiveUntilAsync(accountId, now, ct);
         if (until.Count == 0)
-            return new ListenCatalog(false, null, await repository.EverHadRightAsync(accountId, ct) ? Expired : NoRight, []);
+        {
+            var message = await repository.NextStartAsync(accountId, now, ct) is { } start
+                ? $"Quyền nghe thuyết minh của bạn sẽ bắt đầu từ {VnTime.FromUtc(start):dd/MM/yyyy}."
+                : await repository.EverHadRightAsync(accountId, ct) ? Expired : NoRight;
+            return new ListenCatalog(false, null, message, []);
+        }
         var destinations = await repository.AllowedDestinationsAsync(accountId, now, ct);
         var tracks = destinations.Count == 0 ? [] : await repository.TracksAsync(destinations, ct);
         return new ListenCatalog(true, until.Max(), tracks.Count == 0 ? "Chuyến đi của bạn chưa có thuyết minh được công bố." : "",
@@ -44,13 +49,13 @@ public sealed class ListenService(ListenRepository repository, AudioFileStore fi
         if (owner != grant.AccountId)
             return Op.Invalid("Đơn đặt không thuộc tài khoản này.");
         var saved = await repository.SaveRightAsync(grant, ct);
-        await administration.RecordAsync(new AuditEntry(actorId, "Cấp quyền nghe", "QUYENNGHE", saved.Id, null, saved.Before, grant), ct);
+        await administration.RecordAsync(new AuditEntry(actorId, AuditActions.ListenRightGranted, "QUYENNGHE", saved.Id, null, saved.Before, grant), ct);
         return Op.Ok(grant);
     }
 
     public async Task RevokeListenRightAsync(int orderId, int actorId, CancellationToken ct)
     {
         foreach (var removed in await repository.RemoveRightsAsync(orderId, ct))
-            await administration.RecordAsync(new AuditEntry(actorId, "Thu hồi quyền nghe", "QUYENNGHE", orderId, null, removed, null), ct);
+            await administration.RecordAsync(new AuditEntry(actorId, AuditActions.ListenRightRevoked, "QUYENNGHE", orderId, null, removed, null), ct);
     }
 }

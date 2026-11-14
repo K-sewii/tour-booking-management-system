@@ -56,7 +56,7 @@ public partial class TripApiClient
     public Task<NarrationInfo> SaveNarrationAsync(int? id, NarrationForm data, string token, CancellationToken ct = default) =>
         SendWithMessageAsync<NarrationInfo>(id is null ? HttpMethod.Post : HttpMethod.Put,
             "api/admin/narrations" + (id is null ? "" : $"/{id}"), data, token, ct);
-    public Task<NarrationInfo> NewNarrationVersionAsync(int id, NarrationForm data, string token, CancellationToken ct = default) =>
+    public Task<NarrationInfo> NewNarrationVersionAsync(int id, NewVersionForm data, string token, CancellationToken ct = default) =>
         SendWithMessageAsync<NarrationInfo>(HttpMethod.Post, $"api/admin/narrations/{id}/versions", data, token, ct);
     public Task<NarrationInfo> SetNarrationStatusAsync(int id, string status, string token, CancellationToken ct = default) =>
         SendWithMessageAsync<NarrationInfo>(HttpMethod.Post, $"api/admin/narrations/{id}/status", new StatusChange(status), token, ct);

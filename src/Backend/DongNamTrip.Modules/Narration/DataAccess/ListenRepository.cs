@@ -7,6 +7,8 @@ namespace DongNamTrip.Modules.Narration;
 
 public sealed record RightSave(int Id, ListenRightGrant? Before);
 
+public sealed record RemovedRight(int Id, ListenRightGrant Grant);
+
 /// <summary>Quyền nghe và danh sách thuyết minh được phép nghe (SCR11, UC23).</summary>
 public sealed class ListenRepository(DongNamTripDbContext db)
 {
@@ -20,6 +22,11 @@ public sealed class ListenRepository(DongNamTripDbContext db)
         Active(accountId, now).Select(x => x.HieuLucDen).ToListAsync(ct);
 
     public Task<bool> EverHadRightAsync(int accountId, CancellationToken ct) => db.Quyennghe.AsNoTracking().AnyAsync(x => x.MaTk == accountId, ct);
+
+    /// <summary>Ngày bắt đầu sớm nhất trong các quyền chưa tới hạn (để phân biệt "chưa tới ngày nghe" với "đã hết hạn").</summary>
+    public Task<DateTime?> NextStartAsync(int accountId, DateTime now, CancellationToken ct) =>
+        db.Quyennghe.AsNoTracking().Where(x => x.MaTk == accountId && x.HieuLucTu > now)
+            .OrderBy(x => x.HieuLucTu).Select(x => (DateTime?)x.HieuLucTu).FirstOrDefaultAsync(ct);
 
     /// <summary>Địa điểm thuộc chuyến đi (tour đã đặt hoặc lịch trình chốt của báo giá) của các đơn còn quyền nghe.</summary>
     public async Task<List<int>> AllowedDestinationsAsync(int accountId, DateTime now, CancellationToken ct)
@@ -71,18 +78,19 @@ public sealed class ListenRepository(DongNamTripDbContext db)
             db.Quyennghe.Add(row);
         }
         else before = ToDto(row);
-        row.HieuLucTu = grant.From.ToUniversalTime();
-        row.HieuLucDen = grant.To.ToUniversalTime();
+        // Người gọi (Booking) truyền giờ UTC; giờ kèm múi (Local) được đổi đúng sang UTC, giờ trần coi là UTC (hợp đồng nội bộ).
+        row.HieuLucTu = VnTime.AsUtc(grant.From);
+        row.HieuLucDen = VnTime.AsUtc(grant.To);
         await db.SaveChangesAsync(ct);
         return new RightSave(row.MaQn, before);
     }
 
-    /// <summary>Xóa mọi quyền nghe của đơn; trả về các quyền đã xóa để ghi nhật ký.</summary>
-    public async Task<List<ListenRightGrant>> RemoveRightsAsync(int orderId, CancellationToken ct)
+    /// <summary>Xóa mọi quyền nghe của đơn; trả về các quyền đã xóa (kèm mã quyền nghe) để ghi nhật ký.</summary>
+    public async Task<List<RemovedRight>> RemoveRightsAsync(int orderId, CancellationToken ct)
     {
         var rows = await db.Quyennghe.Where(x => x.MaDon == orderId).ToListAsync(ct);
         if (rows.Count == 0) return [];
-        var removed = rows.Select(ToDto).ToList();
+        var removed = rows.Select(x => new RemovedRight(x.MaQn, ToDto(x))).ToList();
         db.Quyennghe.RemoveRange(rows);
         await db.SaveChangesAsync(ct);
         return removed;

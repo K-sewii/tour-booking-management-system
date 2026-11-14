@@ -28,4 +28,3 @@ public interface ICatalogApi
     /// <summary>Trả chỗ đã giữ; chỉ gọi sau khi đã đổi trạng thái đơn thành công.</summary>
     Task ReleaseSeatsAsync(int departureId, int guests, CancellationToken ct);
 }
-

@@ -3,7 +3,7 @@ import { Link, useSearchParams } from 'react-router';
 import { api } from '../../api/client';
 import type { ListenCatalog } from '../../api/types';
 import { useLoad } from '../../api/useLoad';
-import { dateTime, Failure, Loading } from '../../components/Catalog';
+import { Failure, Loading, vnDateTime } from '../../components/Catalog';
 import '../../styles/content.css';
 
 const PLAY_ERROR = 'Trình duyệt chưa phát được tệp này. Vui lòng thử lại.';
@@ -55,7 +55,7 @@ export function ListenPage() {
           <div className="cx-controls"><button className="btn" onClick={toggle}>{playing ? 'Tạm dừng' : 'Phát'}</button>
             <button className="btn outline" onClick={stop}>Dừng</button><button className="btn outline" onClick={replay}>Nghe lại</button></div>
           <details><summary>Xem nội dung văn bản</summary><div className="cx-transcript">{track.transcript}</div></details></>}
-        {data.validUntil && <p className="cx-note">Quyền nghe còn hiệu lực đến {dateTime(data.validUntil)}.</p>}
+        {data.validUntil && <p className="cx-note">Quyền nghe còn hiệu lực đến {vnDateTime(data.validUntil)}.</p>}
       </div>}
     </div></>;
 }

@@ -1,0 +1,58 @@
+namespace DongNamTrip.Contracts;
+
+public static class AuditActions
+{
+    public const string AudioFailed = "Tạo audio lỗi";
+    public const string AudioCreated = "Tạo audio";
+    public const string AudioPublished = "Công bố audio";
+    public const string AudioUnpublished = "Ngừng công bố audio";
+    public const string NarrationCreated = "Tạo thuyết minh";
+    public const string NarrationEdited = "Sửa thuyết minh";
+    public const string NarrationVersionCreated = "Tạo phiên bản thuyết minh";
+    public const string TranslationAdded = "Thêm bản dịch";
+    public const string TranslationEdited = "Sửa bản dịch";
+    public const string ListenRightGranted = "Cấp quyền nghe";
+    public const string ListenRightRevoked = "Thu hồi quyền nghe";
+    public const string QuoteAccepted = "Khách chấp nhận báo giá";
+    public const string QuoteChangeRequested = "Khách đề nghị đổi báo giá";
+    public const string AccountStaffCreated = "Tạo tài khoản nhân viên";
+    public const string AccountRoleChanged = "Đổi vai trò";
+    public const string AccountStatusChangedLegacy = "Đổi trạng thái";
+    public const string AccountLocked = "Khóa tài khoản";
+    public const string AccountUnlocked = "Mở khóa tài khoản";
+    public const string AccountPasswordReset = "Đặt lại mật khẩu";
+    public const string TourCreated = "Tạo tour";
+    public const string TourEdited = "Sửa tour";
+    public const string TourStopsEdited = "Sửa điểm dừng tour";
+    public const string TourPublished = "Công bố tour";
+    public const string TourStopped = "Ngừng tour";
+    public const string DepartureCreated = "Tạo lịch khởi hành";
+    public const string DepartureEdited = "Sửa lịch khởi hành";
+    public const string DepartureStopped = "Ngừng lịch khởi hành";
+    public const string OrderConfirmed = "Xác nhận đơn";
+    public const string OrderAdjusted = "Điều chỉnh đơn";
+    public const string OrderCancellationApproved = "Duyệt hủy đơn";
+    public const string OrderCancellationRejected = "Từ chối hủy đơn";
+    public const string ReceiptRecorded = "Ghi nhận thu";
+    public const string RefundRecorded = "Ghi nhận hoàn";
+    public const string OrderCompleted = "Hoàn thành đơn";
+    public const string OrderExpired = "Đơn hết hạn giữ chỗ";
+    public const string RequestReceived = "Tiếp nhận yêu cầu";
+    public const string VerificationRecorded = "Ghi xác minh dịch vụ";
+    public const string QuoteIssued = "Phát hành báo giá";
+    public const string PrivateRequestCancelled = "Hủy yêu cầu tour riêng";
+    public const string QuoteExpired = "Báo giá hết hạn";
+    public const string DestinationCreated = "Tạo địa điểm";
+    public const string DestinationEdited = "Sửa địa điểm";
+    public const string DestinationPublished = "Công bố địa điểm";
+    public const string DestinationUnpublished = "Ngừng công bố địa điểm";
+    public const string DestinationDraftDeleted = "Xóa bản nháp địa điểm";
+    public const string ActivityCreated = "Tạo hoạt động";
+    public const string ActivityEdited = "Sửa hoạt động";
+    public const string ActivityPublished = "Công bố hoạt động";
+    public const string ActivityStopped = "Tạm ngừng hoạt động";
+    public const string SlotCreated = "Tạo suất";
+    public const string SlotEdited = "Sửa suất";
+    public const string SlotPublished = "Công bố suất";
+    public const string SlotStopped = "Tạm ngừng suất";
+}

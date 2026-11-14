@@ -83,6 +83,8 @@ def run_first():
     check(api(API+'/api/account/notices', token=token)[0]['readAt'] is None, 'Other account marked notice read.')
     api(API+'/api/account/notices/'+str(notices[0]['id'])+'/read', 'PUT', token=token, expected=204)
     check(api(API+'/api/account/notices', token=token)[0]['readAt'] is not None, 'Read state not persisted.')
+    api(API+'/api/account/notices/'+str(notices[0]['id'])+'/read', 'PUT', token=token, expected=204)  # đọc lại vẫn 204 (idempotent)
+    api(API+'/api/account/notices/999999999/read', 'PUT', token=token, expected=404)
 
     web = web_login(address, 'NewestPass2026')
     for page in ['Security','Payments','Favorites','Notices']:

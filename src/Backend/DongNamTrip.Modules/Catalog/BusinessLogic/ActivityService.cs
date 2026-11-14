@@ -35,7 +35,7 @@ public sealed class ActivityService(ActivityRepository repository, IAdministrati
         var saved = await repository.SaveAsync(id, form, ct);
         if (saved is null)
             return Op.NotFound("Không tìm thấy hoạt động.");
-        await administration.RecordAsync(new AuditEntry(actor, id is null ? "Tạo hoạt động" : "Sửa hoạt động", "HOATDONG", saved.Id, null, before, saved), ct);
+        await administration.RecordAsync(new AuditEntry(actor, id is null ? AuditActions.ActivityCreated : AuditActions.ActivityEdited, "HOATDONG", saved.Id, null, before, saved), ct);
         return Op.Ok(saved);
     }
 
@@ -57,7 +57,7 @@ public sealed class ActivityService(ActivityRepository repository, IAdministrati
         var before = await repository.GetAsync(id, ct);
         await repository.SetStatusAsync(id, status, ct);
         var after = await repository.GetAsync(id, ct);
-        await administration.RecordAsync(new AuditEntry(actor, status == ContentStatus.Published ? "Công bố hoạt động" : "Tạm ngừng hoạt động", "HOATDONG", id,
+        await administration.RecordAsync(new AuditEntry(actor, status == ContentStatus.Published ? AuditActions.ActivityPublished : AuditActions.ActivityStopped, "HOATDONG", id,
             affected > 0 ? $"Ảnh hưởng {affected} lịch trình" : null, before, after), ct);
         return Done(affected);
     }
@@ -104,7 +104,7 @@ public sealed class ActivityService(ActivityRepository repository, IAdministrati
         if (affected > 0 && !confirm)
             return Confirm($"Có {affected} lịch trình của khách đang chọn suất này. Bạn vẫn muốn tạm ngừng?", affected);
         await repository.SetSlotStatusAsync(id, status, ct);
-        await administration.RecordAsync(new AuditEntry(actor, status == ContentStatus.Published ? "Công bố suất" : "Tạm ngừng suất", "SUAT", id,
+        await administration.RecordAsync(new AuditEntry(actor, status == ContentStatus.Published ? AuditActions.SlotPublished : AuditActions.SlotStopped, "SUAT", id,
             affected > 0 ? $"Ảnh hưởng {affected} lịch trình" : null, slot, slot with { Status = status }), ct);
         return Done(affected);
     }
@@ -125,7 +125,7 @@ public sealed class ActivityService(ActivityRepository repository, IAdministrati
             return Op.Conflict("Suất bị trùng giờ với một suất khác của hoạt động này.");
         if (saved.Slot is null)
             return Op.NotFound("Không tìm thấy suất.");
-        await administration.RecordAsync(new AuditEntry(actor, existing is null ? "Tạo suất" : "Sửa suất", "SUAT", saved.Slot.Id, null, existing, saved.Slot), ct);
+        await administration.RecordAsync(new AuditEntry(actor, existing is null ? AuditActions.SlotCreated : AuditActions.SlotEdited, "SUAT", saved.Slot.Id, null, existing, saved.Slot), ct);
         return Op.Ok(saved.Slot);
     }
 

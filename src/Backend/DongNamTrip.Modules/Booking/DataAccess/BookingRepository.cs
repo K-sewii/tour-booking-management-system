@@ -115,15 +115,13 @@ public sealed class BookingRepository(DongNamTripDbContext db)
             - row.Giaodichtien.Where(entry => entry.LoaiGd == MoneyKinds.Refund).Sum(entry => entry.SoTien))).ToList();
     }
 
-    private static DateTime ToUtc(DateTime value) => value.Kind == DateTimeKind.Utc ? value : DateTime.SpecifyKind(value, DateTimeKind.Local).ToUniversalTime();
-
     public async Task<(List<Dondat> Rows, int Total)> ListAsync(BookingFilter filter, DateOnly today, int skip, int take, CancellationToken ct)
     {
         var query = db.Dondat.AsNoTracking().AsQueryable();
         if (!string.IsNullOrWhiteSpace(filter.Status)) query = query.Where(item => item.TrangThai == filter.Status);
-        // NgayDat lưu giờ UTC, bộ lọc nhập theo giờ máy chủ; To không kèm giờ nghĩa là hết ngày đó.
-        if (filter.From is { } from) { var start = ToUtc(from); query = query.Where(item => item.NgayDat >= start); }
-        if (filter.To is { } to) { var end = ToUtc(to.TimeOfDay == TimeSpan.Zero ? to.AddDays(1) : to.AddTicks(1)); query = query.Where(item => item.NgayDat < end); }
+        // NgayDat lưu giờ UTC, bộ lọc nhập theo giờ Việt Nam (UTC+7); To không kèm giờ nghĩa là hết ngày đó.
+        if (filter.From is { } from) { var start = VnTime.ToUtc(from); query = query.Where(item => item.NgayDat >= start); }
+        if (filter.To is { } to) { var end = VnTime.ToUtc(to.TimeOfDay == TimeSpan.Zero ? to.AddDays(1) : to.AddTicks(1)); query = query.Where(item => item.NgayDat < end); }
         if (!string.IsNullOrWhiteSpace(filter.Q))
         {
             var q = filter.Q.Trim();

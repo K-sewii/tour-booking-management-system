@@ -284,9 +284,18 @@ INSERT INTO dbo.LICHTRINH_SUAT (MaLT, MaSuat, MaDD) VALUES (@lt, {slot_id}, {pla
     check(request(status_url, 'POST', {'status': 'Pending'}, token=ed)['status'] == 'Pending', 'Submit for review failed.')
     request(status_url, 'POST', {'status': 'Approved'}, token=ed, expected=403)
     check(request(status_url, 'POST', {'status': 'Approved'}, token=pub)['status'] == 'Approved', 'Approve failed.')
+    # Hoàn duyệt (Approved -> Draft) chỉ dành cho Publisher/Admin; Editor bị từ chối.
+    request(status_url, 'POST', {'status': 'Draft'}, token=ed, expected=403)
+    check(request(status_url, 'POST', {'status': 'Draft'}, token=pub)['status'] == 'Draft', 'Publisher must be able to withdraw an approval.')
+    check(request(status_url, 'POST', {'status': 'Pending'}, token=ed)['status'] == 'Pending', 'Resubmit after withdrawal failed.')
+    check(request(status_url, 'POST', {'status': 'Approved'}, token=pub)['status'] == 'Approved', 'Re-approve failed.')
     translation_status = f'{API}/api/admin/translations/{translation_id}/status'
     request(translation_status, 'POST', {'status': 'Pending'}, token=ed)
     request(translation_status, 'POST', {'status': 'Approved'}, token=ed, expected=403)
+    request(translation_status, 'POST', {'status': 'Approved'}, token=pub)
+    request(translation_status, 'POST', {'status': 'Draft'}, token=ed, expected=403)
+    request(translation_status, 'POST', {'status': 'Draft'}, token=pub)
+    request(translation_status, 'POST', {'status': 'Pending'}, token=ed)
     request(translation_status, 'POST', {'status': 'Approved'}, token=pub)
 
     audio_url = f'{API}/api/admin/translations/{translation_id}/audio'
@@ -307,6 +316,9 @@ INSERT INTO dbo.LICHTRINH_SUAT (MaLT, MaSuat, MaDD) VALUES (@lt, {slot_id}, {pla
     request_bytes(f'{API}/api/admin/audio/{audio_id}/file', token=cu, expected=403)
     version = request(f'{narrations}/{narration_id}/versions', 'POST', {**narration_form, 'source': 'Nội dung phiên bản 2.'}, token=ed)
     check(version['version'] == 2 and version['status'] == 'Draft', 'A new version must be version 2 Draft.')
+    only_source = request(f'{narrations}/{narration_id}/versions', 'POST', {'source': 'Chỉ gửi nội dung.'}, token=ed)
+    check(only_source['version'] == 3 and only_source['status'] == 'Draft', 'A new version must only need the source text.')
+    request(f'{narrations}/{narration_id}/versions', 'POST', {'source': ''}, token=ed, expected=400)
     request(f'{narrations}/{narration_id}', 'PUT', {**narration_form, 'source': 'Sửa trực tiếp'}, token=ed, expected=409)
 
     # ---- SCR11: nghe thuyết minh (chuyến đi, thời hạn nghe, quyền truy cập tệp) ----
@@ -353,6 +365,18 @@ SELECT @don;
     expired = request(API + '/api/listen', token=cu)
     check(expired['hasAccess'] is False and 'hết hạn' in expired['message'], 'An expired right must say so.')
     request(f'{API}/api/listen/audio/{audio_id}', token=cu, expected=403)
+    # Quyền chưa tới hạn: báo ngày bắt đầu theo giờ Việt Nam (UTC+7), không phải "hết hạn".
+    start = (now + datetime.timedelta(days=2)).replace(microsecond=0)
+    request(rights, 'POST', {**grant, 'from': iso(start), 'to': iso(start + datetime.timedelta(days=3))}, token=op)
+    upcoming = request(API + '/api/listen', token=cu)
+    expected_day = (start + datetime.timedelta(hours=7)).strftime('%d/%m/%Y')
+    check(upcoming['hasAccess'] is False and 'hết hạn' not in upcoming['message'] and expected_day in upcoming['message'], 'A not-yet-valid right must announce its start date in Vietnam time.')
+    request(f'{API}/api/listen/audio/{audio_id}', token=cu, expected=403)
+    # Giờ kèm múi (+07:00) phải đổi đúng sang UTC, không lệch theo múi giờ máy chủ: cửa sổ [now-3h, now+1 ngày] phải đang hiệu lực.
+    def iso_vn(moment):
+        return (moment + datetime.timedelta(hours=7)).strftime('%Y-%m-%dT%H:%M:%S+07:00')
+    request(rights, 'POST', {**grant, 'from': iso_vn(now - datetime.timedelta(hours=3)), 'to': iso_vn(now + datetime.timedelta(days=1))}, token=op)
+    check(request(API + '/api/listen', token=cu)['hasAccess'] is True, 'A right given with a +07:00 offset must be converted to UTC correctly.')
 
 
 if __name__ == '__main__':
