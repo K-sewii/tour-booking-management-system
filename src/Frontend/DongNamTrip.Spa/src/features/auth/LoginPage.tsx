@@ -24,6 +24,7 @@ export function LoginPage() {
   }
   return <><AuthArt mode="login"/><section className="auth-form"><span className="pill">DongNamTrip</span><h1>Chào bạn trở lại.</h1><p className="auth-page__description">Đăng nhập để lưu những lịch trình bạn yêu thích.</p>
     {typeof location.state === 'string' && <p className="account-message account-message--success" role="status">{location.state}</p>}
+    {location.state?.reason === 'trips' && <p className="account-message account-message--info" role="status">Vui lòng đăng nhập để xem và quản lý các chuyến đi của bạn.</p>}
     <form className="auth-form-card" onSubmit={event => void submit(event)} noValidate>
       {error !== null && <div className="validation validation-summary" role="alert">{messageFor(error)}</div>}
       <label className="auth-field" htmlFor="Email"><span>Email <b aria-hidden="true">*</b></span><input id="Email" type="email" autoComplete="username" autoFocus value={email} onChange={event => setEmail(event.target.value)} maxLength={254} placeholder="Email của bạn"/><span className="field-error" role="alert">{touched && !email.trim() ? 'Vui lòng nhập email' : touched && !/^[^\s@]+@[^\s@]+$/.test(email) ? 'Email không đúng định dạng.' : errorFor(error, 'Email')}</span></label>

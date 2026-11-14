@@ -7,6 +7,14 @@ namespace DongNamTrip.Modules.Administration;
 
 public sealed class AuditService(AuditRepository repository) : IAdministrationApi
 {
+    public async Task<OpResult<AdminAuditPage>> QueryScreenAsync(int? page, string? actorType, DateOnly? from, DateOnly? to, string? query, CancellationToken ct)
+    {
+        if (page is < 1 or > 1000000 || actorType is not (null or "" or "staff" or "customer" or "system") || from > to || from == DateOnly.MinValue || to == DateOnly.MaxValue)
+            return Op.Invalid("Bộ lọc nhật ký không hợp lệ.");
+        var start = from is { } f ? VnTime.ToUtc(f.ToDateTime(TimeOnly.MinValue)) : (DateTime?)null;
+        var end = to is { } t ? VnTime.EndExclusiveUtc(t.ToDateTime(TimeOnly.MinValue)) : (DateTime?)null;
+        return Op.Ok(await repository.AuditAsync(page ?? 1, actorType, start, end, query, ct));
+    }
     public Task RecordAsync(AuditEntry entry, CancellationToken ct) => repository.AddAsync(
         entry.ActorId, entry.Action, entry.ObjectType, Id(entry.ObjectId),
         entry.Reason, Serialize(entry.Before), Serialize(entry.After), ct);

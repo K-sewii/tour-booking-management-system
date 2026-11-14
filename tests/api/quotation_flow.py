@@ -25,6 +25,8 @@ def run():
     _, _, c2 = smoke.registration('Khách báo giá 2')
     grant_roles(op_email, ['Operator'])
     op = request(API + '/api/auth/login', 'POST', {'email': op_email, 'password': 'SmokePass!2026'})['token']
+    grant_roles(op_email, ['Admin'])
+    audit_token = request(API + '/api/auth/login', 'POST', {'email': op_email, 'password': 'SmokePass!2026'})['token']
     t1, t2 = c1['token'], c2['token']
     admin = lambda path, **kw: request(API + '/api/admin/quote-requests' + path, **kw)
     mine = lambda path, **kw: request(API + '/api/account' + path, **kw)
@@ -81,6 +83,8 @@ def run():
     admin(f'/{rid}/quotes', method='POST', token=op, data=quote_form(deposit=99999999), expected=422)
     admin(f'/{rid}/quotes', method='POST', token=op, data=quote_form(validUntil=iso(days=-1)), expected=422)
     q1 = admin(f'/{rid}/quotes', method='POST', token=op, data=quote_form(), expected=201)
+    staff_audit = request(API + '/api/admin/audit/search?actorType=staff&page=1', token=audit_token)
+    check(any(row['objectType'] == 'BAOGIA' and row['objectId'] == str(q1['id']) and row['action'] == 'Phát hành báo giá' for row in staff_audit['items']), 'SCR19 must show staff quotation audit.')
     check(q1['status'] == 'Sent' and q1['total'] == 2000000, f'Included items must not be added twice: {q1}.')
     check(mine(f'/quote-requests/{rid}', token=t1)['request']['status'] == 'Quoted', 'Issuing must move the request to Quoted.')
     q2 = admin(f'/{rid}/quotes', method='POST', token=op, data=quote_form(deposit=600000), expected=201)
@@ -92,6 +96,8 @@ def run():
     mine(f"/quotes/{q2['id']}/accept", method='POST', data={}, token=t2, expected=404)
     mine(f"/quotes/{q1['id']}/accept", method='POST', data={}, token=t1, expected=409)
     accepted = mine(f"/quotes/{q2['id']}/accept", method='POST', data={}, token=t1, expected=201)
+    customer_audit = request(API + '/api/admin/audit/search?actorType=customer&page=1', token=audit_token)
+    check(any(row['objectType'] == 'BAOGIA' and row['objectId'] == str(q2['id']) and row['action'] == 'Khách chấp nhận báo giá' and row['actorType'] == 'customer' for row in customer_audit['items']), 'SCR19 must classify customer quote acceptance.')
     check(accepted['amount'] == 2000000 and accepted['deposit'] == 600000, f'Accepted quote values: {accepted}.')
     repeat = mine(f"/quotes/{q2['id']}/accept", method='POST', data={}, token=t1, expected=200)
     check(repeat['orderId'] == accepted['orderId'], 'Accepting twice must return the same order.')
@@ -114,6 +120,8 @@ def run():
     mine(f"/quotes/{q3['id']}/change-request", method='POST', data={'note': ''}, token=t1, expected=400)
     mine(f"/quotes/{q3['id']}/change-request", method='POST', data={'note': 'Muốn thêm bữa tối'}, token=t2, expected=404)
     check(mine(f"/quotes/{q3['id']}/change-request", method='POST', data={'note': 'Muốn thêm bữa tối'}, token=t1)['status'] == 'Verifying', 'Change request must reopen verification.')
+    customer_audit = request(API + '/api/admin/audit/search?actorType=customer&page=1', token=audit_token)
+    check(any(row['objectType'] == 'YEUCAUTOURRIENG' and row['objectId'] == str(r2) and row['action'] == 'Khách đề nghị đổi báo giá' and row['actorType'] == 'customer' for row in customer_audit['items']), 'SCR19 must classify customer quote change request.')
     mine(f"/quotes/{q3['id']}/accept", method='POST', data={}, token=t1, expected=409)
     check('Muốn thêm bữa tối' in admin(f'/{r2}', token=op)['changeNotes'], 'Staff must see the change note.')
     q4 = admin(f'/{r2}/quotes', method='POST', token=op, data=quote_form(), expected=201)

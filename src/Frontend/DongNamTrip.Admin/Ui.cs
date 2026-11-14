@@ -83,7 +83,18 @@ internal static class Ui
         }
         catch (HttpRequestException e)
         {
-            if (!owner.IsDisposed) MessageBox.Show(owner, e.StatusCode is null ? "Không kết nối được API. Hãy chạy DongNamTrip.Api ở cổng 5080." : e.Message, "Chưa thực hiện được", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            if (owner.IsDisposed)
+                return;
+
+            if (e.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+            {
+                MessageBox.Show(owner, "Phiên đăng nhập đã hết hạn hoặc tài khoản không còn hoạt động. Vui lòng đăng nhập lại.", "Phiên đã kết thúc", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                if (owner.FindForm() is MainForm main)
+                    main.EndSession();
+                return;
+            }
+
+            MessageBox.Show(owner, e.StatusCode is null ? "Không kết nối được API. Hãy chạy DongNamTrip.Api ở cổng 5080." : e.Message, "Chưa thực hiện được", MessageBoxButtons.OK, MessageBoxIcon.Warning);
         }
         catch (TaskCanceledException)
         {

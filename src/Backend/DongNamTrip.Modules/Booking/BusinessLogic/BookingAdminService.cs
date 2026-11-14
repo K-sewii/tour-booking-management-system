@@ -65,7 +65,7 @@ public sealed class BookingAdminService(BookingRepository repository, BookingSer
             var grant = await narration.GrantListenRightAsync(window, actor, ct);
             if (!grant.IsOk) return Op.Conflict("Không cấp được quyền nghe thuyết minh: " + grant.Message);
         }
-        await administration.RecordAsync(new AuditEntry(actor, "Xác nhận đơn", OrderType, id, null, new { Status = order.TrangThai }, new { Status = OrderStatus.Confirmed }), ct);
+        await administration.RecordAsync(new AuditEntry(actor, AuditActions.OrderConfirmed, OrderType, id, null, new { Status = order.TrangThai }, new { Status = OrderStatus.Confirmed }), ct);
         await administration.NotifyAsync(order.MaTk, $"Đơn #{id} đã được xác nhận", "Đơn đặt tour của bạn đã được nhân viên xác nhận.", ct);
         await transaction.CommitAsync(ct);
         return Op.Ok(await AdminAsync(id, ct));
@@ -113,7 +113,7 @@ public sealed class BookingAdminService(BookingRepository repository, BookingSer
                 return Op.Conflict("Đơn vừa được cập nhật bởi người khác; vui lòng tải lại.");
             if (order.MaLkh is { } departureId) await catalog.ReleaseSeatsAsync(departureId, order.SoKhach, ct);
             await narration.RevokeListenRightAsync(id, actor, ct);
-            await administration.RecordAsync(new AuditEntry(actor, "Duyệt hủy đơn", OrderType, id, reason, new { Status = order.TrangThai }, new { Status = OrderStatus.Cancelled }), ct);
+            await administration.RecordAsync(new AuditEntry(actor, AuditActions.OrderCancellationApproved, OrderType, id, reason, new { Status = order.TrangThai }, new { Status = OrderStatus.Cancelled }), ct);
             await administration.NotifyAsync(order.MaTk, $"Đơn #{id} đã được hủy", $"Yêu cầu hủy đơn đã được duyệt. {reason}", ct);
         }
         else
@@ -125,7 +125,7 @@ public sealed class BookingAdminService(BookingRepository repository, BookingSer
                 case RestoreOutcome.Duplicate:
                     return Op.Conflict("Khách đã có đơn chờ khác cho lịch này; hãy duyệt hủy đơn này hoặc xử lý đơn kia.");
             }
-            await administration.RecordAsync(new AuditEntry(actor, "Từ chối hủy đơn", OrderType, id, reason, new { Status = order.TrangThai }, new { Status = previous }), ct);
+            await administration.RecordAsync(new AuditEntry(actor, AuditActions.OrderCancellationRejected, OrderType, id, reason, new { Status = order.TrangThai }, new { Status = previous }), ct);
             await administration.NotifyAsync(order.MaTk, $"Yêu cầu hủy đơn #{id} bị từ chối", reason, ct);
         }
         await transaction.CommitAsync(ct);
@@ -159,7 +159,7 @@ public sealed class BookingAdminService(BookingRepository repository, BookingSer
         var entry = new Giaodichtien { MaDon = id, LoaiGd = form.Kind, SoTien = form.Amount, MaThamChieu = reference, ThoiDiem = form.At.ToUniversalTime(), MaTkghiNhan = actor };
         if (!await repository.AddMoneyAsync(entry, ct))
             return await DuplicateAsync(id, reference, ct) ?? Op.Conflict("Không ghi được giao dịch, vui lòng thử lại.");
-        await administration.RecordAsync(new AuditEntry(actor, form.Kind == MoneyKinds.Receipt ? "Ghi nhận thu" : "Ghi nhận hoàn", MoneyType, entry.MaGd,
+        await administration.RecordAsync(new AuditEntry(actor, form.Kind == MoneyKinds.Receipt ? AuditActions.ReceiptRecorded : AuditActions.RefundRecorded, MoneyType, entry.MaGd,
             $"Đơn #{id}; mã tham chiếu {reference}", null, new { entry.MaGd, entry.MaDon, entry.LoaiGd, entry.SoTien, entry.MaThamChieu }), ct);
         await transaction.CommitAsync(ct);
         return Op.Ok(new Fresh<MoneyEntry>(new MoneyEntry(entry.MaGd, entry.LoaiGd, entry.SoTien, entry.ThoiDiem, entry.MaThamChieu), true));
@@ -182,7 +182,7 @@ public sealed class BookingAdminService(BookingRepository repository, BookingSer
         if (order.NgayDi is not { } tripDate || tripDate >= Today) return Op.Conflict("Đơn chưa khởi hành nên chưa hoàn thành được.");
         if (!await repository.MoveAsync(id, OrderStatus.Confirmed, OrderStatus.Completed, ct))
             return Op.Conflict("Đơn vừa được cập nhật bởi người khác; vui lòng tải lại.");
-        await administration.RecordAsync(new AuditEntry(actor, "Hoàn thành đơn", OrderType, id, null, new { Status = OrderStatus.Confirmed }, new { Status = OrderStatus.Completed }), ct);
+        await administration.RecordAsync(new AuditEntry(actor, AuditActions.OrderCompleted, OrderType, id, null, new { Status = OrderStatus.Confirmed }, new { Status = OrderStatus.Completed }), ct);
         return Op.Ok(await AdminAsync(id, ct));
     }
 
@@ -198,7 +198,7 @@ public sealed class BookingAdminService(BookingRepository repository, BookingSer
                 await using var transaction = await repository.BeginAsync(ct);
                 if (!await repository.MoveAsync(order.MaDon, OrderStatus.Pending, OrderStatus.Expired, ct)) continue;
                 await catalog.ReleaseSeatsAsync(departureId, order.SoKhach, ct);
-                await administration.RecordAsync(new AuditEntry(null, "Đơn hết hạn giữ chỗ", OrderType, order.MaDon, null,
+                await administration.RecordAsync(new AuditEntry(null, AuditActions.OrderExpired, OrderType, order.MaDon, null,
                     new { Status = OrderStatus.Pending }, new { Status = OrderStatus.Expired }), ct);
                 await administration.NotifyAsync(order.MaTk, $"Đơn #{order.MaDon} đã hết hạn giữ chỗ", "Đơn chưa đủ khoản cần thu trước hạn giữ chỗ nên đã hết hạn. Liên hệ nhân viên nếu bạn đã thanh toán.", ct);
                 await transaction.CommitAsync(ct);

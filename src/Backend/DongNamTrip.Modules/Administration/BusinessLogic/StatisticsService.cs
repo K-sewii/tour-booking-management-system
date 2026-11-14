@@ -13,7 +13,8 @@ public sealed class StatisticsService(StatisticsRepository repository)
         var start = VnTime.ToUtc(from);
         var end = VnTime.EndExclusiveUtc(to);
         var (received, refunded) = await repository.MoneyTotalsAsync(start, end, ct);
-        return Op.Ok(new OperationSummary(from, to, await repository.OrdersByStatusAsync(start, end, status, ct), await repository.OrderValueAsync(start, end, status, ct),
+        var orders = await repository.OrdersByStatusAsync(start, end, status, ct);
+        return Op.Ok(new OperationSummary(from, to, orders, orders.Sum(item => item.OrderValue),
             received, refunded, await repository.RequestsByStatusAsync(start, end, ct)));
     }
 }
