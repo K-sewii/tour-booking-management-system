@@ -2,7 +2,7 @@ using System.ComponentModel.DataAnnotations;
 
 namespace DongNamTrip.Contracts;
 
-public record Destination(int Id, string Name, string Region, string Category, string Address, string Description, int VisitMinutes, string Illustration, string Status = "Published");
+public record Destination(int Id, string Name, string Region, string Category, string Address, string Description, int VisitMinutes, string Illustration, string Status = "Published", string? ImageUrl = null);
 
 public class DestinationDraft
 {
@@ -29,7 +29,7 @@ public class DestinationDraft
     public string? Status { get; set; }
 }
 
-public record Tour(int Id, string Name, string Region, string Category, string Duration, decimal ReferencePrice, string Summary, string Illustration, int[] DestinationIds);
+public record Tour(int Id, string Name, string Region, string Category, string Duration, decimal ReferencePrice, string Summary, string Illustration, int[] DestinationIds, IReadOnlyList<Destination>? ImagePlaces = null);
 
 public record AuthenticatedUser(int Id, string Name, string Email, IReadOnlyList<string> Roles);
 public record LoginResponse(string Token, AuthenticatedUser User);

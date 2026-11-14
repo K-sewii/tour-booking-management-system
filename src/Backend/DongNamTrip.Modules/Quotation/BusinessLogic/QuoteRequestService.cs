@@ -105,7 +105,7 @@ public sealed class QuoteRequestService(QuotationRepository repository, IItinera
         var order = await booking.CreateFromQuoteAsync(new QuoteAcceptance(quoteId, request.MaYc, accountId, request.SoKhach, quote.TongGia, quote.KhoanCanThu,
             quote.DieuKienHuy, version.StartDate, request.LienHe), accountId, ct);
         if (!order.IsOk) return new OpResult<Fresh<QuoteAccepted>>(null, order.Status, order.Message);
-        await administration.RecordAsync(new AuditEntry(accountId, "Khách chấp nhận báo giá", QuoteType, quoteId, null,
+        await administration.RecordAsync(new AuditEntry(accountId, AuditActions.QuoteAccepted, QuoteType, quoteId, null,
             new { Status = QuoteStatus.Sent }, new { Status = QuoteStatus.Accepted, OrderId = order.Value }), ct);
         await transaction.CommitAsync(ct);
         return Op.Ok(new Fresh<QuoteAccepted>(new QuoteAccepted(quoteId, order.Value, quote.TongGia, quote.KhoanCanThu), true));
@@ -130,7 +130,7 @@ public sealed class QuoteRequestService(QuotationRepository repository, IItinera
         if (!await repository.MoveRequestAsync(quote.MaYc, QuoteRequestStatus.Quoted, QuoteRequestStatus.Verifying, ct))
             return Op.Conflict("Yêu cầu không còn ở trạng thái đã báo giá.");
         await repository.SupersedeAsync(quote.MaYc, ct); // chỉ báo giá còn Sent; báo giá đã hết hạn giữ nguyên
-        await administration.RecordAsync(new AuditEntry(accountId, "Khách đề nghị đổi báo giá", RequestType, quote.MaYc, text,
+        await administration.RecordAsync(new AuditEntry(accountId, AuditActions.QuoteChangeRequested, RequestType, quote.MaYc, text,
             new { Status = QuoteRequestStatus.Quoted }, new { Status = QuoteRequestStatus.Verifying }), ct);
         await transaction.CommitAsync(ct);
         return Op.Ok(await InfoAsync((await repository.RequestAsync(quote.MaYc, ct))!, ct));

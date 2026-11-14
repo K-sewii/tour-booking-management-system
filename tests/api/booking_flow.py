@@ -48,6 +48,39 @@ def run():
     admin(f'/tours/{tid}/status', method='POST', token=op, data={'status': 'Published'})
     small = admin(f'/tours/{tid}/departures', method='POST', token=op, expected=201, data={'startsAt': at(20), 'price': 1000000, 'capacity': 1})['id']
     big = admin(f'/tours/{tid}/departures', method='POST', token=op, expected=201, data={'startsAt': at(21), 'price': 1000000, 'capacity': 10})['id']
+    # Six order states on a fixed business day; direct fixtures are scoped to this test account.
+    # UTC 17:00 is midnight in Vietnam, so the extra order just before it must be excluded.
+    grant_roles(fin_email, ['Admin'])
+    stats_token = login(fin_email)
+    staff_audit = admin('/audit/search?actorType=staff&page=1', token=stats_token)
+    check(any(row['objectType'] == 'TOUR' and row['objectId'] == str(tid) and row['action'] == 'Tạo tour' for row in staff_audit['items']), 'SCR19 must show staff tour audit.')
+    marker = f'stats-{suffix}'
+    owner_id = c3['user']['id']
+    recorder_id = request(API + '/api/auth/me', token=stats_token)['id']
+    try:
+        smoke.sql_non_query(f"""
+INSERT INTO DONDAT (MaTK, MaLKH, SoKhach, GiaChot, DieuKienHuy, TrangThai, NgayDat, LienHe)
+SELECT {owner_id}, {big}, 1, 100, N'test', v.state, '2001-01-01T17:00:00', '{marker}'
+FROM (VALUES ('Pending'),('Confirmed'),('CancelRequested'),('Cancelled'),('Expired'),('Completed')) v(state);
+INSERT INTO DONDAT (MaTK, MaLKH, SoKhach, GiaChot, DieuKienHuy, TrangThai, NgayDat, LienHe)
+VALUES ({owner_id}, {big}, 1, 500, N'test', 'Confirmed', '2001-01-01T16:59:59', '{marker}');
+INSERT INTO GIAODICHTIEN (MaDon, LoaiGD, SoTien, MaThamChieu, ThoiDiem, MaTKGhiNhan)
+SELECT MaDon, 'Receipt', 10, '{marker}-r', '2001-01-01T17:00:00', {recorder_id} FROM DONDAT WHERE LienHe='{marker}' AND TrangThai='Cancelled';
+INSERT INTO GIAODICHTIEN (MaDon, LoaiGD, SoTien, MaThamChieu, ThoiDiem, MaTKGhiNhan)
+SELECT MaDon, 'Refund', 4, '{marker}-f', '2001-01-01T17:00:00', {recorder_id} FROM DONDAT WHERE LienHe='{marker}' AND TrangThai='Cancelled';
+""")
+        summary = admin('/stats?from=2001-01-02&to=2001-01-02', token=stats_token)
+        legacy = admin('/accounts/statistics?from=2001-01-02&to=2001-01-02', token=stats_token)
+        states = {'Pending', 'Confirmed', 'CancelRequested', 'Cancelled', 'Expired', 'Completed'}
+        check({x['status'] for x in summary['orders']} == states and sum(x['count'] for x in summary['orders']) == 6, f'All six states and UTC+7 boundary required: {summary}.')
+        check(summary['orderValue'] == 400 and summary['received'] == 10 and summary['refunded'] == 4, f'Effective value and transaction totals mismatch: {summary}.')
+        check(legacy['orderValue'] == summary['orderValue'] and legacy['collected'] == summary['received'] and legacy['refunded'] == summary['refunded'], 'Statistics APIs must use one calculation.')
+        for state in states:
+            filtered = admin(f'/stats?from=2001-01-02&to=2001-01-02&status={state}', token=stats_token)
+            expected_value = 0 if state in {'Cancelled', 'Expired'} else 100
+            check(filtered['orderValue'] == expected_value and len(filtered['orders']) == 1 and filtered['orders'][0]['count'] == 1 and filtered['received'] == 10 and filtered['refunded'] == 4, f'Status filter {state} must preserve transaction totals: {filtered}.')
+    finally:
+        smoke.sql_non_query(f"DELETE FROM GIAODICHTIEN WHERE MaDon IN (SELECT MaDon FROM DONDAT WHERE LienHe='{marker}'); DELETE FROM DONDAT WHERE LienHe='{marker}';")
     departure = lambda dep_id: next(item for item in admin(f'/tours/{tid}/departures', token=op) if item['id'] == dep_id)
     book = lambda token, dep_id, guests=1, expected=201: request(API + '/api/account/bookings', 'POST', {'departureId': dep_id, 'guests': guests, 'contact': '0900000000'}, token=token, expected=expected)
 
@@ -143,6 +176,8 @@ def run():
     # Xác nhận: cấp quyền nghe, thông báo khách.
     confirmed = admin(f'/bookings/{order}/confirm', method='POST', token=op)
     check(confirmed['status'] == 'Confirmed', 'Order must be confirmed.')
+    staff_audit = admin('/audit/search?actorType=staff&page=1', token=stats_token)
+    check(any(row['objectType'] == 'DONDAT' and row['objectId'] == str(order) and row['action'] == 'Xác nhận đơn' for row in staff_audit['items']), 'SCR19 must show staff booking audit.')
     check(sql_scalar(f'SELECT COUNT(*) FROM QUYENNGHE WHERE MaDon = {order}') == '1', 'Confirming must grant a listen right.')
     check(any('xác nhận' in note['title'] for note in request(API + '/api/account/notices', token=t1)), 'Customer must be notified about confirmation.')
     admin(f'/bookings/{order}/confirm', method='POST', token=op, expected=409)

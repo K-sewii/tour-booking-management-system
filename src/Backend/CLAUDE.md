@@ -102,6 +102,8 @@ public static void Map(IEndpointRouteBuilder endpoints)
 
 ## 7. Xác thực và phân quyền
 
+Phiên lưu ảnh chụp vai trò khi đăng nhập. Mọi đường thay đổi vai trò, khóa tài khoản hoặc đặt lại mật khẩu phải thu hồi toàn bộ phiên của tài khoản; người dùng đăng nhập lại để nhận quyền mới. Việc sửa trực tiếp database ngoài API không cập nhật ảnh chụp phiên.
+
 - Phiên đăng nhập là Bearer token do `SqlSessionStore` (bộ nhớ) cấp; handler `SqlAuthenticationHandler`. Vai trò nằm trong `AppRoles`; endpoint quản trị dùng `.RequireAuthorization(policy => policy.RequireRole(...))`.
 - OpenAPI dùng `Microsoft.AspNetCore.OpenApi`; Swagger UI chỉ đọc `/openapi/v1.json`, không đăng ký bộ sinh tài liệu thứ hai. Chỉ map `/openapi/v1.json` và `/swagger` trong `Development`. Scheme Bearer là token phiên ngẫu nhiên/opaque, không phải JWT: không thêm `AddJwtBearer` hoặc sửa `SqlAuthenticationHandler` vì tài liệu.
 - Mỗi route mới thêm `.WithTags(<module>)`, summary/description và `.Produces...` khớp status thực tế. Transformer đọc `IAuthorizeData` từ metadata endpoint **và route group** để chỉ áp dụng security requirement cho route bảo vệ; route công khai không được đánh dấu Bearer. Nêu role nhân viên trên route có `RequireRole`.

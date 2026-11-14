@@ -13,6 +13,16 @@ public sealed class UserAdminService(UserAdminRepository repository, AuditReposi
     private static readonly OpResult<AdminUser> Busy = Op.Conflict("Đang có thay đổi quản trị khác, hãy thử lại sau ít giây.");
     private static readonly string[] KnownRoles = [.. AppRoles.Staff, AppRoles.Customer];
 
+    public Task<List<string>> RolesAsync(CancellationToken ct) => repository.RolesAsync(ct);
+    public Task<List<AdminAccount>> AccountsAsync(string? query, string? role, CancellationToken ct) => repository.AccountsAsync(query, role, ct);
+
+    public async Task<OpResult<AdminAccountPage>> GroupedAsync(string? group, string? query, string? role, string? status, int? page, CancellationToken ct)
+    {
+        if (group is not ("staff" or "customer") || status is not (null or "" or AccountStatus.Active or AccountStatus.Locked) || page is < 1 or > 1000000)
+            return Op.Invalid("Bộ lọc hoặc trang không hợp lệ.");
+        return Op.Ok(await repository.AccountPageAsync(group, query, role, status, page ?? 1, ct));
+    }
+
     public async Task<PagedResult<AdminUser>> ListAsync(UserFilter filter, CancellationToken ct)
     {
         var page = Math.Clamp(filter.Page ?? 1, 1, Limits.MaxPage);
@@ -54,7 +64,7 @@ public sealed class UserAdminService(UserAdminRepository repository, AuditReposi
         return Op.Ok(new StaffCreated((await repository.GetAsync(id, ct))!, password));
     }
 
-    public async Task<OpResult<AdminUser>> SetRolesAsync(int id, IReadOnlyList<string> requested, int actor, CancellationToken ct)
+    public async Task<OpResult<AdminUser>> SetRolesAsync(int id, IReadOnlyList<string> requested, int actor, CancellationToken ct, IReadOnlyList<string>? expectedRoles = null)
     {
         var roles = Normalize(requested);
         if (roles is null) return Op.Invalid("Cần ít nhất một vai trò hợp lệ.");
@@ -64,20 +74,22 @@ public sealed class UserAdminService(UserAdminRepository repository, AuditReposi
             if (!await repository.LockAdminChangesAsync(ct)) return Busy;
             var before = await repository.GetAsync(id, ct);
             if (before is null) return Op.NotFound("Không tìm thấy tài khoản.");
+            if (expectedRoles is not null && !before.Roles.Order(StringComparer.Ordinal).SequenceEqual(expectedRoles.Order(StringComparer.Ordinal)))
+                return Op.Conflict("Vai trò đã thay đổi; hãy tải lại.");
             if (before.Roles.Contains(AppRoles.Admin) && !roles.Contains(AppRoles.Admin))
             {
                 if (actor == id) return Op.Conflict("Bạn không thể tự gỡ vai trò Admin của chính mình.");
-                if (before.Status == AccountStatus.Active && await repository.CountAdminsAsync(ct) <= 1) return Op.Conflict("Không thể gỡ Admin cuối cùng của hệ thống.");
+                if (AdminSafety.IsLastActiveAdmin(before.Status, before.Roles, await repository.CountAdminsAsync(ct))) return Op.Conflict("Không thể gỡ Admin cuối cùng của hệ thống.");
             }
             await repository.ReplaceRolesAsync(id, roles, ct);
             await administration.RecordAsync(new AuditEntry(actor, "Đổi vai trò", AccountType, id, null, new { before.Roles }, new { Roles = roles }), ct);
             await transaction.CommitAsync(ct);
         }
-        sessions.RemoveAllForAccount(id); // có hiệu lực ở phiên kế tiếp
+        sessions.RemoveAllForAccount(id);
         return Op.Ok((await repository.GetAsync(id, ct))!);
     }
 
-    public async Task<OpResult<AdminUser>> SetStatusAsync(int id, string status, string? reason, int actor, CancellationToken ct)
+    public async Task<OpResult<AdminUser>> SetStatusAsync(int id, string status, string? reason, int actor, CancellationToken ct, string? expectedStatus = null)
     {
         if (!AccountStatus.All.Contains(status)) return Op.Invalid("Trạng thái chỉ nhận Active hoặc Locked.");
         await using (var transaction = await repository.BeginAsync(ct))
@@ -85,9 +97,10 @@ public sealed class UserAdminService(UserAdminRepository repository, AuditReposi
             if (!await repository.LockAdminChangesAsync(ct)) return Busy;
             var before = await repository.GetAsync(id, ct);
             if (before is null) return Op.NotFound("Không tìm thấy tài khoản.");
+            if (expectedStatus is not null && before.Status != expectedStatus) return Op.Conflict("Trạng thái đã thay đổi; hãy tải lại.");
             if (status == AccountStatus.Locked && actor == id) return Op.Conflict("Bạn không thể tự khóa tài khoản của chính mình.");
             if (before.Status == status) return Op.Ok(before);
-            if (status == AccountStatus.Locked && before.Status == AccountStatus.Active && before.Roles.Contains(AppRoles.Admin) && await repository.CountAdminsAsync(ct) <= 1)
+            if (status == AccountStatus.Locked && before.Roles.Contains(AppRoles.Admin) && AdminSafety.IsLastActiveAdmin(before.Status, before.Roles, await repository.CountAdminsAsync(ct)))
                 return Op.Conflict("Không thể khóa Admin cuối cùng của hệ thống.");
             await repository.SetStatusAsync(id, status, ct);
             await administration.RecordAsync(new AuditEntry(actor, status == AccountStatus.Locked ? "Khóa tài khoản" : "Mở khóa tài khoản", AccountType, id,

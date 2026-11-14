@@ -104,6 +104,7 @@ def user_secrets_connection_string():
 
 def sql_non_query(statement):
     script = f'''$ProgressPreference = 'SilentlyContinue'
+$ErrorActionPreference = 'Stop'
 $connectionString = [Environment]::GetEnvironmentVariable('DONGNAMTRIP_TEST_CONNECTION')
 $connection = New-Object System.Data.SqlClient.SqlConnection $connectionString
 try {{
@@ -118,10 +119,17 @@ finally {{
     if ($connection) {{ $connection.Dispose() }}
 }}
 '''
-    encoded = base64.b64encode(script.encode('utf-16le')).decode()
     environment = os.environ.copy()
     environment['DONGNAMTRIP_TEST_CONNECTION'] = user_secrets_connection_string()
-    subprocess.run(['powershell', '-NoProfile', '-NonInteractive', '-OutputFormat', 'Text', '-EncodedCommand', encoded], cwd=ROOT, env=environment, check=True)
+    # A large cleanup can exceed Windows' command-line limit when encoded inline.
+    # Windows PowerShell requires a BOM to read Vietnamese SQL literals as UTF-8.
+    with tempfile.NamedTemporaryFile(mode='w', encoding='utf-8-sig', suffix='.ps1', delete=False) as temp_script:
+        temp_script.write(script)
+        script_path = Path(temp_script.name)
+    try:
+        subprocess.run(['powershell', '-NoProfile', '-NonInteractive', '-OutputFormat', 'Text', '-File', str(script_path)], cwd=ROOT, env=environment, check=True)
+    finally:
+        script_path.unlink(missing_ok=True)
 
 
 def sql_literal(value):
@@ -133,6 +141,14 @@ def cleanup_test_accounts():
         return
     emails = ', '.join(sql_literal(email) for email in test_emails)
     sql_non_query(f'''
+-- Clean audit rows of accounts created by this test run.
+DECLARE @TestAccounts TABLE (MaTK int PRIMARY KEY);
+INSERT INTO @TestAccounts (MaTK)
+SELECT MaTK FROM dbo.TAIKHOAN WHERE Email IN ({emails});
+DELETE FROM dbo.NHATKYTHAOTAC
+WHERE MaTK IN (SELECT MaTK FROM @TestAccounts)
+   OR (LoaiDoiTuong = 'TAIKHOAN'
+       AND MaDoiTuong IN (SELECT CONVERT(varchar(20), MaTK) FROM @TestAccounts));
 IF OBJECT_ID('dbo.TAIKHOAN_YEUTHICH', 'U') IS NOT NULL DELETE FROM dbo.TAIKHOAN_YEUTHICH WHERE MaTK IN (SELECT MaTK FROM TAIKHOAN WHERE Email IN ({emails}));
 IF OBJECT_ID('dbo.TAIKHOAN_LICHSU', 'U') IS NOT NULL DELETE FROM dbo.TAIKHOAN_LICHSU WHERE MaTK IN (SELECT MaTK FROM TAIKHOAN WHERE Email IN ({emails}));
 IF OBJECT_ID('dbo.TAIKHOAN_THONGBAO', 'U') IS NOT NULL DELETE FROM dbo.TAIKHOAN_THONGBAO WHERE MaTK IN (SELECT MaTK FROM TAIKHOAN WHERE Email IN ({emails}));
@@ -266,11 +282,14 @@ def run():
     itinerary = {'name': 'Lịch trình SQL identity', 'startDate': tomorrow, 'guests': 2, 'destinationIds': [places[0]['id'], places[-1]['id']]}
     trip = request(API + '/api/itineraries', 'POST', itinerary, token=customer_token)
     assert trip['userId'] == customer['user']['id']
-    other_email, _, other = registration('Khách khác')
+    other_email, other_password, other = registration('Khách khác')
     other_items = request(API + '/api/itineraries', token=other['token'])
     assert all(item['id'] != trip['id'] for item in other_items), 'A SQL account must not inherit another account\'s demo itinerary.'
 
-    staff_email, _, staff = registration('Nhân viên đa vai trò')
+    staff_email, staff_password, staff = registration('Nhân viên đa vai trò')
+    original_customer_token = staff['token']
+    request(API + '/api/admin/quote-requests', token=original_customer_token, expected=403)
+    # Bootstrap an admin for this isolated test database; application changes use its API below.
     sql_non_query(f'''
 INSERT INTO TAIKHOAN_VAITRO (MaTK, MaVaiTro)
 SELECT account.MaTK, role.MaVaiTro
@@ -279,22 +298,37 @@ CROSS JOIN VAITRO AS role
 WHERE account.Email = {sql_literal(staff_email)}
   AND role.TenVaiTro IN ('Admin', 'Editor');
 ''')
-    staff_me = request(API + '/api/auth/me', token=staff['token'])
-    assert set(staff_me['roles']) == {'Admin', 'Customer', 'Editor'}
+    staff = request(API + '/api/auth/login', 'POST', {'email': staff_email, 'password': staff_password})
+    assert set(staff['user']['roles']) == {'Admin', 'Customer', 'Editor'}
+    assert set(request(API + '/api/auth/me', token=staff['token'])['roles']) == {'Admin', 'Customer', 'Editor'}
+    # A role change through administration revokes existing sessions immediately.
+    target_id = other['user']['id']
+    request(API + f'/api/admin/users/{target_id}/roles', 'PUT', {'roles': ['Customer', 'Operator']}, token=staff['token'])
+    request(API + '/api/auth/me', token=other['token'], expected=401)
+    other = request(API + '/api/auth/login', 'POST', {'email': other_email, 'password': other_password})
+    assert set(other['user']['roles']) == {'Customer', 'Operator'}
+    request(API + f'/api/admin/users/{target_id}/roles', 'PUT', {'roles': ['Customer']}, token=staff['token'])
+    request(API + '/api/auth/me', token=other['token'], expected=401)
+    other = request(API + '/api/auth/login', 'POST', {'email': other_email, 'password': other_password})
+    assert other['user']['roles'] == ['Customer']
+    request(API + '/api/admin/quote-requests', token=other['token'], expected=403)
+    request(API + f'/api/admin/users/{target_id}/roles', 'PUT', {'roles': ['Customer', 'Operator'], 'expectedRoles': ['Customer']}, token=staff['token'], expected=200)
+    request(API + '/api/auth/me', token=other['token'], expected=401)
+    other = request(API + '/api/auth/login', 'POST', {'email': other_email, 'password': other_password})
+    assert set(other['user']['roles']) == {'Customer', 'Operator'}
+    request(API + f'/api/admin/users/{target_id}/roles', 'PUT', {'roles': ['Customer'], 'expectedRoles': ['Customer']}, token=staff['token'], expected=409)
+    request(API + f'/api/admin/users/{target_id}/roles', 'PUT', {'roles': ['Customer'], 'expectedRoles': ['Customer', 'Operator']}, token=staff['token'], expected=200)
+    request(API + '/api/auth/me', token=other['token'], expected=401)
+    other = request(API + '/api/auth/login', 'POST', {'email': other_email, 'password': other_password})
+    assert other['user']['roles'] == ['Customer']
+    request(API + f"/api/admin/users/{staff['user']['id']}/roles", 'PUT', {'roles': ['Customer']}, token=staff['token'], expected=409)
     planner = request(API + '/api/planner/catalog')
     assert len(planner['destinations']) >= 2
     request(API + f"/api/itineraries/{trip['id']}", token=other['token'], expected=404)
     request(API + f"/api/itineraries/{trip['id']}", 'PUT', itinerary, token=other['token'], expected=404)
     # Yêu cầu tour riêng và báo giá: xem quotation_flow.py.
     request(API + '/api/destinations', 'POST', {'name': 'Điểm kiểm tra quyền', 'region': 'Tây Ninh', 'category': 'Văn hóa', 'address': 'Chỉ bộ nhớ', 'description': 'Xác nhận Admin hoặc Editor được phép.', 'visitMinutes': 60}, token=staff['token'])
-    sql_non_query(f'''
-DELETE assignment
-FROM TAIKHOAN_VAITRO AS assignment
-INNER JOIN TAIKHOAN AS account ON account.MaTK = assignment.MaTK
-INNER JOIN VAITRO AS role ON role.MaVaiTro = assignment.MaVaiTro
-WHERE account.Email = {sql_literal(staff_email)} AND role.TenVaiTro IN ('Admin', 'Editor');
-''')
-    request(API + '/api/destinations', 'POST', {'name': 'Quyền đã bị gỡ', 'region': 'Tây Ninh', 'category': 'Văn hóa', 'address': 'Không lưu', 'description': 'Role bị gỡ phải có hiệu lực ngay.', 'visitMinutes': 60}, token=staff['token'], expected=403)
+    request(API + '/api/admin/quote-requests', token=staff['token'])
 
     locked_email, locked_password, locked = registration('Tài khoản khóa')
     sql_non_query(f"UPDATE TAIKHOAN SET TrangThai = 'Locked' WHERE Email = {sql_literal(locked_email)};")
@@ -325,7 +359,7 @@ WHERE account.Email = {sql_literal(staff_email)} AND role.TenVaiTro IN ('Admin',
 
     request(API + '/api/auth/logout', 'POST', token=customer_token, expected=204)
     request(API + '/api/auth/me', token=customer_token, expected=401)
-    print(f'PASS: {checks} functional HTTP checks; SQL registration, duplicate email, password, dynamic roles, lock, logout, ownership and Web login.')
+    print(f'PASS: {checks} functional HTTP checks; registration, role-change session revocation, lock, logout, ownership and Web login.')
 
 
 def run_expiry_checks(session_lifetime_seconds):

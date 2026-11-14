@@ -44,13 +44,13 @@ public sealed class ListenService(ListenRepository repository, AudioFileStore fi
         if (owner != grant.AccountId)
             return Op.Invalid("Đơn đặt không thuộc tài khoản này.");
         var saved = await repository.SaveRightAsync(grant, ct);
-        await administration.RecordAsync(new AuditEntry(actorId, "Cấp quyền nghe", "QUYENNGHE", saved.Id, null, saved.Before, grant), ct);
+        await administration.RecordAsync(new AuditEntry(actorId, AuditActions.ListenRightGranted, "QUYENNGHE", saved.Id, null, saved.Before, grant), ct);
         return Op.Ok(grant);
     }
 
     public async Task RevokeListenRightAsync(int orderId, int actorId, CancellationToken ct)
     {
         foreach (var removed in await repository.RemoveRightsAsync(orderId, ct))
-            await administration.RecordAsync(new AuditEntry(actorId, "Thu hồi quyền nghe", "QUYENNGHE", orderId, null, removed, null), ct);
+            await administration.RecordAsync(new AuditEntry(actorId, AuditActions.ListenRightRevoked, "QUYENNGHE", orderId, null, removed, null), ct);
     }
 }
