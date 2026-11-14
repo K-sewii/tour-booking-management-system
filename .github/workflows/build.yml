@@ -54,12 +54,13 @@ jobs:
 
   web-api:
     runs-on: windows-2022
-    timeout-minutes: 20
+    timeout-minutes: 90
     env:
       ASPNETCORE_ENVIRONMENT: Development
       DOTNET_ENVIRONMENT: Development
       BootstrapAdmin__Enabled: 'false'
       DevelopmentTestAccounts__Enabled: 'false'
+      DONGNAMTRIP_TEST_CONNECTION: 'Server=(localdb)\DongNamTripCI;Database=DongNamTrip;Integrated Security=True;Encrypt=False;TrustServerCertificate=True;Connect Timeout=30;'
 
     steps:
       - uses: actions/checkout@v4
@@ -119,6 +120,7 @@ jobs:
       # DongNamTrip_Full.sql keeps its reference tours as Draft (the API lists only Published) and the browser
       # tests expect a fixed catalog, so load a CI-only fixture into the disposable LocalDB.
       - name: Load CI catalog fixture
+        id: fixture
         shell: powershell
         run: |
           $ErrorActionPreference = 'Stop'
@@ -136,28 +138,52 @@ jobs:
           }
 
       - name: Run HTTP and SQL smoke tests
+        if: ${{ !cancelled() && steps.fixture.outcome == 'success' }}
         run: python tests/api/smoke.py --start
 
+      - name: Run tour, itinerary, booking, quotation and administration tests
+        if: ${{ !cancelled() && steps.fixture.outcome == 'success' }}
+        shell: powershell
+        run: |
+          $failed = @()
+          foreach ($test in @('catalog_admin', 'itinerary_check', 'booking_flow', 'quotation_flow', 'user_admin', 'scr19_readonly', 'scr19_mutations')) {
+            Write-Host "::group::$test"
+            python "tests/api/$test.py" --start
+            if ($LASTEXITCODE -ne 0) { $failed += $test }
+            Write-Host '::endgroup::'
+          }
+          if ($failed.Count -gt 0) { Write-Error "Failed suites: $($failed -join ', ')"; exit 1 }
+
       - name: Run SCR02/SCR03 authentication tests
+        if: ${{ !cancelled() && steps.fixture.outcome == 'success' }}
         run: python tests/api/auth_screens.py --start
 
       - name: Run SCR06/SCR07/SCR11/SCR14/SCR15/SCR20 content tests
+        if: ${{ !cancelled() && steps.fixture.outcome == 'success' }}
         run: python tests/api/content_screens.py --start
 
       - name: Run SCR22-SCR25 account area tests
+        if: ${{ !cancelled() && steps.fixture.outcome == 'success' }}
         run: python tests/api/account_area.py
 
       - uses: actions/setup-node@v4
+        id: browser_node
+        if: ${{ !cancelled() && steps.fixture.outcome == 'success' }}
         with:
           node-version: '22'
 
       - name: Install Playwright
+        id: playwright
+        if: ${{ !cancelled() && steps.browser_node.outcome == 'success' }}
         run: npm install --no-save --package-lock=false playwright@1.56.1
 
       - name: Install Chromium
+        id: chromium
+        if: ${{ !cancelled() && steps.playwright.outcome == 'success' }}
         run: npx playwright install chromium
 
       - name: Run browser tests
+        if: ${{ !cancelled() && steps.chromium.outcome == 'success' }}
         run: python tests/e2e/browser_runner.py
 
       - uses: actions/upload-artifact@v4

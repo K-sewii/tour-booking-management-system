@@ -91,6 +91,9 @@ def user_secrets_connection_string():
     global test_connection_string
     if test_connection_string is not None:
         return test_connection_string
+    if os.environ.get('DONGNAMTRIP_TEST_CONNECTION'):
+        test_connection_string = os.environ['DONGNAMTRIP_TEST_CONNECTION']
+        return test_connection_string
     output = subprocess.check_output(
         ['dotnet', 'user-secrets', 'list', '--project', 'src/Backend/DongNamTrip.Api'],
         cwd=ROOT,
@@ -180,6 +183,8 @@ def running_apps(session_lifetime_seconds=300, *, api_only=False, spa=False):
         apps.append((WEB_EXE, WEB + '/Account/Login'))
     assert all(executable.exists() for executable, _ in apps), 'Build the solution before running smoke.py --start.'
     environment = os.environ.copy()
+    if environment.get('DONGNAMTRIP_TEST_CONNECTION'):
+        environment['ConnectionStrings__DongNamTrip'] = environment['DONGNAMTRIP_TEST_CONNECTION']
     environment['ASPNETCORE_ENVIRONMENT'] = 'Development'
     environment['ASPNETCORE_URLS'] = 'http://localhost:5080'
     environment['Authentication__SessionLifetimeSeconds'] = str(session_lifetime_seconds)

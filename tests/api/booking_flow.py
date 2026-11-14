@@ -70,11 +70,10 @@ INSERT INTO GIAODICHTIEN (MaDon, LoaiGD, SoTien, MaThamChieu, ThoiDiem, MaTKGhiN
 SELECT MaDon, 'Refund', 4, '{marker}-f', '2001-01-01T17:00:00', {recorder_id} FROM DONDAT WHERE LienHe='{marker}' AND TrangThai='Cancelled';
 """)
         summary = admin('/stats?from=2001-01-02&to=2001-01-02', token=stats_token)
-        legacy = admin('/accounts/statistics?from=2001-01-02&to=2001-01-02', token=stats_token)
+        admin('/accounts/statistics?from=2001-01-02&to=2001-01-02', token=stats_token, expected=404)
         states = {'Pending', 'Confirmed', 'CancelRequested', 'Cancelled', 'Expired', 'Completed'}
         check({x['status'] for x in summary['orders']} == states and sum(x['count'] for x in summary['orders']) == 6, f'All six states and UTC+7 boundary required: {summary}.')
         check(summary['orderValue'] == 400 and summary['received'] == 10 and summary['refunded'] == 4, f'Effective value and transaction totals mismatch: {summary}.')
-        check(legacy['orderValue'] == summary['orderValue'] and legacy['collected'] == summary['received'] and legacy['refunded'] == summary['refunded'], 'Statistics APIs must use one calculation.')
         for state in states:
             filtered = admin(f'/stats?from=2001-01-02&to=2001-01-02&status={state}', token=stats_token)
             expected_value = 0 if state in {'Cancelled', 'Expired'} else 100

@@ -20,7 +20,7 @@ public static class OrderRules
     ];
 
     /// <summary>Nhãn nhật ký của lần điều chỉnh đơn và dấu ngăn lý do với ý kiến đồng ý của khách; ghi ở BookingAdminService, đọc lại ở BookingService.</summary>
-    public const string AdjustAction = "Điều chỉnh đơn";
+    public const string AdjustAction = AuditActions.OrderAdjusted;
     public const string ConsentSeparator = " | Ý kiến khách: ";
 
     public static bool CanMove(string from, string to) => Moves.Contains((from, to));

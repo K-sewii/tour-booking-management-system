@@ -130,6 +130,21 @@ def run():
     unknown = adm(f'/audit/search?query={historic_action}', token=admin_token)
     check(len(unknown['items']) == 1 and unknown['items'][0]['actorType'] == 'unknown', 'Historic actor type must not be inferred from current roles.')
     check(adm(f'/audit/search?actorType=staff&query={historic_action}', token=admin_token)['total'] == 0, 'Unknown historic actions must not be labeled staff.')
+    marker = f'audit-classification-{suffix}'
+    customer_id = customer['user']['id']
+    try:
+        smoke.sql_non_query(f"""INSERT INTO NHATKYTHAOTAC (MaTK, HanhDong, LoaiDoiTuong, MaDoiTuong) VALUES
+({my_id}, N'Đổi vai trò', 'TAIKHOAN', '{marker}'),
+({customer_id}, N'Khách chấp nhận báo giá', 'BAOGIA', '{marker}'),
+(NULL, N'Báo giá hết hạn', 'BAOGIA', '{marker}')""")
+        rows = adm('/audit/search?page=1', token=admin_token)['items']
+        classified = {row['actorType'] for row in rows if row['objectId'] == marker}
+        check(classified == {'staff', 'customer', 'system'}, f'Audit actor classification: {classified}')
+        for kind in ('staff', 'customer', 'system'):
+            rows = adm(f'/audit/search?actorType={kind}&page=1', token=admin_token)['items']
+            check(any(row['objectId'] == marker and row['actorType'] == kind for row in rows), f'{kind} filter must include its audit row')
+    finally:
+        smoke.sql_non_query(f"DELETE FROM NHATKYTHAOTAC WHERE MaDoiTuong = '{marker}'")
     adm('/audit', method='DELETE', token=admin_token, expected=405)
     request(API + '/api/admin/audit/1', 'PUT', {}, token=admin_token, expected=404)
 
@@ -142,11 +157,12 @@ def run():
     check(adm('/audit?page=2147483647', token=admin_token)['items'] == [], 'A huge audit page must be clamped, not overflow.')
     empty = adm('/stats?from=2000-01-01&to=2000-01-31', token=admin_token)
     check(empty['orders'] == [] and empty['orderValue'] == 0 and empty['received'] == 0 and empty['refunded'] == 0 and empty['requests'] == [], f'Empty stats: {empty}.')
-    old = adm('/accounts/statistics?from=2000-01-01&to=2000-01-31', token=admin_token)
-    check(old['orderValue'] == empty['orderValue'] and old['collected'] == empty['received'] and old['refunded'] == empty['refunded'], 'Compatibility statistics must use the same source.')
+    adm('/accounts/statistics?from=2000-01-01&to=2000-01-31', token=admin_token, expected=404)
+    adm('/accounts', token=admin_token, expected=404)
     today = datetime.date.today()
-    stats = adm(f'/stats?from={today - datetime.timedelta(days=3650)}&to={today}', token=admin_token)
-    expected = sql_scalar("SELECT CAST(COALESCE(SUM(SoTien), 0) AS bigint) FROM GIAODICHTIEN WHERE LoaiGD = 'Receipt'")
+    start = today - datetime.timedelta(days=3650)
+    stats = adm(f'/stats?from={start}&to={today}', token=admin_token)
+    expected = sql_scalar(f"SELECT CAST(COALESCE(SUM(SoTien), 0) AS bigint) FROM GIAODICHTIEN WHERE LoaiGD = 'Receipt' AND ThoiDiem >= DATEADD(hour, -7, CAST('{start}' AS datetime2)) AND ThoiDiem < DATEADD(hour, 17, CAST('{today}' AS datetime2))")
     check(str(int(stats['received'])) == expected, f'Stats received {stats["received"]} must match SQL {expected}.')
 
 

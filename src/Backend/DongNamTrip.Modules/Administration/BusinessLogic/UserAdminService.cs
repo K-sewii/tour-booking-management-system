@@ -58,7 +58,7 @@ public sealed class UserAdminService(UserAdminRepository repository, AuditReposi
         {
             if (await repository.AddAsync(account, roles, ct) is not { } added) return Op.Conflict("Email đã được đăng ký.");
             id = added;
-            await administration.RecordAsync(new AuditEntry(actor, "Tạo tài khoản nhân viên", AccountType, id, null, null, new { Id = id, Email = email, Roles = roles }), ct);
+            await administration.RecordAsync(new AuditEntry(actor, AuditActions.AccountStaffCreated, AccountType, id, null, null, new { Id = id, Email = email, Roles = roles }), ct);
             await transaction.CommitAsync(ct);
         }
         return Op.Ok(new StaffCreated((await repository.GetAsync(id, ct))!, password));
@@ -82,7 +82,7 @@ public sealed class UserAdminService(UserAdminRepository repository, AuditReposi
                 if (AdminSafety.IsLastActiveAdmin(before.Status, before.Roles, await repository.CountAdminsAsync(ct))) return Op.Conflict("Không thể gỡ Admin cuối cùng của hệ thống.");
             }
             await repository.ReplaceRolesAsync(id, roles, ct);
-            await administration.RecordAsync(new AuditEntry(actor, "Đổi vai trò", AccountType, id, null, new { before.Roles }, new { Roles = roles }), ct);
+            await administration.RecordAsync(new AuditEntry(actor, AuditActions.AccountRoleChanged, AccountType, id, null, new { before.Roles }, new { Roles = roles }), ct);
             await transaction.CommitAsync(ct);
         }
         sessions.RemoveAllForAccount(id);
@@ -103,7 +103,7 @@ public sealed class UserAdminService(UserAdminRepository repository, AuditReposi
             if (status == AccountStatus.Locked && before.Roles.Contains(AppRoles.Admin) && AdminSafety.IsLastActiveAdmin(before.Status, before.Roles, await repository.CountAdminsAsync(ct)))
                 return Op.Conflict("Không thể khóa Admin cuối cùng của hệ thống.");
             await repository.SetStatusAsync(id, status, ct);
-            await administration.RecordAsync(new AuditEntry(actor, status == AccountStatus.Locked ? "Khóa tài khoản" : "Mở khóa tài khoản", AccountType, id,
+            await administration.RecordAsync(new AuditEntry(actor, status == AccountStatus.Locked ? AuditActions.AccountLocked : AuditActions.AccountUnlocked, AccountType, id,
                 string.IsNullOrWhiteSpace(reason) ? null : reason.Trim(), new { before.Status }, new { Status = status }), ct);
             await transaction.CommitAsync(ct);
         }
@@ -119,7 +119,7 @@ public sealed class UserAdminService(UserAdminRepository repository, AuditReposi
         await using (var transaction = await repository.BeginAsync(ct))
         {
             await repository.SetPasswordHashAsync(id, hasher.HashPassword(account, password), ct);
-            await administration.RecordAsync(new AuditEntry(actor, "Đặt lại mật khẩu", AccountType, id), ct); // không ghi mật khẩu
+            await administration.RecordAsync(new AuditEntry(actor, AuditActions.AccountPasswordReset, AccountType, id), ct); // không ghi mật khẩu
             await transaction.CommitAsync(ct);
         }
         sessions.RemoveAllForAccount(id);

@@ -47,7 +47,7 @@ public sealed class QuotationAdminService(QuotationRepository repository, IItine
         if (row.TrangThai != QuoteRequestStatus.Submitted) return Op.Conflict($"Yêu cầu đang ở trạng thái \"{QuoteRequestStatus.Label(row.TrangThai)}\" nên không tiếp nhận được.");
         if (!await repository.MoveRequestAsync(id, QuoteRequestStatus.Submitted, QuoteRequestStatus.Verifying, ct))
             return Op.Conflict("Yêu cầu vừa được cập nhật bởi người khác; vui lòng tải lại.");
-        await administration.RecordAsync(new AuditEntry(actor, "Tiếp nhận yêu cầu", RequestType, id, null,
+        await administration.RecordAsync(new AuditEntry(actor, AuditActions.RequestReceived, RequestType, id, null,
             new { Status = QuoteRequestStatus.Submitted }, new { Status = QuoteRequestStatus.Verifying }), ct);
         return Op.Ok(await InfoAsync((await repository.RequestAsync(id, ct))!, ct));
     }
@@ -67,7 +67,7 @@ public sealed class QuotationAdminService(QuotationRepository repository, IItine
         if (row.TrangThai != QuoteRequestStatus.Verifying) return Op.Conflict("Yêu cầu chưa được tiếp nhận hoặc đã kết thúc xác minh.");
         var saved = new Xacminhdichvu { MaYc = id, HangMuc = item, DonViCungCap = provider, ThoiDiem = form.At == default ? Now : form.At, KetQua = form.Result, GhiChu = note };
         var verificationId = await repository.AddVerificationAsync(saved, ct);
-        await administration.RecordAsync(new AuditEntry(actor, "Ghi xác minh dịch vụ", VerificationType, verificationId, null, null,
+        await administration.RecordAsync(new AuditEntry(actor, AuditActions.VerificationRecorded, VerificationType, verificationId, null, null,
             new { saved.HangMuc, saved.DonViCungCap, saved.KetQua, saved.GhiChu }), ct);
         return Op.Ok(ToInfo(saved));
     }
@@ -96,7 +96,7 @@ public sealed class QuotationAdminService(QuotationRepository repository, IItine
             return Op.Conflict("Một nhân viên khác vừa phát hành báo giá cho yêu cầu này; vui lòng tải lại.");
         if (row.TrangThai == QuoteRequestStatus.Verifying && !await repository.MoveRequestAsync(id, QuoteRequestStatus.Verifying, QuoteRequestStatus.Quoted, ct))
             return Op.Conflict("Yêu cầu vừa được cập nhật bởi người khác; vui lòng tải lại.");
-        await administration.RecordAsync(new AuditEntry(actor, "Phát hành báo giá", QuoteType, quoteId, null, null,
+        await administration.RecordAsync(new AuditEntry(actor, AuditActions.QuoteIssued, QuoteType, quoteId, null, null,
             new { Total = total, form.Deposit, form.ValidUntil, Items = form.Items.Count }), ct);
         if (await repository.OwnerAsync(id, ct) is { } owner)
             await administration.NotifyAsync(owner, $"Yêu cầu tour riêng #{id} đã có báo giá", $"Báo giá #{quoteId} có hiệu lực đến {form.ValidUntil:dd/MM/yyyy HH:mm}.", ct);
@@ -112,7 +112,7 @@ public sealed class QuotationAdminService(QuotationRepository repository, IItine
             return Op.Conflict($"Yêu cầu đang ở trạng thái \"{QuoteRequestStatus.Label(row.TrangThai)}\" nên không hủy được.");
         if (!await repository.MoveRequestAsync(id, row.TrangThai, QuoteRequestStatus.Cancelled, ct))
             return Op.Conflict("Yêu cầu vừa được cập nhật bởi người khác; vui lòng tải lại.");
-        await administration.RecordAsync(new AuditEntry(actor, "Hủy yêu cầu tour riêng", RequestType, id, reason,
+        await administration.RecordAsync(new AuditEntry(actor, AuditActions.PrivateRequestCancelled, RequestType, id, reason,
             new { Status = row.TrangThai }, new { Status = QuoteRequestStatus.Cancelled }), ct);
         return Op.Ok(await InfoAsync((await repository.RequestAsync(id, ct))!, ct));
     }
@@ -127,7 +127,7 @@ public sealed class QuotationAdminService(QuotationRepository repository, IItine
             {
                 await using var transaction = await repository.BeginAsync(ct);
                 if (!await repository.MoveQuoteAsync(quote.MaBg, QuoteStatus.Sent, QuoteStatus.Expired, ct)) continue;
-                await administration.RecordAsync(new AuditEntry(null, "Báo giá hết hạn", QuoteType, quote.MaBg, null,
+                await administration.RecordAsync(new AuditEntry(null, AuditActions.QuoteExpired, QuoteType, quote.MaBg, null,
                     new { Status = QuoteStatus.Sent }, new { Status = QuoteStatus.Expired }), ct);
                 if (await repository.OwnerAsync(quote.MaYc, ct) is { } owner)
                     await administration.NotifyAsync(owner, $"Báo giá #{quote.MaBg} đã hết hạn", "Bạn có thể đề nghị nhân viên phát hành báo giá mới.", ct);
