@@ -284,6 +284,11 @@ INSERT INTO dbo.LICHTRINH_SUAT (MaLT, MaSuat, MaDD) VALUES (@lt, {slot_id}, {pla
     check(request(status_url, 'POST', {'status': 'Pending'}, token=ed)['status'] == 'Pending', 'Submit for review failed.')
     request(status_url, 'POST', {'status': 'Approved'}, token=ed, expected=403)
     check(request(status_url, 'POST', {'status': 'Approved'}, token=pub)['status'] == 'Approved', 'Approve failed.')
+    # Hoàn duyệt (Approved -> Draft) chỉ dành cho Publisher/Admin; Editor bị từ chối.
+    request(status_url, 'POST', {'status': 'Draft'}, token=ed, expected=403)
+    check(request(status_url, 'POST', {'status': 'Draft'}, token=pub)['status'] == 'Draft', 'Publisher must be able to withdraw an approval.')
+    check(request(status_url, 'POST', {'status': 'Pending'}, token=ed)['status'] == 'Pending', 'Resubmit after withdrawal failed.')
+    check(request(status_url, 'POST', {'status': 'Approved'}, token=pub)['status'] == 'Approved', 'Re-approve failed.')
     translation_status = f'{API}/api/admin/translations/{translation_id}/status'
     request(translation_status, 'POST', {'status': 'Pending'}, token=ed)
     request(translation_status, 'POST', {'status': 'Approved'}, token=ed, expected=403)
