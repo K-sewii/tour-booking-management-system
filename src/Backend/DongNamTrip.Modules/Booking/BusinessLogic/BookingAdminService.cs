@@ -8,18 +8,13 @@ namespace DongNamTrip.Modules.Booking;
 
 /// <summary>Xử lý đơn của nhân viên: xác nhận, điều chỉnh, duyệt hủy, hoàn thành, ghi thu hoàn và hết hạn giữ chỗ (UC13, UC19, UC20).</summary>
 public sealed class BookingAdminService(BookingRepository repository, BookingService bookings, ICatalogApi catalog, INarrationApi narration,
-    IAdministrationApi administration, IConfiguration configuration, TimeProvider time, ILogger<BookingAdminService> logger)
+    IAdministrationApi administration, IConfiguration configuration, ILogger<BookingAdminService> logger)
 {
     private const string OrderType = "DONDAT";
     private const string MoneyType = "GIAODICHTIEN";
-    private static readonly TimeSpan VnOffset = TimeSpan.FromHours(7);
 
-    private DateTime Now => time.GetLocalNow().DateTime;
-    private DateOnly Today => DateOnly.FromDateTime(Now);
-
-    /// <summary>Gộp ngày lịch (giờ Việt Nam) với giờ trong ngày rồi quy đổi sang UTC theo UTC+7 cố định.</summary>
-    private static DateTime VnDateTimeToUtc(DateOnly date, TimeOnly timeOfDay) =>
-        DateTime.SpecifyKind(date.ToDateTime(timeOfDay) - VnOffset, DateTimeKind.Utc);
+    /// <summary>NgayDi là ngày lịch giờ Việt Nam nên "hôm nay" cũng tính theo giờ Việt Nam, không theo múi giờ máy chủ.</summary>
+    private static DateOnly Today => VnTime.TodayDate;
 
     public async Task<PagedResult<AdminBooking>> ListAsync(BookingFilter filter, CancellationToken ct)
     {
@@ -64,8 +59,8 @@ public sealed class BookingAdminService(BookingRepository repository, BookingSer
         if (order.NgayDi is { } tripDate)
         {
             // NgayDi là ngày lịch (giờ Việt Nam, UTC+7); quy đổi cố định sang UTC, không phụ thuộc múi giờ máy chủ chạy API.
-            var from = VnDateTimeToUtc(tripDate.AddDays(-1), TimeOnly.MinValue);
-            var to = VnDateTimeToUtc(tripDate.AddDays(configuration.GetValue("Booking:ListenDays", 7)), new TimeOnly(23, 59, 59));
+            var from = VnTime.ToUtc(tripDate.AddDays(-1), TimeOnly.MinValue);
+            var to = VnTime.ToUtc(tripDate.AddDays(configuration.GetValue("Booking:ListenDays", 7)), new TimeOnly(23, 59, 59));
             var window = new ListenRightGrant(id, order.MaTk, from, to);
             var grant = await narration.GrantListenRightAsync(window, actor, ct);
             if (!grant.IsOk) return Op.Conflict("Không cấp được quyền nghe thuyết minh: " + grant.Message);

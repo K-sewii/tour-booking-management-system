@@ -41,7 +41,7 @@ public static class UserAdminEndpoints
                 ToHttp(await service.QueryAsync(new AuditFilter(from, to, objectType, actorId, page, size), ct)))
             .WithSummary("Read the audit log (read-only)").Produces<PagedResult<AuditRow>>().Produces(StatusCodes.Status400BadRequest);
         admin.MapGet("/stats", async (DateTime? from, DateTime? to, string? status, StatisticsService service, CancellationToken ct) =>
-                ToHttp(await service.SummaryAsync(from ?? BusinessDate.Today.AddDays(-30), to ?? BusinessDate.Today, status, ct)))
+                ToHttp(await service.SummaryAsync(from ?? VnTime.Today.AddDays(-30), to ?? VnTime.Today, status, ct)))
             .WithSummary("Operation statistics").Produces<OperationSummary>().Produces(StatusCodes.Status400BadRequest);
     }
 }

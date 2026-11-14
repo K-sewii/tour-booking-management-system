@@ -8,7 +8,6 @@ public sealed class ListenService(ListenRepository repository, AudioFileStore fi
 {
     private const string NoRight = "Bạn cần có đơn tour đã được xác nhận để nghe thuyết minh.";
     private const string Expired = "Quyền nghe thuyết minh của bạn đã hết hạn.";
-    private static readonly TimeSpan VnOffset = TimeSpan.FromHours(7);
 
     public async Task<ListenCatalog> CatalogAsync(int accountId, CancellationToken ct)
     {
@@ -17,7 +16,7 @@ public sealed class ListenService(ListenRepository repository, AudioFileStore fi
         if (until.Count == 0)
         {
             var message = await repository.NextStartAsync(accountId, now, ct) is { } start
-                ? $"Quyền nghe thuyết minh của bạn sẽ bắt đầu từ {start + VnOffset:dd/MM/yyyy}."
+                ? $"Quyền nghe thuyết minh của bạn sẽ bắt đầu từ {VnTime.FromUtc(start):dd/MM/yyyy}."
                 : await repository.EverHadRightAsync(accountId, ct) ? Expired : NoRight;
             return new ListenCatalog(false, null, message, []);
         }

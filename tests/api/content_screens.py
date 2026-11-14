@@ -372,6 +372,11 @@ SELECT @don;
     expected_day = (start + datetime.timedelta(hours=7)).strftime('%d/%m/%Y')
     check(upcoming['hasAccess'] is False and 'hết hạn' not in upcoming['message'] and expected_day in upcoming['message'], 'A not-yet-valid right must announce its start date in Vietnam time.')
     request(f'{API}/api/listen/audio/{audio_id}', token=cu, expected=403)
+    # Giờ kèm múi (+07:00) phải đổi đúng sang UTC, không lệch theo múi giờ máy chủ: cửa sổ [now-3h, now+1 ngày] phải đang hiệu lực.
+    def iso_vn(moment):
+        return (moment + datetime.timedelta(hours=7)).strftime('%Y-%m-%dT%H:%M:%S+07:00')
+    request(rights, 'POST', {**grant, 'from': iso_vn(now - datetime.timedelta(hours=3)), 'to': iso_vn(now + datetime.timedelta(days=1))}, token=op)
+    check(request(API + '/api/listen', token=cu)['hasAccess'] is True, 'A right given with a +07:00 offset must be converted to UTC correctly.')
 
 
 if __name__ == '__main__':

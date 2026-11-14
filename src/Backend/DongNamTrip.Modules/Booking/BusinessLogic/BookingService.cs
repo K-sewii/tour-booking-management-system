@@ -18,7 +18,8 @@ public interface IBookingApi
 public sealed class BookingService(BookingRepository repository, ICatalogApi catalog, IAdministrationApi administration, IConfiguration configuration, TimeProvider time) : IBookingApi
 {
     private DateTime Now => time.GetLocalNow().DateTime;
-    private DateOnly Today => DateOnly.FromDateTime(Now);
+    /// <summary>NgayDi là ngày lịch giờ Việt Nam: so với ngày hiện tại theo giờ Việt Nam, khớp với BookingAdminService.</summary>
+    private static DateOnly Today => VnTime.TodayDate;
 
     public async Task<OpResult<Fresh<BookingInfo>>> PlaceAsync(int accountId, BookingForm form, CancellationToken ct)
     {

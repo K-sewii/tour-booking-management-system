@@ -78,14 +78,12 @@ public sealed class ListenRepository(DongNamTripDbContext db)
             db.Quyennghe.Add(row);
         }
         else before = ToDto(row);
-        // Người gọi (Booking) phải truyền giờ đã ở dạng Utc; không suy luận từ giờ máy chủ.
-        row.HieuLucTu = AsUtc(grant.From);
-        row.HieuLucDen = AsUtc(grant.To);
+        // Người gọi (Booking) truyền giờ UTC; giờ kèm múi (Local) được đổi đúng sang UTC, giờ trần coi là UTC (hợp đồng nội bộ).
+        row.HieuLucTu = VnTime.AsUtc(grant.From);
+        row.HieuLucDen = VnTime.AsUtc(grant.To);
         await db.SaveChangesAsync(ct);
         return new RightSave(row.MaQn, before);
     }
-
-    private static DateTime AsUtc(DateTime value) => value.Kind == DateTimeKind.Utc ? value : DateTime.SpecifyKind(value, DateTimeKind.Utc);
 
     /// <summary>Xóa mọi quyền nghe của đơn; trả về các quyền đã xóa (kèm mã quyền nghe) để ghi nhật ký.</summary>
     public async Task<List<RemovedRight>> RemoveRightsAsync(int orderId, CancellationToken ct)

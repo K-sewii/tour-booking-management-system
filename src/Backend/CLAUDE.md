@@ -124,7 +124,7 @@ public static void Map(IEndpointRouteBuilder endpoints)
 | DbContext dùng chung | ADR-001 bước 3: tách DbContext theo module. |
 | `SqlSessionStore` lưu phiên trong bộ nhớ | Mất phiên khi khởi động lại, không chạy nhiều instance. Đặt sau `ISessionStore` khi cần. |
 | Rate limit theo IP | Sau BFF mọi người dùng chung IP của Web; cần forwarded headers trước khi lên môi trường thật. |
-| `DateTime.UtcNow/Today` rải rác | Cân nhắc `TimeProvider` để test được. |
+| `DateTime.UtcNow/Today` rải rác | Ngày nghiệp vụ (ngày đi, hạn nghe, khoảng ngày thống kê/nhật ký/đơn) dùng `VnTime` (giờ Việt Nam UTC+7, CSDL lưu UTC), không tự viết lại phép đổi giờ. `Catalog`, `Itinerary`, `Quotation` và `BookingService.Now` (hạn giữ chỗ) còn tính theo múi giờ máy chủ (`DateTime.Today`, `GetLocalNow()`); chuyển dần sang `VnTime`, riêng hạn giữ chỗ cần đổi cả dữ liệu đã lưu nên làm ở PR riêng. |
 | `SqlAuthentication` chưa tách repository và còn truy cập DbContext trực tiếp | Có trong `LEGACY_DB_IN_BUSINESS_LOGIC`; tách AuthRepository/file theo trách nhiệm rồi xóa ngoại lệ, không thêm ngoại lệ mới. |
 
 ## 10. Checklist

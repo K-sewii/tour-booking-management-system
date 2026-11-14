@@ -27,12 +27,12 @@ public sealed class AuditService(AuditRepository repository) : IAdministrationAp
 
     public async Task<OpResult<PagedResult<AuditRow>>> QueryAsync(AuditFilter filter, CancellationToken ct)
     {
-        if ((filter.From is { } from && !BusinessDate.InRange(from)) || (filter.To is { } to && !BusinessDate.InRange(to)) || filter.From > filter.To)
+        if ((filter.From is { } from && !VnTime.InRange(from)) || (filter.To is { } to && !VnTime.InRange(to)) || filter.From > filter.To)
             return Op.Invalid("Khoảng ngày không hợp lệ.");
         var page = Math.Clamp(filter.Page ?? 1, 1, Limits.MaxPage); // chặn (page - 1) * size tràn số nguyên
         var size = Math.Clamp(filter.Size ?? 20, 1, 100);
         // Ngày nhập theo giờ Việt Nam; ThoiDiem lưu UTC.
-        var utc = filter with { From = filter.From is { } f ? BusinessDate.ToUtc(f) : null, To = filter.To is { } t ? BusinessDate.EndExclusiveUtc(t) : null };
+        var utc = filter with { From = filter.From is { } f ? VnTime.ToUtc(f) : null, To = filter.To is { } t ? VnTime.EndExclusiveUtc(t) : null };
         var (rows, total) = await repository.QueryAsync(utc, page, size, ct);
         return Op.Ok(new PagedResult<AuditRow>(rows, total, page, size));
     }
