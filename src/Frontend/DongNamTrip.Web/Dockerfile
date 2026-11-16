@@ -23,7 +23,7 @@ COPY src/Frontend/DongNamTrip.Web src/Frontend/DongNamTrip.Web
 COPY --from=spa /src/Frontend/DongNamTrip.Web/wwwroot/spa src/Frontend/DongNamTrip.Web/wwwroot/spa
 RUN dotnet publish src/Frontend/DongNamTrip.Web/DongNamTrip.Web.csproj -c Release --no-restore -o /out
 
-FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS runtime
+FROM mcr.microsoft.com/dotnet/aspnet:11.0 AS runtime
 WORKDIR /app
 COPY --from=build /out .
 ENV ASPNETCORE_URLS=http://+:8080
