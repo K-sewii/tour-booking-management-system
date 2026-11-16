@@ -10,7 +10,7 @@ COPY src/Frontend/DongNamTrip.Web/wwwroot/css /src/Frontend/DongNamTrip.Web/wwwr
 # vite.config.ts writes to ../DongNamTrip.Web/wwwroot/spa
 RUN npm run build
 
-FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
+FROM mcr.microsoft.com/dotnet/sdk:11.0 AS build
 WORKDIR /src
 COPY global.json Directory.Build.props ./
 COPY src/Shared/DongNamTrip.Contracts/*.csproj src/Shared/DongNamTrip.Contracts/
