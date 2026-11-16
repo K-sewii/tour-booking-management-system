@@ -51,7 +51,7 @@ public sealed class PlaceAdminRepository(DongNamTripDbContext db)
         row.GioDongCua = form.CloseTime;
         row.ViDo = form.Latitude;
         row.KinhDo = form.Longitude;
-        row.AnhMinhHoa = CatalogOptions.IllustrationFor(form.Region);
+        // Keep AnhMinhHoa unchanged when editing a destination; public UI still has SVG fallback.
         await db.SaveChangesAsync(ct);
         return await GetAsync(row.MaDd, ct);
     }

@@ -30,7 +30,7 @@ export function DestinationDetailPage() {
   const map = destination.latitude !== null && destination.longitude !== null ? `https://www.google.com/maps?q=${destination.latitude},${destination.longitude}` : null;
   return <div className="container section"><nav className="breadcrumbs"><Link to="/Destinations">Điểm đến</Link> / {destination.region}</nav>
     <div className="detail-heading"><span className="pill">{destination.category}</span><h1>{destination.name}</h1><p>{destination.address}</p></div><FavoriteButton kind="destination" id={id}/>
-    <img className="detail-hero" src={art(destination.illustration)} alt={`Minh họa ${destination.region}`}/>
+    <img className="detail-hero" src={destination.imageUrl || art(destination.illustration)} alt={`Ảnh ${destination.name}`} onError={event => { const fallback = art(destination.illustration); if (!event.currentTarget.src.endsWith(fallback)) event.currentTarget.src = fallback; }}/>
     <div className="detail-layout"><article><h2>Một chút về điểm đến</h2><p>{destination.description}</p>
       <div className="facts"><div><small>Khu vực du lịch</small><b>{destination.region}</b></div><div><small>Thời lượng dự kiến</small><b>{destination.visitMinutes} phút</b></div>
         {hours && <div><small>Giờ mở cửa</small><b>{hours}</b></div>}

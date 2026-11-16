@@ -30,17 +30,18 @@ public sealed class SqlSessionStore(IOptions<SqlAuthenticationOptions> options)
     private readonly ConcurrentDictionary<string, SessionRecord> sessions = new();
     private readonly TimeSpan lifetime = GetLifetime(options.Value.SessionLifetimeSeconds);
 
-    public string Create(int accountId)
+    public string Create(int accountId, IEnumerable<string> roles)
     {
         RemoveExpired();
         var token = Convert.ToHexString(RandomNumberGenerator.GetBytes(32));
-        sessions[token] = new SessionRecord(accountId, Convert.ToHexString(RandomNumberGenerator.GetBytes(12)), DateTimeOffset.UtcNow, DateTimeOffset.UtcNow.Add(lifetime));
+        sessions[token] = new SessionRecord(accountId, Convert.ToHexString(RandomNumberGenerator.GetBytes(12)), DateTimeOffset.UtcNow, DateTimeOffset.UtcNow.Add(lifetime), roles.ToArray());
         return token;
     }
 
-    public bool TryGetAccountId(string token, out int accountId)
+    public bool TryGetSession(string token, out int accountId, out string[] roles)
     {
         accountId = default;
+        roles = [];
         if (!sessions.TryGetValue(token, out var session))
             return false;
         if (session.ExpiresAt <= DateTimeOffset.UtcNow)
@@ -50,6 +51,7 @@ public sealed class SqlSessionStore(IOptions<SqlAuthenticationOptions> options)
         }
 
         accountId = session.AccountId;
+        roles = (string[])session.Roles.Clone();
         return true;
     }
 
@@ -87,7 +89,7 @@ public sealed class SqlSessionStore(IOptions<SqlAuthenticationOptions> options)
 
     private static TimeSpan GetLifetime(int seconds) => TimeSpan.FromSeconds(seconds is >= 1 and <= 86_400 ? seconds : 14_400);
 
-    private sealed record SessionRecord(int AccountId, string Id, DateTimeOffset CreatedAt, DateTimeOffset ExpiresAt);
+    private sealed record SessionRecord(int AccountId, string Id, DateTimeOffset CreatedAt, DateTimeOffset ExpiresAt, string[] Roles);
 }
 
 public sealed class SqlAuthService(
@@ -137,7 +139,8 @@ public sealed class SqlAuthService(
             await db.SaveChangesAsync(cancellationToken);
         }
 
-        return new LoginResponse(sessions.Create(account.MaTk), ToUser(account));
+        var user = ToUser(account);
+        return new LoginResponse(sessions.Create(account.MaTk, user.Roles), user);
     }
 
     public async Task<RegistrationResult> RegisterAsync(RegisterRequest input, CancellationToken cancellationToken)
@@ -171,7 +174,7 @@ public sealed class SqlAuthService(
             await transaction.CommitAsync(cancellationToken);
 
             var user = new AuthenticatedUser(account.MaTk, account.HoTen, account.Email, [customerRole.TenVaiTro]);
-            return RegistrationResult.Created(new LoginResponse(sessions.Create(account.MaTk), user));
+            return RegistrationResult.Created(new LoginResponse(sessions.Create(account.MaTk, user.Roles), user));
         }
         catch (DbUpdateException exception) when (IsUniqueEmailViolation(exception))
         {
@@ -331,7 +334,7 @@ public sealed class SqlAuthenticationHandler(
             return AuthenticateResult.NoResult();
 
         var token = header[7..].Trim();
-        if (string.IsNullOrWhiteSpace(token) || !sessions.TryGetAccountId(token, out var accountId))
+        if (string.IsNullOrWhiteSpace(token) || !sessions.TryGetSession(token, out var accountId, out var roles))
             return AuthenticateResult.Fail("Invalid or expired session.");
 
         using var scope = scopeFactory.CreateScope();
@@ -349,7 +352,7 @@ public sealed class SqlAuthenticationHandler(
             new(ClaimTypes.Name, user.Name),
             new(ClaimTypes.Email, user.Email)
         };
-        claims.AddRange(user.Roles.Select(role => new Claim(ClaimTypes.Role, role)));
+        claims.AddRange(roles.Select(role => new Claim(ClaimTypes.Role, role)));
         var identity = new ClaimsIdentity(claims, Scheme.Name);
         return AuthenticateResult.Success(new AuthenticationTicket(new ClaimsPrincipal(identity), Scheme.Name));
     }

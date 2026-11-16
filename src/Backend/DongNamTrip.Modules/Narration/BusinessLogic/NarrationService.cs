@@ -46,7 +46,7 @@ public sealed class NarrationService(NarrationRepository repository, AudioFileSt
             before = await repository.GetAsync(narrationId, ct);
             await repository.UpdateAsync(narrationId, form.Title, form.Source, ct);
         }
-        return await FinishAsync(narrationId, actor, id is null ? "Tạo thuyết minh" : "Sửa thuyết minh", before, null, ct);
+        return await FinishAsync(narrationId, actor, id is null ? AuditActions.NarrationCreated : AuditActions.NarrationEdited, before, null, ct);
     }
 
     public async Task<OpResult<NarrationInfo>> NewVersionAsync(int id, string source, int actor, CancellationToken ct)
@@ -59,7 +59,7 @@ public sealed class NarrationService(NarrationRepository repository, AudioFileSt
             return Op.NotFound("Không tìm thấy thuyết minh.");
         var version = await repository.LatestVersionAsync(current.DestinationId, current.Title, ct) + 1;
         var created = await repository.CreateAsync(current.DestinationId, current.Title, source, version, ct);
-        return await FinishAsync(created, actor, "Tạo phiên bản thuyết minh", null, $"Từ phiên bản {current.Version}", ct);
+        return await FinishAsync(created, actor, AuditActions.NarrationVersionCreated, null, $"Từ phiên bản {current.Version}", ct);
     }
 
     public async Task<OpResult<NarrationInfo>> SetStatusAsync(int id, string status, bool canPublish, int actor, CancellationToken ct)
@@ -73,7 +73,9 @@ public sealed class NarrationService(NarrationRepository repository, AudioFileSt
             or (ContentStatus.Inactive, ContentStatus.Published);
         if (!ok)
             return Op.Invalid($"Không thể chuyển thuyết minh từ \"{ContentStatus.Label(head.Status)}\" sang \"{ContentStatus.Label(status)}\".");
-        if (status is ContentStatus.Approved or ContentStatus.Published or ContentStatus.Inactive && !canPublish)
+        // Hoàn duyệt (Approved → Draft) cũng là quyết định ở mức duyệt: chỉ Admin/Publisher mới được rút lại một bản đã duyệt.
+        if ((status is ContentStatus.Approved or ContentStatus.Published or ContentStatus.Inactive
+            || head.Status == ContentStatus.Approved) && !canPublish)
             return Op.Forbidden(NoPermission);
         if (status == ContentStatus.Pending && head.TranslationCount == 0)
             return Op.Conflict("Hãy thêm ít nhất một bản dịch trước khi gửi duyệt.");
@@ -108,7 +110,7 @@ public sealed class NarrationService(NarrationRepository repository, AudioFileSt
                 return Op.Conflict("Bản dịch đang công bố. Hãy ngừng công bố trước khi sửa.");
             await repository.UpdateTranslationAsync(existing.Id, form.Content, ct);
         }
-        return await FinishAsync(narrationId, actor, existing is null ? "Thêm bản dịch" : "Sửa bản dịch", before, null, ct);
+        return await FinishAsync(narrationId, actor, existing is null ? AuditActions.TranslationAdded : AuditActions.TranslationEdited, before, null, ct);
     }
 
     public async Task<OpResult<NarrationInfo>> SetTranslationStatusAsync(int id, string status, bool canPublish, int actor, CancellationToken ct)
@@ -120,7 +122,8 @@ public sealed class NarrationService(NarrationRepository repository, AudioFileSt
             or (ContentStatus.Pending, ContentStatus.Draft) or (ContentStatus.Approved, ContentStatus.Draft) or (ContentStatus.Published, ContentStatus.Inactive);
         if (!ok)
             return Op.Invalid($"Không thể chuyển bản dịch từ \"{ContentStatus.Label(translation.Status)}\" sang \"{ContentStatus.Label(status)}\".");
-        if (status is ContentStatus.Approved or ContentStatus.Inactive && !canPublish)
+        // Hoàn duyệt (Approved → Draft) cũng là quyết định ở mức duyệt: chỉ Admin/Publisher mới được rút lại một bản dịch đã duyệt.
+        if ((status is ContentStatus.Approved or ContentStatus.Inactive || translation.Status == ContentStatus.Approved) && !canPublish)
             return Op.Forbidden(NoPermission);
         var before = await repository.GetAsync(translation.NarrationId, ct);
         await repository.SetTranslationStatusAsync(id, status, ct);
@@ -164,7 +167,7 @@ public sealed class NarrationService(NarrationRepository repository, AudioFileSt
             if (fileName.Length > 0) files.Delete(fileName);
             throw;
         }
-        await administration.RecordAsync(new AuditEntry(actor, status == ContentStatus.Failed ? "Tạo audio lỗi" : "Tạo audio", "TEPAUDIO", audioId,
+        await administration.RecordAsync(new AuditEntry(actor, status == ContentStatus.Failed ? AuditActions.AudioFailed : AuditActions.AudioCreated, "TEPAUDIO", audioId,
             status == ContentStatus.Failed ? Truncate(upload.Error, 1000) : null, null, new { audioId, translationId, voice, status, fileName }), ct);
         return Reload(await repository.GetAsync(translation.NarrationId, ct));
     }
@@ -192,7 +195,7 @@ public sealed class NarrationService(NarrationRepository repository, AudioFileSt
         }
         else
             await repository.UnpublishAudioAsync(id, ct);
-        await administration.RecordAsync(new AuditEntry(actor, status == ContentStatus.Published ? "Công bố audio" : "Ngừng công bố audio", "TEPAUDIO", id, null, audio, new { audio.Id, Status = status }), ct);
+        await administration.RecordAsync(new AuditEntry(actor, status == ContentStatus.Published ? AuditActions.AudioPublished : AuditActions.AudioUnpublished, "TEPAUDIO", id, null, audio, new { audio.Id, Status = status }), ct);
         return Reload(await repository.GetAsync(audio.NarrationId, ct));
     }
 

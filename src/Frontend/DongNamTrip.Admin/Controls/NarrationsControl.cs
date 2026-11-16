@@ -168,7 +168,7 @@ public sealed class NarrationsControl : UserControl
                 draft = dialog.Value;
                 try
                 {
-                    if (newVersion && item is not null) await api.NewNarrationVersionAsync(item.Id, draft, token);
+                    if (newVersion && item is not null) await api.NewNarrationVersionAsync(item.Id, new NewVersionForm { Source = draft.Source }, token);
                     else await api.SaveNarrationAsync(item?.Id, draft, token);
                     await Reload();
                     return;

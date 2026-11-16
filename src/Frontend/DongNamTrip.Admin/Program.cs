@@ -20,8 +20,16 @@ internal static class Program
             Timeout = TimeSpan.FromSeconds(10)
         };
         var api = new TripApiClient(http);
-        using var login = new LoginForm(api);
-        if (login.ShowDialog() == DialogResult.OK && login.Session is { } session)
-            Application.Run(new MainForm(api, session));
+        while (true)
+        {
+            using var login = new LoginForm(api);
+            if (login.ShowDialog() != DialogResult.OK || login.Session is not { } session)
+                return;
+
+            using var main = new MainForm(api, session);
+            Application.Run(main);
+            if (!main.SessionEnded)
+                return;
+        }
     }
 }

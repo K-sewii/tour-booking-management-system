@@ -1,7 +1,8 @@
 @model Destination
+@{ var imageSrc = Model.ImageUrl ?? $"/images/{Model.Illustration}.svg"; }
 <article class="destination-card">
 <a asp-controller="Destinations" asp-action="Details" asp-route-id="@Model.Id">
-<img src="~/images/@(Model.Illustration).svg" alt="Minh họa @Model.Region" loading="lazy"/>
+<img src="@imageSrc" alt="Ảnh @Model.Name" loading="lazy" onerror="this.onerror=null;this.src='/images/@(Model.Illustration).svg';"/>
 <div>
 <span class="eyebrow">@Model.Region · @Model.Category</span>
 <h3>@Model.Name</h3>

@@ -5,6 +5,9 @@ import { useLoad } from '../../api/useLoad';
 import type { Paged, Tour } from '../../api/types';
 import { useMeta } from '../../api/meta';
 import { TourCard, Failure, Loading, art } from '../../components/Catalog';
+import regionPhotoData from './region-photos.json';
+
+const regionPhotos: Record<string, string> = regionPhotoData;
 
 export function HomePage() {
   const navigate = useNavigate();
@@ -30,7 +33,7 @@ export function HomePage() {
       <label><span>TRẢI NGHIỆM YÊU THÍCH</span><select value={category} onChange={event => setCategory(event.target.value)}><option value="">Mọi trải nghiệm</option>{(meta.data?.categories || []).map(item => <option key={item}>{item}</option>)}</select></label>
       <label><span>TÌM THEO TÊN</span><input value={query} onChange={event => setQuery(event.target.value)} placeholder="Một nơi bạn muốn đến…"/></label><button className="btn">Tìm chuyến đi ↗</button></form></div>
     <section className="section container"><div className="section-heading"><div><div className="eyebrow">CHẲNG CẦN ĐI THẬT XA</div><h2>Mỗi vùng đất, một sắc màu.</h2></div><Link className="text-link" to="/Destinations">Tất cả điểm đến ↗</Link></div>
-      <div className="region-grid">{(meta.data?.regions || []).map(region => <Link className="region-tile" key={region.name} to={`/Destinations?region=${encodeURIComponent(region.name)}`}><img src={art(region.illustration)} alt=""/><span>{region.name} <b>↗</b></span></Link>)}</div></section>
+      <div className="region-grid">{(meta.data?.regions || []).map(region => <Link className="region-tile" key={region.name} to={`/Destinations?region=${encodeURIComponent(region.name)}`}><img src={regionPhotos[region.name] || art(region.illustration)} alt="" onError={event => { const fallback = art(region.illustration); if (!event.currentTarget.src.endsWith(fallback)) event.currentTarget.src = fallback; }}/><span>{region.name} <b>↗</b></span></Link>)}</div></section>
     <section className="section soft"><div className="container"><div className="section-heading"><div><div className="eyebrow">GỢI Ý CHO NGÀY NGHỈ TỚI</div><h2>Xách balô, có lịch trình rồi.</h2></div><Link className="text-link" to="/Tours">Khám phá các tour ↗</Link></div>
       {tours.loading ? <Loading/> : tours.error ? <Failure message={tours.error} retry={tours.retry}/> : <div className="card-grid">{tours.data?.items.map(tour => <TourCard key={tour.id} tour={tour}/>)}</div>}</div></section>
     <section className="section container"><div className="planner-banner"><div><div className="eyebrow">CHUYẾN ĐI MANG DẤU ẤN RIÊNG</div><h2>Bạn chọn điểm đến.<br/>Hành trình là của bạn.</h2><p>Gom những nơi bạn thích, sắp xếp thứ tự và lưu lại ý tưởng cho chuyến đi tiếp theo.</p><Link className="btn" to="/Planner">Bắt đầu lên lịch trình ↗</Link></div>

@@ -26,7 +26,7 @@ public sealed class PlaceAdminService(PlaceAdminRepository repository, IAdminist
         var saved = await repository.SaveAsync(id, form, ct);
         if (saved is null)
             return Op.NotFound("Không tìm thấy địa điểm.");
-        await administration.RecordAsync(new AuditEntry(actor, id is null ? "Tạo địa điểm" : "Sửa địa điểm", ObjectType, saved.Id, null, before, saved), ct);
+        await administration.RecordAsync(new AuditEntry(actor, id is null ? AuditActions.DestinationCreated : AuditActions.DestinationEdited, ObjectType, saved.Id, null, before, saved), ct);
         return Op.Ok(saved);
     }
 
@@ -42,7 +42,7 @@ public sealed class PlaceAdminService(PlaceAdminRepository repository, IAdminist
             return Op.Invalid($"Không thể chuyển địa điểm từ \"{ContentStatus.Label(before.Status)}\" sang \"{ContentStatus.Label(status)}\".");
         await repository.SetStatusAsync(id, status, ct);
         var after = (await repository.GetAsync(id, ct))!;
-        await administration.RecordAsync(new AuditEntry(actor, status == ContentStatus.Published ? "Công bố địa điểm" : "Ngừng công bố địa điểm", ObjectType, id, null, before, after), ct);
+        await administration.RecordAsync(new AuditEntry(actor, status == ContentStatus.Published ? AuditActions.DestinationPublished : AuditActions.DestinationUnpublished, ObjectType, id, null, before, after), ct);
         return Op.Ok(after);
     }
 
@@ -56,7 +56,7 @@ public sealed class PlaceAdminService(PlaceAdminRepository repository, IAdminist
             return Refuse("Chỉ xóa được bản nháp. Hãy chọn \"Ngừng công bố\" để giữ lại lịch sử và dữ liệu liên quan.");
         if (await repository.HasRelationsAsync(id, ct) || !await repository.DeleteAsync(id, ct))
             return Refuse("Địa điểm đã có hoạt động, thuyết minh, tour hoặc lịch trình liên quan nên không xóa được. Hãy ngừng công bố thay vì xóa.");
-        await administration.RecordAsync(new AuditEntry(actor, "Xóa bản nháp địa điểm", ObjectType, id, null, before, null), ct);
+        await administration.RecordAsync(new AuditEntry(actor, AuditActions.DestinationDraftDeleted, ObjectType, id, null, before, null), ct);
         return Op.Ok(new DeleteResult(true, "Đã xóa bản nháp."));
     }
 

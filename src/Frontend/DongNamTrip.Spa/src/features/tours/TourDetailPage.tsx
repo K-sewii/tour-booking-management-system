@@ -5,7 +5,8 @@ import { useLoad } from '../../api/useLoad';
 import type { Booking, Departure, TourDetail, TourEstimate } from '../../api/types';
 import { useMeta } from '../../api/meta';
 import { useAuth } from '../../auth/AuthContext';
-import { art, dateTime, Failure, Loading, price } from '../../components/Catalog';
+import { dateTime, Failure, Loading, price } from '../../components/Catalog';
+import { TourImageCollage } from '../../components/TourImageCollage';
 import { FavoriteButton } from '../account/FavoriteButton';
 import { recordActivity } from '../account/recordActivity';
 
@@ -66,13 +67,13 @@ export function TourDetailPage() {
   if (detail.error) return <div className="container section"><Failure message={detail.error} retry={detail.retry}/></div>;
   if (!tour) return <div className="container section"><h1>Tour không còn hiển thị.</h1><Link to="/Tours">Xem các tour</Link></div>;
   return <div className="container section"><nav className="breadcrumbs"><Link to="/">Trang chủ</Link> / <Link to="/Tours">Tour</Link> / {tour.region}</nav>
-    <div className="detail-heading"><span className="pill">{tour.category} · {tour.duration}</span><h1>{tour.name}</h1><p>{tour.summary}</p></div><FavoriteButton kind="tour" id={id}/>
-    <img className="detail-hero" src={art(tour.illustration)} alt={`Minh họa ${tour.region}`}/><div className="detail-layout"><article><div className="subnav"><a href="#overview">Tổng quan</a><a href="#itinerary">Lịch trình</a><a href="#notes">Lưu ý</a></div>
+    <div className="detail-heading">{tour.referenceOnly && <p className="reference-notice">Dữ liệu tham khảo — chưa công bố</p>}<span className="pill">{tour.category} · {tour.duration}</span><h1>{tour.name}</h1><p>{tour.summary}</p></div>{!tour.referenceOnly && <FavoriteButton kind="tour" id={id}/>}
+    <TourImageCollage tour={tour} detail/><div className="detail-layout"><article><div className="subnav"><a href="#overview">Tổng quan</a><a href="#itinerary">Lịch trình</a><a href="#notes">Lưu ý</a></div>
       <h2 id="overview">Một ngày, nhiều điều để nhớ.</h2><p>{tour.summary}</p><div className="facts"><div><small>Thời lượng</small><b>{tour.duration}</b></div><div><small>Khu vực</small><b>{tour.region}</b></div><div><small>Điểm tham quan</small><b>{places.length} địa điểm</b></div></div>
       <h2 id="itinerary">Lịch trình gợi ý</h2><ol className="timeline">{places.map(place => <li key={place.id}><h3>{place.name}</h3><p>{place.description}</p><Link className="text-link" to={`/Destinations/Details/${place.id}`}>Khám phá địa điểm ↗</Link></li>)}</ol>
       <h2 id="notes">Trước khi bạn lên đường</h2><p>Giá chính thức, điều kiện hủy và số chỗ còn lại hiển thị theo từng lịch khởi hành ở khung đặt tour. Chỗ chỉ được giữ khi bạn đặt tour; nhân viên xác nhận sau khi nhận khoản cần thu.</p></article>
       <aside className="booking-panel"><small>Giá tham khảo / khách</small><h2>{price(tour.referencePrice)}</h2>
         <label>Số khách<input id="guest-count" type="number" min={meta.data?.guestsMin} max={meta.data?.guestsMax} value={guests} onChange={event => setGuests(Math.max(meta.data?.guestsMin ?? 1, Math.min(meta.data?.guestsMax ?? 1, Number(event.target.value) || 1)))}/></label>
-        <div className="estimate"><span>Tạm tính minh họa</span><b id="estimate-value">{estimate.data ? price(estimate.data.total) : '…'}</b></div><BookingPanel tourId={id} guests={guests}/><Link className="btn outline full" to={`/Planner?tourId=${id}`}>Tùy chỉnh lịch trình ↗</Link></aside></div></div>;
+        <div className="estimate"><span>Tạm tính minh họa</span><b id="estimate-value">{estimate.data ? price(estimate.data.total) : '…'}</b></div>{tour.referenceOnly ? <p className="reference-notice">Dữ liệu tham khảo — chưa công bố. Không thể đặt tour.</p> : <><BookingPanel tourId={id} guests={guests}/><Link className="btn outline full" to={`/Planner?tourId=${id}`}>Tùy chỉnh lịch trình ↗</Link></>}</aside></div></div>;
 }
 

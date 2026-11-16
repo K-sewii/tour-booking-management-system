@@ -11,17 +11,8 @@ public sealed class StatisticsRepository(DongNamTripDbContext db)
     {
         var query = db.Dondat.AsNoTracking().Where(item => item.NgayDat >= from && item.NgayDat < to);
         if (!string.IsNullOrWhiteSpace(status)) query = query.Where(item => item.TrangThai == status);
-        return (await query.GroupBy(item => item.TrangThai).Select(group => new { group.Key, Count = group.Count() }).ToListAsync(ct))
-            .Select(row => new StatusCount(row.Key, row.Count)).OrderBy(row => row.Status).ToList();
-    }
-
-    /// <summary>Tổng giá chốt của đơn không Cancelled, Expired (CancelRequested vẫn tính).</summary>
-    public async Task<decimal> OrderValueAsync(DateTime from, DateTime to, string? status, CancellationToken ct)
-    {
-        var query = db.Dondat.AsNoTracking().Where(item => item.NgayDat >= from && item.NgayDat < to
-            && item.TrangThai != OrderStatus.Cancelled && item.TrangThai != OrderStatus.Expired);
-        if (!string.IsNullOrWhiteSpace(status)) query = query.Where(item => item.TrangThai == status);
-        return await query.SumAsync(item => (decimal?)item.GiaChot, ct) ?? 0;
+        return (await query.GroupBy(item => item.TrangThai).Select(group => new { group.Key, Count = group.Count(), Value = group.Sum(item => item.GiaChot) }).ToListAsync(ct))
+            .Select(row => new StatusCount(row.Key, row.Count, row.Key is OrderStatus.Cancelled or OrderStatus.Expired ? 0 : row.Value)).OrderBy(row => row.Status).ToList();
     }
 
     public async Task<(decimal Received, decimal Refunded)> MoneyTotalsAsync(DateTime from, DateTime to, CancellationToken ct)

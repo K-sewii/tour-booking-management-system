@@ -97,13 +97,4 @@ finally {
     $connection.Dispose()
 }
 
-# smoke.py reads this key through dotnet user-secrets; the API uses it too.
-# User Secrets are created on the disposable runner, never in the repository.
-$project = Join-Path (Split-Path -Parent (Split-Path -Parent $PSScriptRoot)) 'src\Backend\DongNamTrip.Api'
-$ciConnection = 'Server=(localdb)\DongNamTripCI;Database=DongNamTrip;Integrated Security=True;Encrypt=False;TrustServerCertificate=True;Connect Timeout=30;'
-& dotnet user-secrets set 'ConnectionStrings:DongNamTrip' $ciConnection --project $project
-if ($LASTEXITCODE -ne 0) {
-    throw 'Could not configure the API User Secrets on the CI runner.'
-}
-
 Write-Host 'CI LocalDB initialized: 25 tables, 6 roles, and language seed data.'

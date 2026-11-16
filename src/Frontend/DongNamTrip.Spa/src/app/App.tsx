@@ -25,7 +25,7 @@ function RequireAuth({ children }: { children: ReactNode }) {
   const location = useLocation();
   if (loading) return <div className="container section spa-state" role="status">Đang kiểm tra phiên đăng nhập…</div>;
   if (error) return <div className="container section account-message account-message--error" role="alert">{error} <button className="btn outline" onClick={() => window.location.reload()}>Thử lại</button></div>;
-  if (!user) return <Navigate to={`/Account/Login?returnUrl=${encodeURIComponent(location.pathname + location.search)}`} replace/>;
+  if (!user) return <Navigate to={`/Account/Login?returnUrl=${encodeURIComponent(location.pathname + location.search)}`} state={location.pathname === '/Trips' ? { reason: 'trips' } : undefined} replace/>;
   return <>{children}</>;
 }
 

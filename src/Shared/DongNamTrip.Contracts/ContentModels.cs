@@ -11,7 +11,7 @@ public record ActivityInfo(int Id, int DestinationId, string Name, string? Descr
 /// <summary>Chi tiết địa điểm; gồm mọi trường của <see cref="Destination"/> nên URL cũ vẫn tương thích.</summary>
 public record DestinationDetail(int Id, string Name, string Region, string Category, string Address, string Description,
     int VisitMinutes, string Illustration, string Status, TimeOnly? OpenTime, TimeOnly? CloseTime, decimal? Latitude, decimal? Longitude,
-    List<ActivityInfo> Activities);
+    List<ActivityInfo> Activities, string? ImageUrl = null);
 
 // ---- UC14 · SCR14: quản trị địa điểm ----
 /// <summary>Một dòng quản trị địa điểm; gồm mọi trường của <see cref="Destination"/>.</summary>
@@ -129,6 +129,13 @@ public class NarrationForm
     [Required(ErrorMessage = "Vui lòng nhập tiêu đề."), StringLength(200, ErrorMessage = "Tiêu đề tối đa 200 ký tự.")]
     public string Title { get; set; } = "";
 
+    [Required(ErrorMessage = "Vui lòng nhập nội dung thuyết minh."), StringLength(20000, ErrorMessage = "Nội dung tối đa 20000 ký tự.")]
+    public string Source { get; set; } = "";
+}
+
+/// <summary>Chỉ dùng cho việc tạo phiên bản mới từ một thuyết minh đã có (không cần chọn lại địa điểm/tiêu đề).</summary>
+public class NewVersionForm
+{
     [Required(ErrorMessage = "Vui lòng nhập nội dung thuyết minh."), StringLength(20000, ErrorMessage = "Nội dung tối đa 20000 ký tự.")]
     public string Source { get; set; } = "";
 }

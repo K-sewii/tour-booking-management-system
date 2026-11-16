@@ -94,6 +94,13 @@ public partial class TripApiClient
     // ---- SCR19, SCR13: người dùng, nhật ký, thống kê ----
     public Task<PagedResult<AdminUser>> AdminUsersAsync(UserFilter filter, string token, CancellationToken ct = default) =>
         GetWithMessageAsync<PagedResult<AdminUser>>("api/admin/users" + Query(("q", filter.Q), ("role", filter.Role), ("status", filter.Status), ("page", filter.Page), ("size", filter.Size)), token, ct);
+    public Task<AdminAccountPage> GroupedUsersAsync(string group, string query, string role, string status, int page, string token, CancellationToken ct = default) =>
+        GetWithMessageAsync<AdminAccountPage>("api/admin/users/grouped" + Query(("group", group), ("q", query), ("role", role), ("status", status), ("page", page)), token, ct);
+    public Task<List<string>> UserRolesAsync(string token, CancellationToken ct = default) => GetWithMessageAsync<List<string>>("api/admin/users/roles", token, ct);
+    public Task<AdminUser> SetUserRolesCheckedAsync(int id, IReadOnlyList<string> roles, IReadOnlyList<string> expected, string token, CancellationToken ct = default) =>
+        SendWithMessageAsync<AdminUser>(HttpMethod.Put, $"api/admin/users/{id}/roles", new RolesRequest(roles, expected), token, ct);
+    public Task<AdminUser> SetUserStatusCheckedAsync(int id, string status, string? reason, string expected, string token, CancellationToken ct = default) =>
+        SendWithMessageAsync<AdminUser>(HttpMethod.Post, $"api/admin/users/{id}/status", new StatusRequest(status, reason, expected), token, ct);
     public Task<AdminUserDetail> AdminUserAsync(int id, string token, CancellationToken ct = default) => GetWithMessageAsync<AdminUserDetail>($"api/admin/users/{id}", token, ct);
     public Task<StaffCreated> CreateStaffAsync(StaffForm form, string token, CancellationToken ct = default) =>
         SendWithMessageAsync<StaffCreated>(HttpMethod.Post, "api/admin/users", form, token, ct);

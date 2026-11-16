@@ -33,8 +33,8 @@ public static class NarrationEndpoints
             ToHttp(await service.SaveAsync(null, form, AccountId(user), ct))).WithValidation<NarrationForm>();
         editors.MapPut("/narrations/{id:int}", async (int id, NarrationForm form, ClaimsPrincipal user, NarrationService service, CancellationToken ct) =>
             ToHttp(await service.SaveAsync(id, form, AccountId(user), ct))).WithValidation<NarrationForm>();
-        editors.MapPost("/narrations/{id:int}/versions", async (int id, NarrationForm form, ClaimsPrincipal user, NarrationService service, CancellationToken ct) =>
-            ToHttp(await service.NewVersionAsync(id, form.Source, AccountId(user), ct))).WithValidation<NarrationForm>();
+        editors.MapPost("/narrations/{id:int}/versions", async (int id, NewVersionForm form, ClaimsPrincipal user, NarrationService service, CancellationToken ct) =>
+            ToHttp(await service.NewVersionAsync(id, form.Source, AccountId(user), ct))).WithValidation<NewVersionForm>();
         editors.MapPut("/narrations/{id:int}/translations", async (int id, TranslationForm form, ClaimsPrincipal user, NarrationService service, CancellationToken ct) =>
             ToHttp(await service.SaveTranslationAsync(id, form, AccountId(user), ct))).WithValidation<TranslationForm>();
         editors.MapPost("/translations/{id:int}/audio", async (int id, AudioUpload upload, ClaimsPrincipal user, NarrationService service, CancellationToken ct) =>

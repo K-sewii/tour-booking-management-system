@@ -39,7 +39,7 @@ public sealed class TourAdminService(TourAdminRepository repository, IAdministra
             return Op.Conflict("Tour này đã có trong khu vực đã chọn.");
         var saved = await repository.SaveAsync(id, clean, ct);
         if (saved is null) return Op.NotFound("Không tìm thấy tour.");
-        await administration.RecordAsync(new AuditEntry(actor, id is null ? "Tạo tour" : "Sửa tour", TourType, saved.Id, null, before, clean), ct);
+        await administration.RecordAsync(new AuditEntry(actor, id is null ? AuditActions.TourCreated : AuditActions.TourEdited, TourType, saved.Id, null, before, clean), ct);
         return Op.Ok(saved);
     }
 
@@ -64,7 +64,7 @@ public sealed class TourAdminService(TourAdminRepository repository, IAdministra
             await transaction.CommitAsync(ct);
         }
         var after = (await repository.GetAsync(id, ct))!;
-        await administration.RecordAsync(new AuditEntry(actor, "Sửa điểm dừng tour", TourType, id, null, before!.Stops, after.Stops), ct);
+        await administration.RecordAsync(new AuditEntry(actor, AuditActions.TourStopsEdited, TourType, id, null, before!.Stops, after.Stops), ct);
         return Op.Ok(after);
     }
 
@@ -91,7 +91,7 @@ public sealed class TourAdminService(TourAdminRepository repository, IAdministra
         }
         if (!await repository.SetStatusAsync(id, status, ct)) return Op.NotFound("Không tìm thấy tour.");
         var after = (await repository.TourAsync(id, ct))!;
-        await administration.RecordAsync(new AuditEntry(actor, status == TourStatus.Published ? "Công bố tour" : "Ngừng tour", TourType, id, reason, before, after), ct);
+        await administration.RecordAsync(new AuditEntry(actor, status == TourStatus.Published ? AuditActions.TourPublished : AuditActions.TourStopped, TourType, id, reason, before, after), ct);
         return Op.Ok(after);
     }
 
@@ -132,7 +132,7 @@ public sealed class TourAdminService(TourAdminRepository repository, IAdministra
         }
         var saved = await repository.SaveDepartureAsync(tourId, id, form, ct);
         if (saved is null) return Op.NotFound("Không tìm thấy lịch khởi hành.");
-        await administration.RecordAsync(new AuditEntry(actor, id is null ? "Tạo lịch khởi hành" : "Sửa lịch khởi hành", DepartureType, saved.Id, null, before, saved), ct);
+        await administration.RecordAsync(new AuditEntry(actor, id is null ? AuditActions.DepartureCreated : AuditActions.DepartureEdited, DepartureType, saved.Id, null, before, saved), ct);
         return Op.Ok(saved);
     }
 
@@ -143,7 +143,7 @@ public sealed class TourAdminService(TourAdminRepository repository, IAdministra
         if (before.Status == DepartureStatus.Inactive) return Op.Conflict("Lịch khởi hành đã ngừng.");
         await repository.SetDepartureStatusAsync(id, DepartureStatus.Inactive, ct);
         var after = (await repository.DepartureAsync(id, ct))!;
-        await administration.RecordAsync(new AuditEntry(actor, "Ngừng lịch khởi hành", DepartureType, id, null, before, after), ct);
+        await administration.RecordAsync(new AuditEntry(actor, AuditActions.DepartureStopped, DepartureType, id, null, before, after), ct);
         return Op.Ok(after);
     }
 }

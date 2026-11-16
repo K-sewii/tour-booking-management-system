@@ -15,40 +15,64 @@ public sealed class CatalogService(CatalogRepository repository, TimeProvider ti
         (Math.Clamp(page ?? 1, 1, Limits.MaxPage), Math.Clamp(size ?? defaultSize, 1, Limits.MaxPageSize));
 
     // Không ids: toàn bộ danh sách (Admin, MVC cũ); có ids: đúng thứ tự yêu cầu.
-    public Task<List<Destination>> DestinationsAsync(IReadOnlyCollection<int>? ids, CancellationToken ct) => repository.DestinationsAsync(ids, ct);
-    Task<List<Destination>> ICatalogApi.DestinationsAsync(IReadOnlyCollection<int> ids, CancellationToken ct) => repository.DestinationsAsync(ids, ct);
-    public Task<PlannerCatalog> PlannerCatalogAsync(CancellationToken ct) => repository.PlannerCatalogAsync(ct);
+    private static Destination WithImage(Destination item) => item with { ImageUrl = DestinationImageCatalog.Resolve(item.ImageUrl, item.Name, item.Region) };
+    public async Task<List<Destination>> DestinationsAsync(IReadOnlyCollection<int>? ids, CancellationToken ct) =>
+        (await repository.DestinationsAsync(ids, ct)).Select(WithImage).ToList();
+    Task<List<Destination>> ICatalogApi.DestinationsAsync(IReadOnlyCollection<int> ids, CancellationToken ct) => DestinationsAsync(ids, ct);
+    public async Task<PlannerCatalog> PlannerCatalogAsync(CancellationToken ct)
+    {
+        var catalog = await repository.PlannerCatalogAsync(ct);
+        return catalog with { Destinations = catalog.Destinations.Select(WithImage).ToList() };
+    }
     public Task<ItineraryStopDraft[]?> TourTemplateAsync(int tourId, CancellationToken ct) => repository.TourTemplateAsync(tourId, ct);
     public Task<List<PlannerSlot>> SlotsAsync(IReadOnlyCollection<int> ids, CancellationToken ct) => repository.SlotsAsync(ids, ct);
-    public Task<DestinationDetail?> DestinationDetailAsync(int id, CancellationToken ct) =>
-        repository.DestinationDetailAsync(id, DateOnly.FromDateTime(DateTime.Today), ct);
-    public Task<List<Tour>> ToursAsync(CancellationToken ct) => repository.ToursAsync(ct);
+    public async Task<DestinationDetail?> DestinationDetailAsync(int id, CancellationToken ct)
+    {
+        var item = await repository.DestinationDetailAsync(id, DateOnly.FromDateTime(DateTime.Today), ct);
+        return item is null ? null : item with { ImageUrl = DestinationImageCatalog.Resolve(item.ImageUrl, item.Name, item.Region) };
+    }
+    public async Task<List<Tour>> ToursAsync(CancellationToken ct) => await WithTourImagesAsync(await repository.ToursAsync(ct), ct);
+
+    // Fetch only linked published places, in batches, then preserve each tour's stop order.
+    private async Task<List<Tour>> WithTourImagesAsync(List<Tour> tours, CancellationToken ct)
+    {
+        var ids = tours.SelectMany(t => t.DestinationIds).Distinct().ToArray();
+        var places = new Dictionary<int, Destination>();
+        foreach (var batch in ids.Chunk(Limits.MaxIds))
+            foreach (var place in await DestinationsAsync(batch, ct))
+                places[place.Id] = place;
+        return tours.Select(t => t with
+        {
+            ImagePlaces = t.DestinationIds.Distinct().Where(places.ContainsKey).Select(id => places[id])
+                .Where(p => !string.IsNullOrWhiteSpace(p.ImageUrl)).DistinctBy(p => p.ImageUrl, StringComparer.OrdinalIgnoreCase).Take(4).ToArray()
+        }).ToList();
+    }
     /// <summary>Tạo mới (<paramref name="id"/> null) hoặc cập nhật; vùng và loại hình phải thuộc <see cref="CatalogOptions"/>.</summary>
     public async Task<DestinationSaveResult> SaveDestinationAsync(int? id, DestinationDraft draft, CancellationToken ct)
     {
         if (!CatalogOptions.Regions.Contains(draft.Region) || !CatalogOptions.Categories.Contains(draft.Category))
             return DestinationSaveResult.Invalid;
-        return await repository.SaveDestinationAsync(id, draft, ct) is { } saved ? DestinationSaveResult.Saved(saved) : DestinationSaveResult.NotFound;
+        return await repository.SaveDestinationAsync(id, draft, ct) is { } saved ? DestinationSaveResult.Saved(WithImage(saved)) : DestinationSaveResult.NotFound;
     }
 
     public async Task<PagedResult<Destination>> SearchDestinationsAsync(string? q, string? region, string? category, int? page, int? size, CancellationToken ct)
     {
         var (number, take) = Paging(page, size, Limits.DestinationPageSize);
         var (items, total) = await repository.SearchDestinationsAsync(q?.Trim(), region, category, (number - 1) * take, take, ct);
-        return new(items, total, number, take);
+        return new(items.Select(WithImage).ToList(), total, number, take);
     }
 
     public async Task<PagedResult<Tour>> SearchToursAsync(string? q, string? region, string? category, string? sort, int? page, int? size, CancellationToken ct)
     {
         var (number, take) = Paging(page, size, Limits.TourPageSize);
         var (items, total) = await repository.SearchToursAsync(q?.Trim(), region, category, sort, (number - 1) * take, take, ct);
-        return new(items, total, number, take);
+        return new(await WithTourImagesAsync(items, ct), total, number, take);
     }
 
     public async Task<TourDetail?> TourDetailAsync(int id, CancellationToken ct)
     {
         var tour = await repository.TourAsync(id, ct);
-        return tour is null ? null : new(tour, await repository.DestinationsAsync(tour.DestinationIds, ct));
+        return tour is null ? null : new((await WithTourImagesAsync([tour], ct))[0], await DestinationsAsync(tour.DestinationIds, ct));
     }
 
     public async Task<TourEstimate?> EstimateAsync(int id, int guests, CancellationToken ct)

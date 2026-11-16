@@ -7,13 +7,14 @@ public sealed class StatisticsService(StatisticsRepository repository)
 {
     public async Task<OpResult<OperationSummary>> SummaryAsync(DateTime from, DateTime to, string? status, CancellationToken ct)
     {
-        if (!BusinessDate.InRange(from) || !BusinessDate.InRange(to) || to < from) return Op.Invalid("Khoảng ngày không hợp lệ: ngày kết thúc phải sau ngày bắt đầu.");
+        if (!VnTime.InRange(from) || !VnTime.InRange(to) || to < from) return Op.Invalid("Khoảng ngày không hợp lệ: ngày kết thúc phải sau ngày bắt đầu.");
         if (!string.IsNullOrWhiteSpace(status) && !OrderStatus.All.Contains(status)) return Op.Invalid("Trạng thái đơn không hợp lệ.");
         // Ngày nhập theo giờ Việt Nam, không kèm giờ là cả ngày; dữ liệu lưu theo UTC.
-        var start = BusinessDate.ToUtc(from);
-        var end = BusinessDate.EndExclusiveUtc(to);
+        var start = VnTime.ToUtc(from);
+        var end = VnTime.EndExclusiveUtc(to);
         var (received, refunded) = await repository.MoneyTotalsAsync(start, end, ct);
-        return Op.Ok(new OperationSummary(from, to, await repository.OrdersByStatusAsync(start, end, status, ct), await repository.OrderValueAsync(start, end, status, ct),
+        var orders = await repository.OrdersByStatusAsync(start, end, status, ct);
+        return Op.Ok(new OperationSummary(from, to, orders, orders.Sum(item => item.OrderValue),
             received, refunded, await repository.RequestsByStatusAsync(start, end, ct)));
     }
 }
