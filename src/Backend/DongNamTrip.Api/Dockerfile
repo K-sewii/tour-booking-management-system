@@ -12,7 +12,7 @@ COPY src/Backend/DongNamTrip.Modules src/Backend/DongNamTrip.Modules
 COPY src/Backend/DongNamTrip.Api src/Backend/DongNamTrip.Api
 RUN dotnet publish src/Backend/DongNamTrip.Api/DongNamTrip.Api.csproj -c Release --no-restore -o /out
 
-FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS runtime
+FROM mcr.microsoft.com/dotnet/aspnet:11.0 AS runtime
 WORKDIR /app
 COPY --from=build /out .
 ENV ASPNETCORE_URLS=http://+:8080
