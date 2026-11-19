@@ -1,0 +1,746 @@
+{
+  "updated": "2026-11-19",
+  "aiNotice": "AI restoration reconstructs plausible fine detail; restored assets are not untouched camera originals. Source authorship and existing rights remain applicable.",
+  "commonPrompt": "Faithful photographic restoration and super-resolution ONLY of the supplied real photo. Preserve the exact viewpoint, original crop and aspect ratio, landmark architecture, object arrangement, people, lighting and colors. Restore natural crisp edges, fine textures and foliage; remove compression blocking and blur with restrained realistic detail, no halos, no painterly or plastic effect. Preserve all original signage and any existing watermark exactly. Do not add, omit or move buildings, objects or people. Do not invent legible small lettering. No new captions, text or logos. Deliver a clean high-resolution image, ideally 3072 pixels or wider while keeping the reference composition.",
+  "assets": [
+    {
+      "file": "auth-saigon-night.webp",
+      "method": "AI photographic restoration",
+      "original": {
+        "width": 462,
+        "height": 432
+      },
+      "output": {
+        "width": 1000,
+        "height": 935,
+        "bytes": 249526,
+        "sha256": "d5f742a35c2891bafbf85165c16eb097b9fe01843699b3430a3bf0ef137cbfce"
+      },
+      "sourceReference": null,
+      "prompt": "Faithful photographic restoration / super-resolution of the supplied existing photograph: the Ho Chi Minh City night aerial cityscape with the same church building, skyline and light trails. Preserve this exact cityscape and every building position. This is an edit target, not a design reference. Keep the same camera position, framing, aspect ratio, scene composition, colors, landmark architecture, people and objects. Recover crisp natural detail in edges, foliage, surfaces and textures; remove compression artifacts, noise and soft blur. Do not redesign, replace or move any landmark, structure or text. Preserve all readable original writing and any existing watermark exactly; do not invent new small text. No new objects, labels or watermark. Photographic, not painted or stylized. No sharpening halos or plastic textures. Render a large, clean high-resolution version, preferably 3072px or wider, maintaining the original aspect ratio.",
+      "delivery": {
+        "codec": "WebP",
+        "quality": 75,
+        "maxWidth": 1000,
+        "sourceWidth": 1297,
+        "sourceHeight": 1213
+      }
+    },
+    {
+      "file": "banners/hero-vung-tau.jpg",
+      "method": "Higher-resolution source photograph; no AI",
+      "original": {
+        "width": 1280,
+        "height": 853
+      },
+      "output": {
+        "width": 2400,
+        "height": 1600,
+        "bytes": 340846,
+        "sha256": "a4fcdbe5b69726bcd4b26079bd36c836d228cc0b7b58db61557dcc19367adcf9"
+      },
+      "sourceReference": "https://commons.wikimedia.org/wiki/File:Bai_Truoc_Vung_Tau.jpg",
+      "notes": "NDTK08, CC BY 4.0; original photographic detail retained. See banners/README.md.",
+      "delivery": {
+        "codec": "JPEG",
+        "quality": 80,
+        "maxWidth": 2400,
+        "sourceWidth": 3840,
+        "sourceHeight": 2560
+      }
+    },
+    {
+      "file": "destinations/bd01-chua-hoi-khanh.webp",
+      "method": "AI photographic restoration",
+      "original": {
+        "width": 770,
+        "height": 515
+      },
+      "output": {
+        "width": 1535,
+        "height": 1025,
+        "bytes": 216834,
+        "sha256": "1612f748c22e897965a9ed9cec176a38446b9e7750ac0b421bc9002d2b5495ec"
+      },
+      "sourceReference": "https://giacngo.vn/anh-chua-hoi-khanh-di-tich-lich-su-van-hoa-cap-quoc-gia-voi-kien-truc-tieu-bieu-o-nam-bo-post75222.html",
+      "prompt": "Faithful photographic restoration and super-resolution ONLY of the supplied real photo. Preserve the exact viewpoint, original crop and aspect ratio, landmark architecture, object arrangement, people, lighting and colors. Restore natural crisp edges, fine textures and foliage; remove compression blocking and blur with restrained realistic detail, no halos, no painterly or plastic effect. Preserve all original signage and any existing watermark exactly. Do not add, omit or move buildings, objects or people. Do not invent legible small lettering. No new captions, text or logos. Deliver a clean high-resolution image, ideally 3072 pixels or wider while keeping the reference composition. Subject: Hoi Khanh pagoda, reclining white Buddha, staircase and the single woman in a white ao dai; preserve her identity and silhouette.",
+      "delivery": {
+        "codec": "WebP",
+        "quality": 80,
+        "maxWidth": 1536,
+        "sourceWidth": 1535,
+        "sourceHeight": 1025
+      }
+    },
+    {
+      "file": "destinations/bd02-chua-ba-thien-hau.webp",
+      "method": "AI photographic restoration",
+      "original": {
+        "width": 618,
+        "height": 495
+      },
+      "output": {
+        "width": 1536,
+        "height": 1014,
+        "bytes": 315554,
+        "sha256": "26cb569c6cace5abd8eb274bec783aebd4654bb965fcd21a5806524cc544385c"
+      },
+      "sourceReference": null,
+      "prompt": "Faithful photographic restoration and super-resolution ONLY of the supplied real photo. Preserve the exact viewpoint, original crop and aspect ratio, landmark architecture, object arrangement, people, lighting and colors. Restore natural crisp edges, fine textures and foliage; remove compression blocking and blur with restrained realistic detail, no halos, no painterly or plastic effect. Preserve all original signage and any existing watermark exactly. Do not add, omit or move buildings, objects or people. Do not invent legible small lettering. No new captions, text or logos. Deliver a clean high-resolution image, ideally 3072 pixels or wider while keeping the reference composition. Subject: Thien Hau temple gate at Thu Dau Mot; preserve the original Chinese characters, red-and-green gate design and street scene.",
+      "notes": "Restored from the previously verified Binh Duong temple photo rather than the mismatched photo on main.",
+      "delivery": {
+        "codec": "WebP",
+        "quality": 80,
+        "maxWidth": 1536,
+        "sourceWidth": 1544,
+        "sourceHeight": 1019
+      }
+    },
+    {
+      "file": "destinations/bd03-nha-co-tran-van-ho.webp",
+      "method": "AI photographic restoration",
+      "original": {
+        "width": 700,
+        "height": 427
+      },
+      "output": {
+        "width": 1536,
+        "height": 936,
+        "bytes": 215540,
+        "sha256": "f847ab085e63837d56b1f7ac6045834e863bb4af2f5534f129fe98d208afe935"
+      },
+      "sourceReference": "https://dulichbinhduong.org.vn/du-lich/tham-quan-nhung-ngoi-nha-co-o-binh-duong/ct",
+      "prompt": "Faithful photographic restoration and super-resolution ONLY of the supplied real photo. Preserve the exact viewpoint, original crop and aspect ratio, landmark architecture, object arrangement, people, lighting and colors. Restore natural crisp edges, fine textures and foliage; remove compression blocking and blur with restrained realistic detail, no halos, no painterly or plastic effect. Preserve all original signage and any existing watermark exactly. Do not add, omit or move buildings, objects or people. Do not invent legible small lettering. No new captions, text or logos. Deliver a clean high-resolution image, ideally 3072 pixels or wider while keeping the reference composition. Subject: Tran Van Ho historic house carved timber interior, original gold calligraphy and furnishings.",
+      "delivery": {
+        "codec": "WebP",
+        "quality": 80,
+        "maxWidth": 1536,
+        "sourceWidth": 1606,
+        "sourceHeight": 979
+      }
+    },
+    {
+      "file": "destinations/bd04-lang-son-mai-tuong-binh-hiep.webp",
+      "method": "AI photographic restoration",
+      "original": {
+        "width": 1000,
+        "height": 667
+      },
+      "output": {
+        "width": 1535,
+        "height": 1024,
+        "bytes": 301544,
+        "sha256": "51f5dae4cb28a39e630780e4a7a901ad52cded1b6d2b90c11a77813f88f54293"
+      },
+      "sourceReference": "https://dulich.binhduong.gov.vn/vi/langsonmai",
+      "prompt": "Faithful photographic restoration and super-resolution ONLY of the supplied real photo. Preserve the exact viewpoint, original crop and aspect ratio, landmark architecture, object arrangement, people, lighting and colors. Restore natural crisp edges, fine textures and foliage; remove compression blocking and blur with restrained realistic detail, no halos, no painterly or plastic effect. Preserve all original signage and any existing watermark exactly. Do not add, omit or move buildings, objects or people. Do not invent legible small lettering. No new captions, text or logos. Deliver a clean high-resolution image, ideally 3072 pixels or wider while keeping the reference composition. Subject: Tuong Binh Hiep lacquerware artisan and objects; preserve the elderly man's face, hands, clothes, position and all displayed lacquerwares.",
+      "delivery": {
+        "codec": "WebP",
+        "quality": 80,
+        "maxWidth": 1536,
+        "sourceWidth": 1535,
+        "sourceHeight": 1024
+      }
+    },
+    {
+      "file": "destinations/bd05-khu-du-lich-dai-nam.webp",
+      "method": "AI photographic restoration",
+      "original": {
+        "width": 900,
+        "height": 600
+      },
+      "output": {
+        "width": 1536,
+        "height": 1024,
+        "bytes": 377720,
+        "sha256": "994f9a448e938d473a3048ecd83c5a36e042fc75ceb58ac08a0b04955730f93e"
+      },
+      "sourceReference": "https://dulichbinhduong.org.vn/du-lich/chuong-trinh-tour-du-lich-binh-duong/ct",
+      "prompt": "Faithful photographic restoration and super-resolution ONLY of the supplied real photo. Preserve the exact viewpoint, original crop and aspect ratio, landmark architecture, object arrangement, people, lighting and colors. Restore natural crisp edges, fine textures and foliage; remove compression blocking and blur with restrained realistic detail, no halos, no painterly or plastic effect. Preserve all original signage and any existing watermark exactly. Do not add, omit or move buildings, objects or people. Do not invent legible small lettering. No new captions, text or logos. Deliver a clean high-resolution image, ideally 3072 pixels or wider while keeping the reference composition. Subject: Dai Nam tourism park aerial view; lock the exact arrangement of gates, green-roof buildings, lawns and roads.",
+      "delivery": {
+        "codec": "WebP",
+        "quality": 80,
+        "maxWidth": 1536,
+        "sourceWidth": 1536,
+        "sourceHeight": 1024
+      }
+    },
+    {
+      "file": "destinations/dn01-khu-du-lich-buu-long.webp",
+      "method": "AI photographic restoration",
+      "original": {
+        "width": 960,
+        "height": 529
+      },
+      "output": {
+        "width": 1536,
+        "height": 846,
+        "bytes": 242084,
+        "sha256": "745aa84bfc361c53c4f9b6805144106f61caa5c3ac385dae4c0b4d181a589aa6"
+      },
+      "sourceReference": "https://dongnai.gov.vn/vi/wcag/Chuong-trinh-Ke-hoach-phat-trien-KTXH/du-lich-dong-nai-nhung-diem-den-tranh-nong-hap-dan-2324.html",
+      "prompt": "Faithful photographic restoration and super-resolution ONLY of the supplied real photo. Preserve the exact viewpoint, original crop and aspect ratio, landmark architecture, object arrangement, people, lighting and colors. Restore natural crisp edges, fine textures and foliage; remove compression blocking and blur with restrained realistic detail, no halos, no painterly or plastic effect. Preserve all original signage and any existing watermark exactly. Do not add, omit or move buildings, objects or people. Do not invent legible small lettering. No new captions, text or logos. Deliver a clean high-resolution image, ideally 3072 pixels or wider while keeping the reference composition. Subject: Buu Long tourist park dragon gate; preserve the exact dragon sculptures, positions and entrances.",
+      "delivery": {
+        "codec": "WebP",
+        "quality": 80,
+        "maxWidth": 1536,
+        "sourceWidth": 1690,
+        "sourceHeight": 931
+      }
+    },
+    {
+      "file": "destinations/dn02-van-mieu-tran-bien.webp",
+      "method": "AI photographic restoration",
+      "original": {
+        "width": 1200,
+        "height": 800
+      },
+      "output": {
+        "width": 1536,
+        "height": 1024,
+        "bytes": 344346,
+        "sha256": "2a73097636ab939e879a23d0f69a62bfeeec5f3a5b3cb8c71ee803a10d256009"
+      },
+      "sourceReference": "https://vov.vn/du-lich/van-mieu-tran-bien-niem-tu-hao-cua-nguoi-dan-phuong-nam-post1101136.vov",
+      "prompt": "Faithful photographic restoration and super-resolution ONLY of the supplied real photo. Preserve the exact viewpoint, original crop and aspect ratio, landmark architecture, object arrangement, people, lighting and colors. Restore natural crisp edges, fine textures and foliage; remove compression blocking and blur with restrained realistic detail, no halos, no painterly or plastic effect. Preserve all original signage and any existing watermark exactly. Do not add, omit or move buildings, objects or people. Do not invent legible small lettering. No new captions, text or logos. Deliver a clean high-resolution image, ideally 3072 pixels or wider while keeping the reference composition. Subject: Tran Bien Temple of Literature entrance gate. Keep the existing white VOV watermark unchanged.",
+      "delivery": {
+        "codec": "WebP",
+        "quality": 80,
+        "maxWidth": 1536,
+        "sourceWidth": 1536,
+        "sourceHeight": 1024
+      }
+    },
+    {
+      "file": "destinations/dn03-vuon-quoc-gia-cat-tien.webp",
+      "method": "AI photographic restoration",
+      "original": {
+        "width": 547,
+        "height": 365
+      },
+      "output": {
+        "width": 1536,
+        "height": 1024,
+        "bytes": 549980,
+        "sha256": "7c83dd7e82b1f16b8c6b986037558df97bc9e79ef9468a4879ca146f358ee78d"
+      },
+      "sourceReference": "https://cattiennationalpark.com.vn/",
+      "prompt": "Faithful photographic restoration / super-resolution of the supplied existing photograph: the Cat Tien National Park stone entrance sign surrounded by forest. Preserve exact lettering 'VƯỜN QUỐC GIA CÁT TIÊN NATIONAL PARK' and sign layout. This is an edit target, not a design reference. Keep the same camera position, framing, aspect ratio, scene composition, colors, landmark architecture, people and objects. Recover crisp natural detail in edges, foliage, surfaces and textures; remove compression artifacts, noise and soft blur. Do not redesign, replace or move any landmark, structure or text. Preserve all readable original writing and any existing watermark exactly; do not invent new small text. No new objects, labels or watermark. Photographic, not painted or stylized. No sharpening halos or plastic textures. Render a large, clean high-resolution version, preferably 3072px or wider, maintaining the original aspect ratio.",
+      "delivery": {
+        "codec": "WebP",
+        "quality": 80,
+        "maxWidth": 1536,
+        "sourceWidth": 1536,
+        "sourceHeight": 1024
+      }
+    },
+    {
+      "file": "destinations/dn04-thac-giang-dien.webp",
+      "method": "AI photographic restoration",
+      "original": {
+        "width": 750,
+        "height": 450
+      },
+      "output": {
+        "width": 1536,
+        "height": 921,
+        "bytes": 200220,
+        "sha256": "bb378470a9c75ca8be0f1cebe855368bdb461f9a79983f021404526d3a100195"
+      },
+      "sourceReference": "https://dongnai.gov.vn/vi/wcag/Chuong-trinh-Ke-hoach-phat-trien-KTXH/du-lich-dong-nai-nhung-diem-den-tranh-nong-hap-dan-2324.html",
+      "prompt": "Faithful photographic restoration and super-resolution ONLY of the supplied real photo. Preserve the exact viewpoint, original crop and aspect ratio, landmark architecture, object arrangement, people, lighting and colors. Restore natural crisp edges, fine textures and foliage; remove compression blocking and blur with restrained realistic detail, no halos, no painterly or plastic effect. Preserve all original signage and any existing watermark exactly. Do not add, omit or move buildings, objects or people. Do not invent legible small lettering. No new captions, text or logos. Deliver a clean high-resolution image, ideally 3072 pixels or wider while keeping the reference composition. Subject: Giang Dien waterfall, preserve the exact rocks and long-exposure water.",
+      "delivery": {
+        "codec": "WebP",
+        "quality": 80,
+        "maxWidth": 1536,
+        "sourceWidth": 1620,
+        "sourceHeight": 971
+      }
+    },
+    {
+      "file": "destinations/dn05-khu-du-lich-vuon-xoai.webp",
+      "method": "AI photographic restoration",
+      "original": {
+        "width": 619,
+        "height": 323
+      },
+      "output": {
+        "width": 1536,
+        "height": 802,
+        "bytes": 297810,
+        "sha256": "3c6d2ba765f779f19262302de8c968f07fdf9dca16e9c3cd2fa8030114368257"
+      },
+      "sourceReference": "https://dongnai.gov.vn/vi/wcag/Chuong-trinh-Ke-hoach-phat-trien-KTXH/du-lich-dong-nai-nhung-diem-den-tranh-nong-hap-dan-2324.html",
+      "prompt": "Faithful photographic restoration and super-resolution ONLY of the supplied real photo. Preserve the exact viewpoint, original crop and aspect ratio, landmark architecture, object arrangement, people, lighting and colors. Restore natural crisp edges, fine textures and foliage; remove compression blocking and blur with restrained realistic detail, no halos, no painterly or plastic effect. Preserve all original signage and any existing watermark exactly. Do not add, omit or move buildings, objects or people. Do not invent legible small lettering. No new captions, text or logos. Deliver a clean high-resolution image, ideally 3072 pixels or wider while keeping the reference composition. Subject: Vuon Xoai entrance stone sign, retain exactly all Vietnamese lettering and existing Saigon Star Travel watermarks.",
+      "delivery": {
+        "codec": "WebP",
+        "quality": 80,
+        "maxWidth": 1536,
+        "sourceWidth": 1736,
+        "sourceHeight": 906
+      }
+    },
+    {
+      "file": "destinations/hcm01-dinh-doc-lap.webp",
+      "method": "AI photographic restoration",
+      "original": {
+        "width": 1000,
+        "height": 667
+      },
+      "output": {
+        "width": 1535,
+        "height": 1024,
+        "bytes": 311286,
+        "sha256": "3680e8654feb55398ab9ed672175a96b210b56c86deee6e9810ab966878984fe"
+      },
+      "sourceReference": "https://visithcmc.vn/vi/dinh-doc-lap/",
+      "prompt": "Faithful photographic restoration and super-resolution ONLY of the supplied real photo. Preserve the exact viewpoint, original crop and aspect ratio, landmark architecture, object arrangement, people, lighting and colors. Restore natural crisp edges, fine textures and foliage; remove compression blocking and blur with restrained realistic detail, no halos, no painterly or plastic effect. Preserve all original signage and any existing watermark exactly. Do not add, omit or move buildings, objects or people. Do not invent legible small lettering. No new captions, text or logos. Deliver a clean high-resolution image, ideally 3072 pixels or wider while keeping the reference composition. Subject: Independence Palace facade, fountain, flag and lawns. Preserve exact modernist architecture and all window patterns.",
+      "delivery": {
+        "codec": "WebP",
+        "quality": 80,
+        "maxWidth": 1536,
+        "sourceWidth": 1535,
+        "sourceHeight": 1024
+      }
+    },
+    {
+      "file": "destinations/hcm02-bao-tang-chung-tich-chien-tranh.webp",
+      "method": "AI photographic restoration",
+      "original": {
+        "width": 1000,
+        "height": 667
+      },
+      "output": {
+        "width": 1535,
+        "height": 1024,
+        "bytes": 162034,
+        "sha256": "958da2afc56371f269329f1e76fd8e544576200422bcdc3a05f286b4ae749cb9"
+      },
+      "sourceReference": "https://visithcmc.vn/vi/bao-tang-chung-tich-chien-tranh/",
+      "prompt": "Faithful photographic restoration and super-resolution ONLY of the supplied real photo. Preserve the exact viewpoint, original crop and aspect ratio, landmark architecture, object arrangement, people, lighting and colors. Restore natural crisp edges, fine textures and foliage; remove compression blocking and blur with restrained realistic detail, no halos, no painterly or plastic effect. Preserve all original signage and any existing watermark exactly. Do not add, omit or move buildings, objects or people. Do not invent legible small lettering. No new captions, text or logos. Deliver a clean high-resolution image, ideally 3072 pixels or wider while keeping the reference composition. Subject: War Remnants Museum exhibition with three visitors, framed historical photographs and display objects. Preserve visitor identities, clothing, all exhibited photographs and the existing watermark; do not invent or alter documentary content.",
+      "delivery": {
+        "codec": "WebP",
+        "quality": 80,
+        "maxWidth": 1536,
+        "sourceWidth": 1535,
+        "sourceHeight": 1024
+      }
+    },
+    {
+      "file": "destinations/hcm03-buu-dien-trung-tam-sai-gon.webp",
+      "method": "AI photographic restoration",
+      "original": {
+        "width": 1600,
+        "height": 1000
+      },
+      "output": {
+        "width": 1536,
+        "height": 961,
+        "bytes": 236148,
+        "sha256": "a98a26da05d30e7b614c71b19f0d7f99205e20fc527468ab827b500763a57ed5"
+      },
+      "sourceReference": "https://hello.hochiminhcity.gov.vn/vi/discover/buu-dien-thanh-pho",
+      "prompt": "Faithful photographic restoration and super-resolution ONLY of the supplied real photo. Preserve the exact viewpoint, original crop and aspect ratio, landmark architecture, object arrangement, people, lighting and colors. Restore natural crisp edges, fine textures and foliage; remove compression blocking and blur with restrained realistic detail, no halos, no painterly or plastic effect. Preserve all original signage and any existing watermark exactly. Do not add, omit or move buildings, objects or people. Do not invent legible small lettering. No new captions, text or logos. Deliver a clean high-resolution image, ideally 3072 pixels or wider while keeping the reference composition. Subject: Saigon Central Post Office facade. Preserve exact architecture, clock, flags, lettering BUU DIEN and original visitors.",
+      "delivery": {
+        "codec": "WebP",
+        "quality": 80,
+        "maxWidth": 1536,
+        "sourceWidth": 1586,
+        "sourceHeight": 992
+      }
+    },
+    {
+      "file": "destinations/hcm04-cho-ben-thanh.webp",
+      "method": "AI photographic restoration",
+      "original": {
+        "width": 1600,
+        "height": 1067
+      },
+      "output": {
+        "width": 1536,
+        "height": 1024,
+        "bytes": 160200,
+        "sha256": "b7b5fb135f1bd9f7c538b84dd9a7aff4e592780bc00816dee9b438a231991b16"
+      },
+      "sourceReference": "https://visithcmc.vn/vi/kham-pha-cho-ben-thanh-tphcm-tu-a-z-5-phut-doc/",
+      "prompt": "Faithful photographic restoration and super-resolution ONLY of the supplied real photo. Preserve the exact viewpoint, original crop and aspect ratio, landmark architecture, object arrangement, people, lighting and colors. Restore natural crisp edges, fine textures and foliage; remove compression blocking and blur with restrained realistic detail, no halos, no painterly or plastic effect. Preserve all original signage and any existing watermark exactly. Do not add, omit or move buildings, objects or people. Do not invent legible small lettering. No new captions, text or logos. Deliver a clean high-resolution image, ideally 3072 pixels or wider while keeping the reference composition. Subject: Ben Thanh Market facade and the same group of five tourists being photographed. Preserve every person's identity, pose, face, clothing, foreground phone and the exact market architecture and signs.",
+      "delivery": {
+        "codec": "WebP",
+        "quality": 80,
+        "maxWidth": 1536,
+        "sourceWidth": 1536,
+        "sourceHeight": 1024
+      }
+    },
+    {
+      "file": "destinations/hcm05-dia-dao-cu-chi.webp",
+      "method": "AI photographic restoration",
+      "original": {
+        "width": 547,
+        "height": 365
+      },
+      "output": {
+        "width": 1536,
+        "height": 1024,
+        "bytes": 358710,
+        "sha256": "a92334a05f9504703984bfd43b065597d158857bc4faebcdadac88a04c3a9196"
+      },
+      "sourceReference": "https://visithcmc.vn/vi/tham-quan-dia-dao-cu-chi-thanh-pho-duoi-long-dat/",
+      "prompt": null,
+      "notes": "First restoration used the same preservation constraints; its exact prompt was not retained. The shared restoration policy is recorded above.",
+      "delivery": {
+        "codec": "WebP",
+        "quality": 80,
+        "maxWidth": 1536,
+        "sourceWidth": 1536,
+        "sourceHeight": 1024
+      }
+    },
+    {
+      "file": "destinations/tn01-nui-ba-den.webp",
+      "method": "AI photographic restoration",
+      "original": {
+        "width": 1200,
+        "height": 739
+      },
+      "output": {
+        "width": 1536,
+        "height": 946,
+        "bytes": 229340,
+        "sha256": "e9f78e9993a7e74b67b38028536e886b8d344e560f957824dfb6a8e5c98ccc9a"
+      },
+      "sourceReference": "https://khudulichnuibaden.tayninh.gov.vn/gioi-thieu-nui-ba-den",
+      "prompt": "Faithful photographic restoration and super-resolution ONLY of the supplied real photo. Preserve the exact viewpoint, original crop and aspect ratio, landmark architecture, object arrangement, people, lighting and colors. Restore natural crisp edges, fine textures and foliage; remove compression blocking and blur with restrained realistic detail, no halos, no painterly or plastic effect. Preserve all original signage and any existing watermark exactly. Do not add, omit or move buildings, objects or people. Do not invent legible small lettering. No new captions, text or logos. Deliver a clean high-resolution image, ideally 3072 pixels or wider while keeping the reference composition. Subject: Ba Den mountain temple and statue panorama at sunset. Preserve exact statue silhouette, temples, terraced plazas and garden layout.",
+      "delivery": {
+        "codec": "WebP",
+        "quality": 80,
+        "maxWidth": 1536,
+        "sourceWidth": 1598,
+        "sourceHeight": 984
+      }
+    },
+    {
+      "file": "destinations/tn02-toa-thanh-cao-dai.webp",
+      "method": "AI photographic restoration",
+      "original": {
+        "width": 1500,
+        "height": 844
+      },
+      "output": {
+        "width": 1536,
+        "height": 864,
+        "bytes": 194928,
+        "sha256": "a76c1f025e7fff46203d5c76a8d4a0b8fd225c0b27dda82446285d4d069b44e1"
+      },
+      "sourceReference": "https://dantoc.vietnamtourism.gov.vn/tay-ninh-phat-huy-gia-tri-di-san-van-hoa-cua-dong-bao-dan-toc-thieu-so-gan-voi-phat-trien-du-lich/",
+      "prompt": "Faithful photographic restoration and super-resolution ONLY of the supplied real photo. Preserve the exact viewpoint, original crop and aspect ratio, landmark architecture, object arrangement, people, lighting and colors. Restore natural crisp edges, fine textures and foliage; remove compression blocking and blur with restrained realistic detail, no halos, no painterly or plastic effect. Preserve all original signage and any existing watermark exactly. Do not add, omit or move buildings, objects or people. Do not invent legible small lettering. No new captions, text or logos. Deliver a clean high-resolution image, ideally 3072 pixels or wider while keeping the reference composition. Subject: Tay Ninh Cao Dai Holy See architecture under textured blue clouds. Preserve exact towers, decorative motifs, flags, visitors and temple proportions.",
+      "delivery": {
+        "codec": "WebP",
+        "quality": 80,
+        "maxWidth": 1536,
+        "sourceWidth": 1672,
+        "sourceHeight": 941
+      }
+    },
+    {
+      "file": "destinations/tn03-ho-dau-tieng.webp",
+      "method": "AI photographic restoration",
+      "original": {
+        "width": 700,
+        "height": 393
+      },
+      "output": {
+        "width": 1536,
+        "height": 861,
+        "bytes": 109134,
+        "sha256": "e6c62f7fd35a56769a4e061d2ec0dbef3e60ad214027a4af054520860f5c8902"
+      },
+      "sourceReference": "https://dulich.tayninh.gov.vn/tin-tuc/hanh-trinh-san-hoang-hon-ho-dau-tieng-ban-giao-huong-anh-sang-giua-long-bien-ho-1594",
+      "prompt": "Faithful photographic restoration and super-resolution ONLY of the supplied real photo. Preserve the exact viewpoint, original crop and aspect ratio, landmark architecture, object arrangement, people, lighting and colors. Restore natural crisp edges, fine textures and foliage; remove compression blocking and blur with restrained realistic detail, no halos, no painterly or plastic effect. Preserve all original signage and any existing watermark exactly. Do not add, omit or move buildings, objects or people. Do not invent legible small lettering. No new captions, text or logos. Deliver a clean high-resolution image, ideally 3072 pixels or wider while keeping the reference composition. Subject: Dau Tieng lake sunset, preserve campsite, tent, motorcycle and mountain silhouette.",
+      "delivery": {
+        "codec": "WebP",
+        "quality": 80,
+        "maxWidth": 1536,
+        "sourceWidth": 1676,
+        "sourceHeight": 939
+      }
+    },
+    {
+      "file": "destinations/tn04-lo-go-xa-mat.webp",
+      "method": "AI photographic restoration",
+      "original": {
+        "width": 800,
+        "height": 450
+      },
+      "output": {
+        "width": 1536,
+        "height": 864,
+        "bytes": 215620,
+        "sha256": "90a8ac116c04a1f8fabaf23fcd8ebfbd7abbd53292089a4f0eba641c83e371de"
+      },
+      "sourceReference": "https://dulich.tayninh.gov.vn/tin-tuc/vuon-quoc-gia-lo-go-xa-mat-diem-den-sinh-thai-hap-dan-cua-du-lich-tay-ninh-1619",
+      "prompt": "Faithful photographic restoration and super-resolution ONLY of the supplied real photo. Preserve the exact viewpoint, original crop and aspect ratio, landmark architecture, object arrangement, people, lighting and colors. Restore natural crisp edges, fine textures and foliage; remove compression blocking and blur with restrained realistic detail, no halos, no painterly or plastic effect. Preserve all original signage and any existing watermark exactly. Do not add, omit or move buildings, objects or people. Do not invent legible small lettering. No new captions, text or logos. Deliver a clean high-resolution image, ideally 3072 pixels or wider while keeping the reference composition. Subject: Lo Go Xa Mat forest river boat trip, preserve people and clothing and boat exactly.",
+      "delivery": {
+        "codec": "WebP",
+        "quality": 80,
+        "maxWidth": 1536,
+        "sourceWidth": 1672,
+        "sourceHeight": 941
+      }
+    },
+    {
+      "file": "destinations/tn05-chua-go-ken.webp",
+      "method": "AI photographic restoration",
+      "original": {
+        "width": 1000,
+        "height": 602
+      },
+      "output": {
+        "width": 1536,
+        "height": 924,
+        "bytes": 339210,
+        "sha256": "d0c9329b0a7611ee1bd7beecf53697ec414ca5d4becbc80574f50219eef39907"
+      },
+      "sourceReference": "https://www.vietnamairlines.com/de/vi/plan-book/travel/travel-guide/chua-go-ken",
+      "prompt": "Faithful photographic restoration and super-resolution ONLY of the supplied real photo. Preserve the exact viewpoint, original crop and aspect ratio, landmark architecture, object arrangement, people, lighting and colors. Restore natural crisp edges, fine textures and foliage; remove compression blocking and blur with restrained realistic detail, no halos, no painterly or plastic effect. Preserve all original signage and any existing watermark exactly. Do not add, omit or move buildings, objects or people. Do not invent legible small lettering. No new captions, text or logos. Deliver a clean high-resolution image, ideally 3072 pixels or wider while keeping the reference composition. Subject: Go Ken pagoda aerial view, preserve all buildings, statue and fields.",
+      "delivery": {
+        "codec": "WebP",
+        "quality": 80,
+        "maxWidth": 1536,
+        "sourceWidth": 1617,
+        "sourceHeight": 973
+      }
+    },
+    {
+      "file": "destinations/vt01-bai-sau-vung-tau.webp",
+      "method": "AI photographic restoration",
+      "original": {
+        "width": 959,
+        "height": 601
+      },
+      "output": {
+        "width": 1536,
+        "height": 961,
+        "bytes": 246802,
+        "sha256": "aea37942ce71346badaafaf5f77a8a220dfdaff53177bf788ddc591252895e45"
+      },
+      "sourceReference": "https://vietnam.travel/things-to-do/vung-tau-sightseeing-wonderland/",
+      "prompt": "Faithful photographic restoration and super-resolution ONLY of the supplied real photo. Preserve the exact viewpoint, original crop and aspect ratio, landmark architecture, object arrangement, people, lighting and colors. Restore natural crisp edges, fine textures and foliage; remove compression blocking and blur with restrained realistic detail, no halos, no painterly or plastic effect. Preserve all original signage and any existing watermark exactly. Do not add, omit or move buildings, objects or people. Do not invent legible small lettering. No new captions, text or logos. Deliver a clean high-resolution image, ideally 3072 pixels or wider while keeping the reference composition. Subject: Vung Tau Back Beach aerial coastline. Preserve the exact urban skyline, promenade, flags, umbrellas, swimmers and boats.",
+      "delivery": {
+        "codec": "WebP",
+        "quality": 80,
+        "maxWidth": 1536,
+        "sourceWidth": 1585,
+        "sourceHeight": 992
+      }
+    },
+    {
+      "file": "destinations/vt02-bach-dinh.webp",
+      "method": "AI photographic restoration",
+      "original": {
+        "width": 1000,
+        "height": 667
+      },
+      "output": {
+        "width": 1535,
+        "height": 1024,
+        "bytes": 308900,
+        "sha256": "f5006ae020d2f40d7f7234cc323bc2023d8204af4e8159822118e21c153bea4c"
+      },
+      "sourceReference": "https://vietnam.travel/things-to-do/vung-tau-sightseeing-wonderland/",
+      "prompt": "Faithful photographic restoration and super-resolution ONLY of the supplied real photo. Preserve the exact viewpoint, original crop and aspect ratio, landmark architecture, object arrangement, people, lighting and colors. Restore natural crisp edges, fine textures and foliage; remove compression blocking and blur with restrained realistic detail, no halos, no painterly or plastic effect. Preserve all original signage and any existing watermark exactly. Do not add, omit or move buildings, objects or people. Do not invent legible small lettering. No new captions, text or logos. Deliver a clean high-resolution image, ideally 3072 pixels or wider while keeping the reference composition. Subject: Bach Dinh historic white villa viewed from the staircase. Preserve all windows, ornamental reliefs, arches, railings, trees and facade patina.",
+      "delivery": {
+        "codec": "WebP",
+        "quality": 80,
+        "maxWidth": 1536,
+        "sourceWidth": 1535,
+        "sourceHeight": 1024
+      }
+    },
+    {
+      "file": "destinations/vt03-hai-dang-vung-tau.webp",
+      "method": "AI photographic restoration",
+      "original": {
+        "width": 1024,
+        "height": 1024
+      },
+      "output": {
+        "width": 1254,
+        "height": 1254,
+        "bytes": 370192,
+        "sha256": "4c0a385846f999c99e2eb163850dcfb4ac80949b87be7189294091c54e633ae8"
+      },
+      "sourceReference": "https://vietnam.travel/things-to-do/vung-tau-sightseeing-wonderland/",
+      "prompt": "Faithful photographic restoration and super-resolution ONLY of the supplied real photo. Preserve the exact viewpoint, original crop and aspect ratio, landmark architecture, object arrangement, people, lighting and colors. Restore natural crisp edges, fine textures and foliage; remove compression blocking and blur with restrained realistic detail, no halos, no painterly or plastic effect. Preserve all original signage and any existing watermark exactly. Do not add, omit or move buildings, objects or people. Do not invent legible small lettering. No new captions, text or logos. Deliver a clean high-resolution image, ideally 3072 pixels or wider while keeping the reference composition. Subject: Vung Tau lighthouse and staircase, preserve exact square crop and tree branches and person.",
+      "delivery": {
+        "codec": "WebP",
+        "quality": 80,
+        "maxWidth": 1536,
+        "sourceWidth": 1254,
+        "sourceHeight": 1254
+      }
+    },
+    {
+      "file": "destinations/vt04-tuong-chua-kito-vua.webp",
+      "method": "AI photographic restoration",
+      "original": {
+        "width": 1280,
+        "height": 900
+      },
+      "output": {
+        "width": 1495,
+        "height": 1052,
+        "bytes": 289156,
+        "sha256": "27dedc3b5555e4b01cf3cfd2fdc696e63a410786484677674a942570d6831334"
+      },
+      "sourceReference": "https://vietnam.travel/things-to-do/vung-tau-sightseeing-wonderland/",
+      "prompt": "Faithful photographic restoration and super-resolution ONLY of the supplied real photo. Preserve the exact viewpoint, original crop and aspect ratio, landmark architecture, object arrangement, people, lighting and colors. Restore natural crisp edges, fine textures and foliage; remove compression blocking and blur with restrained realistic detail, no halos, no painterly or plastic effect. Preserve all original signage and any existing watermark exactly. Do not add, omit or move buildings, objects or people. Do not invent legible small lettering. No new captions, text or logos. Deliver a clean high-resolution image, ideally 3072 pixels or wider while keeping the reference composition. Subject: Christ the King statue in Vung Tau viewed from behind above the forest and sea. Preserve exact statue pose, pedestal, islands and coastline.",
+      "delivery": {
+        "codec": "WebP",
+        "quality": 80,
+        "maxWidth": 1536,
+        "sourceWidth": 1495,
+        "sourceHeight": 1052
+      }
+    },
+    {
+      "file": "destinations/vt05-mui-nghinh-phong.webp",
+      "method": "AI photographic restoration",
+      "original": {
+        "width": 800,
+        "height": 542
+      },
+      "output": {
+        "width": 1524,
+        "height": 1032,
+        "bytes": 322564,
+        "sha256": "31cd8e15b2ce970c30edde38938dbf4c20ff463ac08620a247468a8afde9bde2"
+      },
+      "sourceReference": "https://visitvungtau.travel/vi/mui-nghinh-phong-kinh-nghiem-kham-pha-tron-ven-tu-a-z",
+      "prompt": "Faithful photographic restoration and super-resolution ONLY of the supplied real photo. Preserve the exact viewpoint, original crop and aspect ratio, landmark architecture, object arrangement, people, lighting and colors. Restore natural crisp edges, fine textures and foliage; remove compression blocking and blur with restrained realistic detail, no halos, no painterly or plastic effect. Preserve all original signage and any existing watermark exactly. Do not add, omit or move buildings, objects or people. Do not invent legible small lettering. No new captions, text or logos. Deliver a clean high-resolution image, ideally 3072 pixels or wider while keeping the reference composition. Subject: Mui Nghinh Phong coastal viewpoint with the same woman in dark clothing. Preserve her identity, face, pose and clothes, all rocks, shoreline and clouds.",
+      "delivery": {
+        "codec": "WebP",
+        "quality": 80,
+        "maxWidth": 1536,
+        "sourceWidth": 1524,
+        "sourceHeight": 1032
+      }
+    },
+    {
+      "file": "destinations/vt06-thap-tam-thang.webp",
+      "method": "AI photographic restoration",
+      "original": {
+        "width": 1600,
+        "height": 900
+      },
+      "output": {
+        "width": 1536,
+        "height": 864,
+        "bytes": 136858,
+        "sha256": "33a14511b8afea61c38f7f7feaeb6b23b3d7cda97d9f77be2d1d61d13cf29716"
+      },
+      "sourceReference": "https://vietnam.vnanet.vn/vietnamese/tin-tuc/thap-tam-thang-bieu-tuong-moi-niem-tu-hao-cua-tp-ho-chi-minh-414516.html",
+      "prompt": "Faithful photographic restoration and super-resolution ONLY of the supplied real photo. Preserve the exact viewpoint, original crop and aspect ratio, landmark architecture, object arrangement, people, lighting and colors. Restore natural crisp edges, fine textures and foliage; remove compression blocking and blur with restrained realistic detail, no halos, no painterly or plastic effect. Preserve all original signage and any existing watermark exactly. Do not add, omit or move buildings, objects or people. Do not invent legible small lettering. No new captions, text or logos. Deliver a clean high-resolution image, ideally 3072 pixels or wider while keeping the reference composition. Subject: Tam Thang monument by Vung Tau sea. Keep every column and its geometric arrangement, people and viewpoint.",
+      "delivery": {
+        "codec": "WebP",
+        "quality": 80,
+        "maxWidth": 1536,
+        "sourceWidth": 1672,
+        "sourceHeight": 941
+      }
+    },
+    {
+      "file": "destinations/vt07-chua-dai-tong-lam.webp",
+      "method": "AI photographic restoration",
+      "original": {
+        "width": 1600,
+        "height": 900
+      },
+      "output": {
+        "width": 1536,
+        "height": 864,
+        "bytes": 196042,
+        "sha256": "d7954178247604ffec62b6f3301194359e401f6a6058113ff6c506dc210e2556"
+      },
+      "sourceReference": "https://www.vietfuntravel.com.vn/tour-vung-tau/tour-du-lich-vung-tau-1-ngay.html",
+      "prompt": "Faithful photographic restoration and super-resolution ONLY of the supplied real photo. Preserve the exact viewpoint, original crop and aspect ratio, landmark architecture, object arrangement, people, lighting and colors. Restore natural crisp edges, fine textures and foliage; remove compression blocking and blur with restrained realistic detail, no halos, no painterly or plastic effect. Preserve all original signage and any existing watermark exactly. Do not add, omit or move buildings, objects or people. Do not invent legible small lettering. No new captions, text or logos. Deliver a clean high-resolution image, ideally 3072 pixels or wider while keeping the reference composition. Subject: Dai Tong Lam pagoda facade, preserve original gold colors, architecture and Chinese calligraphy.",
+      "delivery": {
+        "codec": "WebP",
+        "quality": 80,
+        "maxWidth": 1536,
+        "sourceWidth": 1672,
+        "sourceHeight": 941
+      }
+    },
+    {
+      "file": "destinations/vt08-cho-ba-ria.webp",
+      "method": "Higher-resolution source photograph; no AI",
+      "original": {
+        "width": 355,
+        "height": 355
+      },
+      "output": {
+        "width": 1600,
+        "height": 800,
+        "bytes": 299548,
+        "sha256": "4321e27c15ccf2ced5c7c27c11282569fd50a2e8a53ed4876c2bdd31a3704fa6"
+      },
+      "notes": "Recovered the previously verified 4400 x 2200 original photo; replaces the low-resolution multi-market collage.",
+      "delivery": {
+        "codec": "WebP",
+        "quality": 80,
+        "maxWidth": 1600,
+        "sourceWidth": 4400,
+        "sourceHeight": 2200
+      }
+    },
+    {
+      "file": "destinations/vt09-suoi-khoang-nong-binh-chau.webp",
+      "method": "Higher-resolution source photograph; no AI",
+      "original": {
+        "width": 1500,
+        "height": 1080
+      },
+      "output": {
+        "width": 1500,
+        "height": 1000,
+        "bytes": 287092,
+        "sha256": "2b4bdf9d2f12380e766a29b5f79c4c0a59e5760633e71f8b7ec583b873a6e948"
+      },
+      "sourceReference": "https://minera.vn/kham-pha/",
+      "download": "https://minera.vn/static/upload/images/minera-springs/Springs%20Pool/Springs-pool-ho-khoang.jpg",
+      "notes": "Official Minera Springs Pool photo, replaces the unverified onsen image.",
+      "delivery": {
+        "codec": "WebP",
+        "quality": 80,
+        "maxWidth": 1536,
+        "sourceWidth": 1500,
+        "sourceHeight": 1000
+      }
+    },
+    {
+      "file": "destinations/vt10-bien-ho-coc.webp",
+      "method": "AI photographic restoration",
+      "original": {
+        "width": 800,
+        "height": 600
+      },
+      "output": {
+        "width": 1448,
+        "height": 1086,
+        "bytes": 194876,
+        "sha256": "e3588a9eac4b3aa271ba4117d15ebc267775b15466c48e748fc40ea5807316f7"
+      },
+      "sourceReference": "https://www.vietfuntravel.com.vn/tour-vung-tau/tour-du-lich-ho-coc-binh-chau-2-ngay-1-dem.html",
+      "prompt": "Faithful photographic restoration / super-resolution of the supplied existing photograph: the Ho Coc beach aerial view with the same shoreline, forest, huts, beach and sea. This is an edit target, not a design reference. Keep the same camera position, framing, aspect ratio, scene composition, colors, landmark architecture, people and objects. Recover crisp natural detail in edges, foliage, surfaces and textures; remove compression artifacts, noise and soft blur. Do not redesign, replace or move any landmark, structure or text. Preserve all readable original writing and any existing watermark exactly; do not invent new small text. No new objects, labels or watermark. Photographic, not painted or stylized. No sharpening halos or plastic textures. Render a large, clean high-resolution version, preferably 3072px or wider, maintaining the original aspect ratio.",
+      "delivery": {
+        "codec": "WebP",
+        "quality": 80,
+        "maxWidth": 1536,
+        "sourceWidth": 1448,
+        "sourceHeight": 1086
+      }
+    }
+  ],
+  "optimization": "2026-11-19: delivery images encoded at quality 80; destinations up to 1536px (market 1600px), auth 1000px WebP quality 75, banner 2400px JPEG. Restored source images remain in Git history."
+}

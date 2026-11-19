@@ -7,8 +7,8 @@ const menu = [
   ['/Account/Favorites', 'Yêu thích và lịch sử'], ['/Account/Notices', 'Thông báo và tùy chọn'],
 ];
 
-export function AccountLayout({ children }: { children: ReactNode }) {
-  return <div className="account-page"><div className="container account-wrap">
+export function AccountLayout({ children, className = '' }: { children: ReactNode; className?: string }) {
+  return <div className={`account-page ${className}`}><div className="container account-wrap">
     <nav className="account-breadcrumb" aria-label="Đường dẫn"><Link to="/">Trang chủ</Link><span aria-hidden="true">/</span><span>Tài khoản</span></nav>
     <div className="account-layout"><aside className="account-sidebar"><div className="account-sidebar-heading"><span className="account-icon" aria-hidden="true">◎</span><div><strong>Tài khoản của bạn</strong><p>Đồng hành mỗi chuyến đi</p></div></div>
       <nav aria-label="Quản lý tài khoản">{menu.map(([to, text]) => <NavLink key={to} to={to} end={to === '/Account/Profile' || to === '/Trips'}>{text}</NavLink>)}</nav></aside>

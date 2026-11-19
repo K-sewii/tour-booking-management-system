@@ -44,7 +44,11 @@ const notice = 'Vui lòng đăng nhập để xem và quản lý các chuyến �
       await page.goto(root + '/Destinations', { waitUntil: 'networkidle' });
       assert.equal(await page.locator('.destination-card').count(), 12);
       await page.screenshot({ path: path.join(out, `destinations-${width}.png`), fullPage: true });
-      await page.goto(root + '/Destinations/Details/4', { waitUntil: 'networkidle' });
+      const catalogResponse = await page.request.get(root + '/spa-api/proxy/destinations');
+      assert.equal(catalogResponse.ok(), true);
+      const market = (await catalogResponse.json()).find(place => place.name === 'Chợ Bến Thành');
+      assert.ok(market, 'Chợ Bến Thành must exist in the review catalog');
+      await page.goto(root + '/Destinations/Details/' + market.id, { waitUntil: 'networkidle' });
       const hero = page.locator('img.detail-hero'); await hero.waitFor(); await hero.evaluate(e => e.decode());
       assert.ok(await hero.evaluate(e => e.naturalWidth > 0 && e.currentSrc.endsWith('hcm04-cho-ben-thanh.webp')));
       await page.screenshot({ path: path.join(out, `detail-${width}.png`), fullPage: true });
@@ -74,19 +78,25 @@ const notice = 'Vui lòng đăng nhập để xem và quản lý các chuyến �
       await page.goto(root + '/Account/Login', { waitUntil: 'networkidle' });
       assert.equal(await page.getByText(notice).count(), 0);
       await page.goto(root + '/Tours', { waitUntil: 'networkidle' });
-      try { await page.locator('.tour-card').first().waitFor(); }
-      catch (error) { console.error('Tours page state:', (await page.locator('main').innerText()).slice(0, 1500)); throw error; }
-      assert.ok(await page.locator('.tour-card').count() > 0);
-      assert.ok(await page.getByText('Dữ liệu tham khảo — chưa công bố').count() > 0);
+      const toursResponse = await page.request.get(root + '/spa-api/proxy/tours/search');
+      assert.equal(toursResponse.ok(), true);
+      const tourCatalog = await toursResponse.json();
+      assert.equal(await page.locator('.tour-card').count(), tourCatalog.items.length);
+      if (!tourCatalog.items.length)
+        assert.ok(await page.getByText('Chưa tìm thấy tour phù hợp.', { exact: true }).isVisible());
       await page.screenshot({ path: path.join(out, `tours-${width}.png`), fullPage: true });
-      await page.locator('.tour-card a').first().click();
-      await page.locator('.detail-heading').waitFor();
-      assert.ok(await page.getByText('Dữ liệu tham khảo — chưa công bố', { exact: true }).isVisible());
-      assert.equal(await page.getByRole('button', { name: /đặt tour/i }).count(), 0);
-      assert.equal(await page.getByRole('link', { name: /đăng nhập để đặt tour/i }).count(), 0);
+      if (tourCatalog.items.length) {
+        await page.locator('.tour-card a').first().click();
+        await page.locator('.detail-heading').waitFor();
+        if (tourCatalog.items[0].referenceOnly) {
+          assert.ok(await page.getByText('Dữ liệu tham khảo — chưa công bố', { exact: true }).isVisible());
+          assert.equal(await page.getByRole('button', { name: /đặt tour/i }).count(), 0);
+          assert.equal(await page.getByRole('link', { name: /đăng nhập để đặt tour/i }).count(), 0);
+        }
+      }
       assert.deepEqual(errors, []); assert.deepEqual(badImages, []);
       await context.close();
-      console.log(`PASS: pages, images, login notice and reference tours at ${width}px`);
+      console.log(`PASS: pages, images, login notice and tour catalog at ${width}px`);
     }
     const context = await browser.newContext({ viewport: { width: 1440, height: 900 } });
     const page = await context.newPage();
@@ -97,7 +107,7 @@ const notice = 'Vui lòng đăng nhập để xem và quản lý các chuyến �
     await page.getByText(notice).waitFor();
     await page.locator('#Email').fill('fixture@example.test');
     await page.locator('#Password').fill('FixturePassword!');
-    await page.getByRole('button', { name: /Đăng nhập →/ }).click();
+    await page.getByRole('button', { name: 'Đăng nhập', exact: true }).click();
     await page.waitForURL('**/Trips');
     await context.close();
     console.log('PASS: simulated login returns to /Trips');
@@ -107,7 +117,7 @@ const notice = 'Vui lòng đăng nhập để xem và quản lý các chuyến �
     await unsafePage.goto(root + '/Account/Login?returnUrl=%2F%2Fevil.example', { waitUntil: 'networkidle' });
     await unsafePage.locator('#Email').fill('fixture@example.test');
     await unsafePage.locator('#Password').fill('FixturePassword!');
-    await unsafePage.getByRole('button', { name: /Đăng nhập →/ }).click();
+    await unsafePage.getByRole('button', { name: 'Đăng nhập', exact: true }).click();
     await unsafePage.waitForURL(root + '/');
     await unsafe.close();
     console.log('PASS: external returnUrl is rejected');

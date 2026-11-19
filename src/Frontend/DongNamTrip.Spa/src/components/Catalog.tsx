@@ -12,12 +12,12 @@ export function TourCard({ tour }: { tour: Tour }) {
   const href = `/Tours/Details/${tour.id}`;
   return <article className="tour-card"><Link className="card-art" to={href}><TourImageCollage tour={tour}/><span className="badge">{tour.category}</span></Link>
     <div className="card-body">{tour.referenceOnly && <p className="reference-notice">Dữ liệu tham khảo — chưa công bố</p>}<div className="eyebrow">{tour.region} <span>· {tour.duration}</span></div><h3><Link to={href}>{tour.name}</Link></h3><p>{tour.summary}</p>
-      <div className="card-price"><div><small>Giá tham khảo / khách</small><strong>{price(tour.referencePrice)}</strong></div><Link className="circle-link" to={href} aria-label={`Xem tour ${tour.name}`}>↗</Link></div></div></article>;
+      <div className="card-price"><div><small>Giá tham khảo / khách</small><strong>{price(tour.referencePrice)}</strong></div><Link className="text-link" to={href} aria-label={`Xem tour ${tour.name}`}>Xem tour</Link></div></div></article>;
 }
 
 export function DestinationCard({ destination }: { destination: Destination }) {
   return <article className="destination-card"><Link to={`/Destinations/Details/${destination.id}`}><img src={destination.imageUrl || art(destination.illustration)} alt={`Ảnh ${destination.name}`} loading="lazy" onError={event => { const fallback = art(destination.illustration); if (!event.currentTarget.src.endsWith(fallback)) event.currentTarget.src = fallback; }}/>
-    <div><span className="eyebrow">{destination.region} · {destination.category}</span><h3>{destination.name}</h3><p>{destination.visitMinutes} phút tham quan dự kiến <span>↗</span></p></div></Link></article>;
+    <div><span className="eyebrow">{destination.region} · {destination.category}</span><h3>{destination.name}</h3><p>{destination.visitMinutes} phút tham quan dự kiến</p></div></Link></article>;
 }
 
 export function Pagination({ page, total, pageSize, params, path }: { page: number; total: number; pageSize: number; params: URLSearchParams; path: string }) {
