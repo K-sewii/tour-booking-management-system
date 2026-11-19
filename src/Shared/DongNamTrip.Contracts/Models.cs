@@ -2,7 +2,10 @@ using System.ComponentModel.DataAnnotations;
 
 namespace DongNamTrip.Contracts;
 
-public record Destination(int Id, string Name, string Region, string Category, string Address, string Description, int VisitMinutes, string Illustration, string Status = "Published");
+public record Destination(int Id, string Name, string Region, string Category, string Address, string Description, int VisitMinutes, string Illustration, string Status = "Published")
+{
+    public string ImageUrl => CatalogPhotos.DestinationImage(Name, Region);
+}
 
 public class DestinationDraft
 {
@@ -29,7 +32,10 @@ public class DestinationDraft
     public string? Status { get; set; }
 }
 
-public record Tour(int Id, string Name, string Region, string Category, string Duration, decimal ReferencePrice, string Summary, string Illustration, int[] DestinationIds);
+public record Tour(int Id, string Name, string Region, string Category, string Duration, decimal ReferencePrice, string Summary, string Illustration, int[] DestinationIds)
+{
+    public string ImageUrl { get; init; } = CatalogPhotos.RegionImage(Region);
+}
 
 public record AuthenticatedUser(int Id, string Name, string Email, IReadOnlyList<string> Roles);
 public record LoginResponse(string Token, AuthenticatedUser User);
@@ -199,7 +205,10 @@ public record TourDetail(Tour Tour, IReadOnlyList<Destination> Places);
 
 public record TourEstimate(int Guests, decimal Total);
 
-public record RegionOption(string Name, string Illustration);
+public record RegionOption(string Name, string Illustration)
+{
+    public string ImageUrl => CatalogPhotos.RegionImage(Name);
+}
 
 /// <summary>Số liệu và giới hạn do Backend công bố; Frontend chỉ đọc, không tự khai báo.</summary>
 public record ClientRules(

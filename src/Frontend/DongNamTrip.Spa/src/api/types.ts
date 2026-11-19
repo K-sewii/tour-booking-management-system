@@ -1,7 +1,7 @@
 export type ItemKind = 'tour' | 'destination';
 export type User = { id: number; name: string; email: string; roles: string[] };
-export type Destination = { id: number; name: string; region: string; category: string; address: string; description: string; visitMinutes: number; illustration: string; status?: string };
-export type Tour = { id: number; name: string; region: string; category: string; duration: string; referencePrice: number; summary: string; illustration: string; destinationIds: number[] };
+export type Destination = { id: number; name: string; region: string; category: string; address: string; description: string; visitMinutes: number; illustration: string; imageUrl?: string; status?: string };
+export type Tour = { id: number; name: string; region: string; category: string; duration: string; referencePrice: number; summary: string; illustration: string; imageUrl?: string; destinationIds: number[] };
 export type ItineraryStop = { destinationId: number; day: number; order: number; note: string | null; slotIds: number[] };
 export type Itinerary = { id: number; userId: number; name: string; startDate: string; guests: number; destinationIds: number[]; destinationNames: string[]; totalVisitMinutes: number; departurePoint: string | null; transport: string | null; budget: number | null; updatedAt: string; stops: ItineraryStop[]; warnings: string[] };
 export type PlannerCatalog = { destinations: Destination[]; activities: { id: number; destinationId: number; name: string; durationMinutes: number; conditions: string | null; referenceFee: number | null }[]; slots: { id: number; activityId: number; destinationId: number; date: string; startsAt: string; endsAt: string; status: string }[] };
@@ -12,7 +12,7 @@ export type TourDetail = { tour: Tour; places: Destination[] };
 export type TourEstimate = { guests: number; total: number };
 export type ItineraryPreview = { places: Destination[]; totalVisitMinutes: number };
 export type Meta = {
-  regions: { name: string; illustration: string }[]; categories: string[];
+  regions: { name: string; illustration: string; imageUrl?: string }[]; categories: string[];
   tourPageSize: number; destinationPageSize: number; plannerListSize: number;
   itineraryNameMax: number; guestsMin: number; guestsMax: number; maxPlaces: number;
   nameMin: number; nameMax: number; passwordMin: number; passwordMax: number; phoneMax: number;

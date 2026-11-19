@@ -1,7 +1,7 @@
 @model Tour
 <article class="tour-card">
 <a class="card-art" asp-controller="Tours" asp-action="Details" asp-route-id="@Model.Id">
-<img src="~/images/@(Model.Illustration).svg" alt="Minh họa @Model.Region" loading="lazy"/>
+<img src="@Model.ImageUrl" alt="@Model.Name" loading="lazy"/>
 <span class="badge">@Model.Category</span></a>
 <div class="card-body">
 <div class="eyebrow">@Model.Region <span>· @Model.Duration</span></div>

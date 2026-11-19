@@ -25,7 +25,7 @@ export function ShellLayout({ children }: { children: ReactNode }) {
     <footer><div className="container footer-grid"><div><Link className="brand light" to="/">DongNam<span>Trip</span></Link><p>Những hành trình gần.<br/>Những trải nghiệm thật đáng nhớ.</p></div>
       <div><b>Bắt đầu khám phá</b><Link to="/Tours">Tour có sẵn</Link><Link to="/Destinations">Điểm đến Đông Nam Bộ</Link><Link to="/Planner">Tự tạo chuyến đi</Link></div>
       <div><b>Chuyến đi của bạn</b><Link to="/Trips">Lịch trình đã lưu</Link><Link to={user ? '/Account/Profile' : '/Account/Login'}>Tài khoản</Link><p>Dự án học tập của nhóm DongNamTrip</p></div></div>
-      <div className="container footer-bottom">© 2026 DongNamTrip <span>Hình minh họa • Giá mẫu • Chưa giao dịch thực tế</span></div>
+      <div className="container footer-bottom">© 2026 DongNamTrip <span>Khám phá Đông Nam Bộ • Giá tham khảo • Chưa giao dịch thực tế</span></div>
     </footer>
   </>;
 }

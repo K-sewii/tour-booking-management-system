@@ -137,7 +137,15 @@ public sealed class CatalogRepository(DongNamTripDbContext db)
         var ids = rows.Select(item => item.MaTour).ToList();
         var links = await db.TourDiadiem.AsNoTracking().Where(link => ids.Contains(link.MaTour))
             .OrderBy(link => link.NgayThu).ThenBy(link => link.ThuTu).ToListAsync(ct);
+        var placeIds = links.Select(link => link.MaDd).Distinct().ToArray();
+        var places = await VisiblePlaces.Where(place => placeIds.Contains(place.MaDd))
+            .Select(place => new { place.MaDd, place.TenDd, place.KhuVuc }).ToDictionaryAsync(place => place.MaDd, ct);
         return rows.Select(row => new TourDto(row.MaTour, row.TenTour, row.KhuVuc, row.LoaiHinh, row.ThoiLuong, row.GiaThamKhao, row.TomTat,
-            CatalogOptions.IllustrationFor(row.KhuVuc), links.Where(link => link.MaTour == row.MaTour).Select(link => link.MaDd).ToArray())).ToList();
+            CatalogOptions.IllustrationFor(row.KhuVuc), links.Where(link => link.MaTour == row.MaTour).Select(link => link.MaDd).ToArray())
+        {
+            ImageUrl = links.Where(link => link.MaTour == row.MaTour && places.ContainsKey(link.MaDd))
+                .Select(link => CatalogPhotos.DestinationPhoto(places[link.MaDd].TenDd, places[link.MaDd].KhuVuc))
+                .FirstOrDefault(photo => photo is not null) ?? CatalogPhotos.RegionImage(row.KhuVuc)
+        }).ToList();
     }
 }

@@ -11,13 +11,19 @@ public record ActivityInfo(int Id, int DestinationId, string Name, string? Descr
 /// <summary>Chi tiết địa điểm; gồm mọi trường của <see cref="Destination"/> nên URL cũ vẫn tương thích.</summary>
 public record DestinationDetail(int Id, string Name, string Region, string Category, string Address, string Description,
     int VisitMinutes, string Illustration, string Status, TimeOnly? OpenTime, TimeOnly? CloseTime, decimal? Latitude, decimal? Longitude,
-    List<ActivityInfo> Activities);
+    List<ActivityInfo> Activities)
+{
+    public string ImageUrl => CatalogPhotos.DestinationImage(Name, Region);
+}
 
 // ---- UC14 · SCR14: quản trị địa điểm ----
 /// <summary>Một dòng quản trị địa điểm; gồm mọi trường của <see cref="Destination"/>.</summary>
 public record AdminDestination(int Id, string Name, string Region, string Category, string Address, string Description,
     int VisitMinutes, string Illustration, string Status, TimeOnly? OpenTime, TimeOnly? CloseTime, decimal? Latitude, decimal? Longitude,
-    int ActivityCount, int NarrationCount, bool HasTransactions);
+    int ActivityCount, int NarrationCount, bool HasTransactions)
+{
+    public string ImageUrl => CatalogPhotos.DestinationImage(Name, Region);
+}
 
 public class DestinationForm : IValidatableObject
 {

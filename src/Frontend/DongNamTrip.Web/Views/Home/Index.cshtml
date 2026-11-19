@@ -13,7 +13,7 @@
 <div class="hero-note">
 <span>05</span> khu vực khám phá <i></i>
 <span>∞</span> cảm hứng lên đường</div></div>
-<div class="hero-caption">MỘT GÓC ĐÔNG NAM BỘ <span>Hình minh họa</span></div></section>
+<div class="hero-caption">BƯU ĐIỆN TRUNG TÂM SÀI GÒN <span>TP. Hồ Chí Minh</span></div></section>
 <div class="container">
 <form class="search-bar" method="get" action="/Tours">
 <label>
@@ -35,7 +35,7 @@
 <h2>Mỗi vùng đất, một sắc màu.</h2></div>
 <a class="text-link" href="/Destinations">Tất cả điểm đến ↗</a></div>
 <div class="region-grid">@foreach(var region in CatalogOptions.Regions){<a class="region-tile" asp-controller="Destinations" asp-action="Index" asp-route-region="@region">
-<img src="~/images/@(CatalogOptions.IllustrationFor(region)).svg" alt=""/>
+<img src="@CatalogPhotos.RegionImage(region)" alt=""/>
 <span>@region <b>↗</b></span></a>}</div></section>
 <section class="section soft">
 <div class="container">

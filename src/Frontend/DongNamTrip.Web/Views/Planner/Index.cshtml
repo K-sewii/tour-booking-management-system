@@ -16,7 +16,7 @@
 <label class="sr-only" for="place-search">Tìm địa điểm</label>
 <input id="place-search" placeholder="Tìm tên hoặc khu vực…"/></div>
 <div id="place-list">@foreach(var d in Model.Destinations){<article class="place-row" data-id="@d.Id" data-name="@d.Name" data-region="@d.Region" data-minutes="@d.VisitMinutes">
-<img src="~/images/@(d.Illustration).svg" alt=""/>
+<img src="@d.ImageUrl" alt=""/>
 <div><small>@d.Region · @d.VisitMinutes phút</small>
 <h3>@d.Name</h3>
 <span>@d.Category</span></div>
