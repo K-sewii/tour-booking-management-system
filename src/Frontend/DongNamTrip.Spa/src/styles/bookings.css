@@ -1,0 +1,104 @@
+/* Customer booking overview and detail. Keep controls and state in the page. */
+.booking-orders{overflow:hidden;box-shadow:none}
+.account-list .booking-order{padding:24px 28px;border-top:1px solid var(--line);gap:24px;align-items:center}
+.account-list .booking-order:first-child{border-top:0}
+.booking-order.is-selected{background:#f8fbf9;box-shadow:inset 3px 0 var(--green)}
+.booking-reference{display:flex;flex-wrap:wrap;align-items:center;gap:12px;color:var(--muted);font-size:12px;font-weight:600;line-height:1.5}
+.booking-status{display:inline-flex;align-items:center;padding:4px 10px;border-radius:4px;background:#f8f0de;color:#8b651d;font-size:11px;font-weight:650;white-space:nowrap}
+.booking-status[data-status="Confirmed"],.booking-status[data-status="Completed"]{background:#e8f3ed;color:#206647}
+.booking-status[data-status="Cancelled"],.booking-status[data-status="Expired"]{background:#eef0f1;color:#59656a}
+.booking-status[data-status="CancelRequested"]{background:#fff0e7;color:#985425}
+.booking-order-info{flex:1;min-width:0}
+.account-card .booking-order h2{font-size:17px;line-height:1.45;letter-spacing:-.02em;margin:10px 0 5px}
+.booking-order-info p{color:var(--muted);font-size:12px;margin:0}
+.account-list li>.booking-order-action{display:flex;align-items:center;gap:22px;flex-shrink:0;overflow:visible}
+.booking-order-action strong{font-size:16px;font-variant-numeric:tabular-nums;white-space:nowrap}
+.booking-order-action .btn{min-height:40px;min-width:82px}
+.booking-detail{margin-top:24px;box-shadow:none;overflow:hidden}
+.booking-detail-header{padding:28px 30px 24px;border-bottom:1px solid var(--line)}
+.account-card .booking-detail-header h2{font-size:24px;line-height:1.35;letter-spacing:-.025em;margin:14px 0 22px}
+.booking-meta{display:flex;flex-wrap:wrap;gap:20px 40px;margin:0}
+.booking-meta div{min-width:110px}
+.booking-meta dt,.booking-price dt,.booking-balance dt{font-size:12px;color:var(--muted);font-weight:400}
+.booking-meta dd,.booking-price dd,.booking-balance dd{margin:5px 0 0;font-size:14px;font-weight:600;font-variant-numeric:tabular-nums}
+.booking-detail-body{padding:26px 30px 30px}
+.booking-hold{background:#fbf7ed;border-left:3px solid #d9b969;border-radius:0 5px 5px 0;padding:13px 16px;margin:0 0 26px;font-size:12px;line-height:1.7;color:#6c5d36}
+.booking-hold strong,.booking-hold span{display:block}
+.booking-hold strong{font-weight:600}
+.booking-hold span{margin-top:3px}
+.booking-detail h3{font-size:17px;letter-spacing:-.015em;margin:0 0 18px;line-height:1.4}
+.booking-price{display:flex;flex-wrap:wrap;gap:16px 40px;margin:0 0 22px}
+.booking-price dd{font-size:18px}
+.booking-price>div:first-child dd{font-size:23px;color:var(--green)}
+.booking-balance{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));margin:0;padding:20px 0;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+.booking-balance>div{padding:0 22px;border-left:1px solid var(--line)}
+.booking-balance>div:first-child{padding-left:0;border-left:0}
+.booking-balance dd{font-size:16px;overflow-wrap:anywhere}
+.booking-balance>div:last-child dd{color:var(--green)}
+.booking-section{margin-top:28px}
+.booking-itinerary{list-style:none;margin:0;padding:0}
+.booking-itinerary li{position:relative;display:flex;align-items:baseline;gap:18px;padding:0 0 20px 22px;border-left:1px solid #d6e3dd;margin-left:4px;font-size:14px;line-height:1.6}
+.booking-itinerary li:last-child{padding-bottom:0;border-left-color:transparent}
+.booking-itinerary li:before{content:"";position:absolute;left:-4px;top:7px;width:7px;height:7px;border-radius:50%;background:var(--green)}
+.booking-day{font-size:12px;color:var(--muted);white-space:nowrap;min-width:42px}
+.booking-itinerary strong{font-weight:600}
+.booking-policy{padding:22px;background:#f7f8f7;border-radius:6px}
+.booking-policy h3{margin-bottom:10px}
+.booking-policy p{font-size:13px;line-height:1.8;margin:0;color:#596e65}
+.booking-policy p+p{margin-top:10px}
+.booking-section .account-list li{padding:15px 0}
+.booking-cancellation{border-top:1px solid var(--line);padding-top:26px}
+.booking-cancellation .private-request-form{max-width:660px;margin:0;gap:16px}
+.booking-cancellation label{font-size:13px;margin:0;gap:8px}
+.booking-cancellation textarea{display:block;width:100%;min-height:108px;resize:vertical;border:1px solid #bbcfc3;border-radius:6px;padding:12px 14px;font:inherit;font-weight:400;color:var(--ink);background:#fff}
+.booking-cancellation textarea:focus{outline:2px solid #079b7970;outline-offset:2px}
+.booking-cancellation .btn{justify-self:start;min-height:44px;font-size:13px;padding:11px 18px}
+.booking-detail-body>.notice,.booking-detail-body>.account-message{margin-top:24px}
+
+/* Separate the primary booking action from the itinerary link. */
+.booking-panel>.btn.outline.full{margin-top:14px;min-height:46px;font-size:13px}
+.booking-panel>.private-request-form{gap:16px}
+.booking-panel .private-request-form label{margin-bottom:0;gap:6px}
+.booking-panel .private-request-form :is(input,select){margin-top:0;font-size:13px}
+.booking-panel .private-request-form .hint{margin:0;line-height:1.75}
+.booking-panel .private-request-form>.btn{min-height:48px}
+.booking-panel .private-request-form>.notice{padding:16px}
+.booking-panel .private-request-form>.notice p{font-size:12px;line-height:1.75}
+.booking-panel .private-request-form>.notice .btn+.btn{margin-top:10px}
+
+@media(max-width:1100px){
+  .account-list .booking-order{align-items:flex-start;gap:18px}
+  .account-list li>.booking-order-action{flex-direction:column;align-items:flex-end;gap:12px}
+}
+@media(max-width:850px){
+  .booking-detail-header,.booking-detail-body{padding:24px}
+  .account-list .booking-order{padding:22px}
+  .booking-meta{gap:16px 24px}
+  .booking-balance>div{padding:0 12px}
+  .booking-balance dd{font-size:14px}
+}
+@media(max-width:640px){
+  .account-bookings .account-sidebar nav{display:flex;gap:4px;overflow-x:auto;scrollbar-width:thin;padding:8px}
+  .account-bookings .account-sidebar nav a{flex-shrink:0;white-space:nowrap;margin:0;border-left:0;border-bottom:2px solid transparent;border-radius:4px;padding:10px 12px;font-size:12px}
+  .account-bookings .account-sidebar nav a[aria-current=page]{border-bottom-color:var(--green)}
+  .account-bookings .account-layout{gap:22px}
+  .account-list .booking-order{padding:20px;gap:16px}
+  .account-list .booking-order>.booking-order-info{flex-basis:100%}
+  .account-list .booking-order>.booking-order-action{flex-basis:100%;flex-direction:row;justify-content:space-between;align-items:center}
+  .account-card .booking-order h2{font-size:16px}
+  .booking-detail{margin-top:20px}
+  .booking-detail-header,.booking-detail-body{padding:22px 20px}
+  .account-card .booking-detail-header h2{font-size:21px;margin-bottom:20px}
+  .booking-meta{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  .booking-meta div{min-width:0}
+  .booking-meta dd{font-size:13px}
+  .booking-price{display:grid;gap:16px;margin-bottom:20px}
+  .booking-price dd{font-size:17px}
+  .booking-balance{grid-template-columns:1fr;padding:4px 0}
+  .booking-balance>div{display:flex;align-items:baseline;justify-content:space-between;gap:14px;border-left:0;padding:12px 0}
+  .booking-balance dd{margin:0;font-size:15px}
+  .booking-itinerary li{gap:12px;padding-left:18px}
+  .booking-policy{padding:18px}
+  .booking-section{margin-top:24px}
+  .booking-cancellation .btn{width:100%}
+}

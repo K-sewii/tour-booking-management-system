@@ -7,7 +7,6 @@
 <button id="bookings-tab" data-tab="bookings" role="tab" aria-selected="false" aria-controls="bookings">Tour đã đặt</button>
 <button id="quotes-tab" data-tab="quotes" role="tab" aria-selected="false" aria-controls="quotes">Yêu cầu & báo giá</button></div>
 <section id="drafts" role="tabpanel" aria-labelledby="drafts-tab">@if(Model.Itineraries.Count==0){<div class="empty">
-<span class="empty-icon">↗</span>
 <h2>Chuyến đi tiếp theo bắt đầu ở đây.</h2>
 <p>Bạn chưa lưu lịch trình nào. Hãy chọn vài điểm đến yêu thích.</p>
 <a class="btn" href="/Planner">Tạo lịch trình đầu tiên</a></div>}else{<div class="card-grid">@foreach(var trip in Model.Itineraries){<article class="saved-trip">
