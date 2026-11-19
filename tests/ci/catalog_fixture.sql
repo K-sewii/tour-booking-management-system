@@ -1,7 +1,6 @@
 ﻿-- CHỈ DÙNG CHO CI (tests/e2e, tests/spa): bộ danh mục cố định mà các test trình duyệt kỳ vọng
 -- (tour đầu tiên 690.000 ₫ có 2 điểm, đúng 1 tour ở Vũng Tàu). Không nạp vào database thật.
--- Idempotent: thêm dòng theo tên và chỉ công bố các tour của fixture trong database kiểm thử.
--- Dữ liệu thật nằm ở db/init/DongNamTrip_Full.sql và các migration V*.sql.
+-- Idempotent: bỏ qua dòng đã có (so theo tên). Dữ liệu thật nằm ở db/init/DongNamTrip_Full.sql.
 SET NOCOUNT ON;
 
 DECLARE @places TABLE (Seq INT IDENTITY(1,1), Ten NVARCHAR(120), KhuVuc NVARCHAR(50), LoaiHinh NVARCHAR(100), DiaChi NVARCHAR(250), MoTa NVARCHAR(3000), Phut INT);
@@ -30,19 +29,6 @@ INSERT INTO TOUR (TenTour, KhuVuc, LoaiHinh, ThoiLuong, GiaThamKhao, TomTat, Tra
 SELECT t.Ten, t.KhuVuc, t.LoaiHinh, t.ThoiLuong, t.Gia, t.TomTat, 'Published'
 FROM @tours t WHERE NOT EXISTS (SELECT 1 FROM TOUR x WHERE x.TenTour = t.Ten)
 ORDER BY t.Seq;
-
--- Các migration demo (ví dụ V004) có thể công bố thêm tour trước khi fixture được nạp.
--- Giữ danh mục CI cố định để thứ tự tour, giá mẫu và bộ lọc không phụ thuộc dữ liệu demo.
--- Chỉ đổi trạng thái trong database kiểm thử; giữ nguyên tour, lịch khởi hành và liên kết.
-UPDATE t SET TrangThai = 'Draft'
-FROM TOUR t
-WHERE t.TrangThai = 'Published'
-  AND NOT EXISTS (SELECT 1 FROM @tours fixture WHERE fixture.Ten = t.TenTour);
-
-UPDATE t SET TrangThai = 'Published'
-FROM TOUR t
-JOIN @tours fixture ON fixture.Ten = t.TenTour
-WHERE t.TrangThai <> 'Published';
 
 DECLARE @links TABLE (Tour NVARCHAR(200), Place NVARCHAR(120), ThuTu INT);
 INSERT INTO @links VALUES

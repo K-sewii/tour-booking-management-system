@@ -80,24 +80,6 @@ docker compose up -d --build
 
 Chi tiết xem [Hướng dẫn chi tiết](docs/guides/vi/huong-dan.md) hoặc [Running with Docker](docs/guides/running-with-docker.md) (tiếng Anh).
 
-### Bốn tour có sẵn để demo
-
-`db/init/V004_demo_tours.sql` chuẩn bị bốn tour từ danh mục nháp có sẵn:
-
-| Tour | Thời lượng | Giá demo / khách | Sức chứa mỗi lịch |
-| --- | --- | --- | --- |
-| Củ Chi - Hành trình về vùng đất thép | Nửa ngày | 500.000 đ | 24 |
-| Cao Đài - Củ Chi: Sắc màu văn hóa và lịch sử | 1 ngày | 730.000 đ | 28 |
-| Vũng Tàu - Biển xanh và dấu ấn phố biển | 1 ngày | 1.050.000 đ | 30 |
-| Bình Châu - Hồ Cốc: Nghỉ dưỡng 2 ngày 1 đêm | 2 ngày 1 đêm | 2.300.000 đ | 20 |
-
-Mỗi tour có điểm dừng theo thứ tự, điều kiện hủy và ba lịch khởi hành thứ Bảy liên tiếp. Lịch đầu tiên cách ngày chạy ít nhất bảy ngày, tính theo giờ Việt Nam. Đây là dữ liệu kiểm thử đồ án; giá và dịch vụ chưa phải báo giá thương mại.
-
-- Database mới: trình khởi tạo Docker chạy V004 sau các script trước đó.
-- Database đang có: mở và chạy riêng `V004_demo_tours.sql` trong SSMS sau khi đã áp dụng V001, V002 và V003. Không chạy lại `DongNamTrip_Full.sql` trên database có dữ liệu.
-- Script nhận diện tour/địa danh theo tên và khu vực. Chạy lại không nhân đôi lịch cùng ngày, không đặt lại số chỗ đã giữ và không ghi đè chương trình tour demo đã chuẩn bị. Bốn tour tham khảo còn lại giữ nguyên.
-- Kiểm tra tại `/Tours`, chọn một tour và lịch khởi hành để thử đặt. Nhân viên dùng **Tài chính → Ghi nhận thu**, sau đó **Đơn đặt tour → Xác nhận đơn** khi đã đủ khoản cần thu.
-
 ## Kiến trúc
 
 ```mermaid
