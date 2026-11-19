@@ -19,7 +19,7 @@
 <label class="auth-field" for="Password"><span>Mật khẩu <b aria-hidden="true">*</b></span><input asp-for="Password" type="password" autocomplete="new-password" required minlength="8" maxlength="128" aria-describedby="Password-error" placeholder="Ít nhất 8 ký tự, có chữ và số"/><span asp-validation-for="Password" id="Password-error" class="field-error" aria-live="polite"></span></label>
 <label class="auth-field" for="ConfirmPassword"><span>Nhập lại mật khẩu <b aria-hidden="true">*</b></span><input asp-for="ConfirmPassword" type="password" autocomplete="new-password" required maxlength="128" aria-describedby="ConfirmPassword-error" placeholder="Nhập lại mật khẩu"/><span asp-validation-for="ConfirmPassword" id="ConfirmPassword-error" class="field-error" aria-live="polite"></span></label>
 <label class="terms-field" for="TermsAccepted"><input asp-for="TermsAccepted" type="checkbox" aria-describedby="TermsAccepted-error"/><span>Tôi đồng ý với điều khoản sử dụng <b aria-hidden="true">*</b></span></label><span asp-validation-for="TermsAccepted" id="TermsAccepted-error" class="field-error" aria-live="polite"></span>
-<button class="btn full" type="submit" data-auth-submit data-default-label="Đăng ký →" data-busy-label="Đang tạo tài khoản…" disabled>Đăng ký →</button>
+<button class="btn full" type="submit" data-auth-submit data-default-label="Đăng ký" data-busy-label="Đang tạo tài khoản…" disabled>Đăng ký</button>
 <p class="auth-status" data-auth-status role="status" aria-live="polite"></p>
 </form>
 <p class="auth-switch">Đã có tài khoản? <a class="text-link" asp-action="Login" asp-route-returnUrl="@ViewBag.ReturnUrl">Đăng nhập</a></p></section></div>

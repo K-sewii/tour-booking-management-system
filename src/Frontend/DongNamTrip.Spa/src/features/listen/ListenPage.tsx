@@ -43,7 +43,7 @@ export function ListenPage() {
   return <><section className="page-intro"><div className="container"><div className="eyebrow">NGHE KỂ VỀ NƠI BẠN ĐẾN</div><h1>Nghe thuyết minh.</h1>
     <p>Thuyết minh dành cho các địa điểm trong chuyến đi đã được xác nhận của bạn.</p></div></section>
     <div className="container section cx-listen">
-      {!data.hasAccess && <div className="notice" role="status"><b>{data.message}</b><p><Link className="text-link" to="/Tours">Khám phá tour →</Link> · <Link className="text-link" to="/Trips">Chuyến đi của tôi →</Link></p></div>}
+      {!data.hasAccess && <div className="notice" role="status"><b>{data.message}</b><p><Link className="text-link" to="/Tours">Khám phá tour</Link> · <Link className="text-link" to="/Trips">Chuyến đi của tôi</Link></p></div>}
       {data.hasAccess && !tracks.length && <div className="notice" role="status">{data.message}</div>}
       {data.hasAccess && !!tracks.length && <div className="cx-listen-panel">
         <label>Địa điểm<select value={place} onChange={event => choose({ destinationId: Number(event.target.value) })}>{places.map(([id, name]) => <option key={id} value={id}>{name}</option>)}</select></label>

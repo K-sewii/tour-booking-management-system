@@ -81,7 +81,7 @@ export function TripsPage() {
       <button role="tab" className={tab === 'quotes' ? 'current' : ''} aria-selected={tab === 'quotes'} onClick={() => setTab('quotes')}>Yêu cầu & báo giá ({requests.data?.length || 0})</button></div>
       {message && <p role="status" className="notice">{message}</p>}{error && <p role="alert" className="account-message account-message--error">{error}</p>}
       {tab === 'drafts' && (trips.loading ? <Loading/> : trips.error ? <Failure message={trips.error} retry={trips.retry}/> : !trips.data?.length ?
-        <div className="empty"><span className="empty-icon">↗</span><h2>Chuyến đi tiếp theo bắt đầu ở đây.</h2><p>Bạn chưa lưu lịch trình nào. Hãy chọn vài điểm đến yêu thích.</p><Link className="btn" to="/Planner">Tạo lịch trình đầu tiên</Link></div>
+        <div className="empty"><h2>Chuyến đi tiếp theo bắt đầu ở đây.</h2><p>Bạn chưa lưu lịch trình nào. Hãy chọn vài điểm đến yêu thích.</p><Link className="btn" to="/Planner">Tạo lịch trình đầu tiên</Link></div>
         : <div className="card-grid">{trips.data.map(trip => <article className="saved-trip" key={trip.id}><span className="pill">Lịch trình #{trip.id}</span><h2>{trip.name}</h2><p>{trip.startDate} · {trip.guests} khách</p><ol>{trip.destinationNames.map((name, index) => <li key={index}>{name}</li>)}</ol>
           {trip.warnings.map((warning, index) => <p className="hint" key={index}>{warning}</p>)}
           {checks[trip.id] && <p className="hint">{checks[trip.id].fits ? 'Lịch phù hợp' : 'Lịch còn cảnh báo'}{checks[trip.id].complete ? '' : ' (chưa đủ dữ liệu để kết luận)'}: {checks[trip.id].warnings.length === 0 ? 'không có cảnh báo.' : checks[trip.id].warnings.map(warning => warning.message).join(' ')}</p>}

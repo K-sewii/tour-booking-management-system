@@ -29,7 +29,7 @@ export function LoginPage() {
       {error !== null && <div className="validation validation-summary" role="alert">{messageFor(error)}</div>}
       <label className="auth-field" htmlFor="Email"><span>Email <b aria-hidden="true">*</b></span><input id="Email" type="email" autoComplete="username" autoFocus value={email} onChange={event => setEmail(event.target.value)} maxLength={254} placeholder="Email của bạn"/><span className="field-error" role="alert">{touched && !email.trim() ? 'Vui lòng nhập email' : touched && !/^[^\s@]+@[^\s@]+$/.test(email) ? 'Email không đúng định dạng.' : errorFor(error, 'Email')}</span></label>
       <label className="auth-field" htmlFor="Password"><span>Mật khẩu <b aria-hidden="true">*</b></span><input id="Password" type="password" autoComplete="current-password" value={password} onChange={event => setPassword(event.target.value)} maxLength={128} placeholder="Nhập mật khẩu"/><span className="field-error" role="alert">{touched && !password ? 'Vui lòng nhập mật khẩu' : errorFor(error, 'Password')}</span></label>
-      <button className="btn full" type="submit" disabled={busy}>{busy ? 'Đang đăng nhập…' : 'Đăng nhập →'}</button><p className="auth-status" role="status" aria-live="polite"/></form>
+      <button className="btn full" type="submit" disabled={busy}>{busy ? 'Đang đăng nhập…' : 'Đăng nhập'}</button><p className="auth-status" role="status" aria-live="polite"/></form>
     <p className="auth-switch">Chưa có tài khoản? <Link className="text-link" to={`/Account/Register${params.has('returnUrl') ? '?returnUrl=' + encodeURIComponent(params.get('returnUrl')!) : ''}`}>Đăng ký</Link></p></section></>;
 }
 

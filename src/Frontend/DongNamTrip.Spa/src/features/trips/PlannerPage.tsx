@@ -80,7 +80,7 @@ export function PlannerPage() {
     finally { setBusy(false); }
   }
   return <><section className="page-intro compact"><div className="container"><div className="eyebrow">LÊN Ý TƯỞNG, RỒI LÊN ĐƯỜNG</div><h1>Chuyến đi của riêng bạn.</h1><p>Chọn điểm đến, đổi thứ tự và lưu lại hành trình yêu thích.</p></div></section>
-    <div className="container section" id="planner"><div className="planner-steps"><b>01 Chọn điểm đến</b><span>→</span><b>02 Sắp xếp lịch trình</b><span>→</span><b>03 Lưu ý tưởng</b></div>
+    <div className="container section" id="planner"><div className="planner-steps"><b>01 Chọn điểm đến</b><b>02 Sắp xếp lịch trình</b><b>03 Lưu ý tưởng</b></div>
       <div className="planner-layout"><section><div className="section-heading"><h2>Thêm nơi bạn muốn đến</h2><label className="sr-only" htmlFor="place-search">Tìm địa điểm</label><input id="place-search" value={search} onChange={event => setSearch(event.target.value)} placeholder="Tìm tên hoặc khu vực…"/></div>
         {destinations.loading ? <Loading/> : destinations.error ? <Failure message={destinations.error} retry={destinations.retry}/> : <div id="place-list">{visible.map(place => <article className="place-row" key={place.id}><img src={place.imageUrl || art(place.illustration)} alt="" onError={event => { const fallback = art(place.illustration); if (!event.currentTarget.src.endsWith(fallback)) event.currentTarget.src = fallback; }}/><div><small>{place.region} · {place.visitMinutes} phút</small><h3>{place.name}</h3><span>{place.category}</span></div>
           <button type="button" className="add-place" aria-label={`Thêm ${place.name}`} disabled={draft.ids.includes(place.id) || draft.ids.length >= (meta.data?.maxPlaces ?? 0)} onClick={() => updateIds([...draft.ids, place.id])}>{draft.ids.includes(place.id) ? '✓' : '+'}</button></article>)}{!visible.length && <p>Không có địa điểm phù hợp với từ khóa.</p>}</div>}</section>
@@ -101,8 +101,8 @@ export function PlannerPage() {
           <p className="notice small-notice">Suất là mong muốn, chưa giữ chỗ. Điều hành sẽ xác minh trước khi báo giá.</p>
           {user && draft.ids.length > 0 && <button type="button" className="btn outline full" disabled={checking} onClick={() => void checkDraft()}>{checking ? 'Đang kiểm tra…' : 'Kiểm tra lịch'}</button>}
           {check && <p role="status" className="hint">{check.fits ? 'Lịch phù hợp' : 'Lịch còn cảnh báo'}{check.complete ? '' : ' (chưa đủ dữ liệu để kết luận)'}: {check.warnings.length === 0 ? 'không có cảnh báo.' : check.warnings.map(warning => warning.message).join(' ')}</p>}
-          <button type="submit" className="btn full" disabled={busy}>{busy ? 'Đang lưu lịch trình…' : itineraryId ? 'Cập nhật lịch trình ↗' : 'Lưu lịch trình ↗'}</button><p id="planner-message" role="status" aria-live="polite">{error}</p>
-          {!user && error && <Link className="text-link" to="/Account/Login?returnUrl=%2FPlanner">Đăng nhập để lưu →</Link>}
+          <button type="submit" className="btn full" disabled={busy}>{busy ? 'Đang lưu lịch trình…' : itineraryId ? 'Cập nhật lịch trình' : 'Lưu lịch trình'}</button><p id="planner-message" role="status" aria-live="polite">{error}</p>
+          {!user && error && <Link className="text-link" to="/Account/Login?returnUrl=%2FPlanner">Đăng nhập để lưu</Link>}
           <button type="button" className="reset-link" onClick={() => { setDraft({ name: '', startDate: nextWeek(), guests: 2, ids: [], departurePoint: '', transport: '', budget: '', details: {} }); setError(''); }}>Làm mới lịch trình</button>
         </form></aside></div></div></>;
 }
