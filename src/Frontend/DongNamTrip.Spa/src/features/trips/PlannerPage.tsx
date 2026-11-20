@@ -38,6 +38,8 @@ export function PlannerPage() {
   const meta = useMeta();
   const [draft, setDraft] = useState<Draft>(savedDraft);
   const [search, setSearch] = useState('');
+  const [openStops, setOpenStops] = useState<number[]>([]);
+  const toggleStop = (id: number) => setOpenStops(current => current.includes(id) ? current.filter(item => item !== id) : [...current, id]);
   const catalog = useLoad('planner-catalog', () => api.get<PlannerCatalog>('proxy/planner/catalog'));
   const destinations = useLoad('planner-places-' + search, async () => api.get<Paged<Destination>>('proxy/destinations/search?' + new URLSearchParams({ q: search, pageSize: String((await loadMeta()).plannerListSize) })));
   const preview = useLoad('planner-preview-' + draft.ids.join(','), () => draft.ids.length
@@ -108,11 +110,12 @@ export function PlannerPage() {
           <div className="form-row"><label>Nơi xuất phát<input maxLength={250} value={draft.departurePoint} onChange={event => setDraft({ ...draft, departurePoint: event.target.value })}/></label><label>Phương tiện<input maxLength={50} value={draft.transport} onChange={event => setDraft({ ...draft, transport: event.target.value })}/></label></div>
           <label>Ngân sách dự kiến (VNĐ)<input type="number" min="0" value={draft.budget} onChange={event => setDraft({ ...draft, budget: event.target.value })}/></label>
           {catalog.error && <Failure message={catalog.error} retry={catalog.retry}/>}
-          <ol id="selected-places">{selected.map((place, index) => <li key={place.id}><span>{index + 1}. {place.name}<small>{place.visitMinutes} phút · {place.region}</small></span>
+          <ol id="selected-places">{selected.map((place, index) => <li key={place.id}><span>{index + 1}. {place.name}<small>{place.visitMinutes} phút · {place.region} · Ngày {detail(place.id).day}</small></span>
             <button type="button" aria-label={`Đưa ${place.name} lên`} disabled={index === 0} onClick={() => move(index, -1)}>↑</button><button type="button" aria-label={`Đưa ${place.name} xuống`} disabled={index === selected.length - 1} onClick={() => move(index, 1)}>↓</button><button type="button" aria-label={`Xóa ${place.name}`} onClick={() => updateIds(draft.ids.filter(id => id !== place.id))}>×</button>
-            <div className="stop-options"><label>Ngày thứ<input type="number" min="1" max="30" value={detail(place.id).day} onChange={event => updateDetail(place.id, { day: Number(event.target.value), slotIds: [] })}/></label><label>Ghi chú<input maxLength={500} value={detail(place.id).note} onChange={event => updateDetail(place.id, { note: event.target.value })}/></label>
+            <button type="button" className="stop-toggle" aria-expanded={openStops.includes(place.id)} onClick={() => toggleStop(place.id)}>{openStops.includes(place.id) ? 'Thu gọn ▴' : 'Chi tiết ▾'}</button>
+            {openStops.includes(place.id) && <div className="stop-options"><label>Ngày thứ<input type="number" min="1" max="30" value={detail(place.id).day} onChange={event => updateDetail(place.id, { day: Number(event.target.value), slotIds: [] })}/></label><label>Ghi chú<input maxLength={500} value={detail(place.id).note} onChange={event => updateDetail(place.id, { note: event.target.value })}/></label>
               <fieldset><legend>Suất mong muốn</legend>{catalog.data?.slots.filter(slot => slot.destinationId === place.id && slot.date === dateOnDay(draft.startDate, detail(place.id).day)).map(slot => <label key={slot.id}><input type="checkbox" checked={detail(place.id).slotIds.includes(slot.id)} onChange={event => updateDetail(place.id, { slotIds: event.target.checked ? [...detail(place.id).slotIds, slot.id] : detail(place.id).slotIds.filter(id => id !== slot.id) })}/>{catalog.data?.activities.find(activity => activity.id === slot.activityId)?.name || `Hoạt động #${slot.activityId}`} · {slot.startsAt}–{slot.endsAt}</label>)}{!catalog.data?.slots.some(slot => slot.destinationId === place.id && slot.date === dateOnDay(draft.startDate, detail(place.id).day)) && <small>Chưa có suất công bố cho ngày này.</small>}</fieldset>
-            </div></li>)}</ol>
+            </div>}</li>)}</ol>
           {!selected.length && <div className="planner-empty"><span>↖</span><b>Bắt đầu từ một nơi bạn thích.</b><p>Nhấn dấu + để thêm điểm đầu tiên.</p></div>}
           <p className="hint">Tổng tham quan: {preview.data?.totalVisitMinutes ?? 0} phút. Chưa bao gồm di chuyển.</p>
           <p className="notice small-notice">Suất là mong muốn, chưa giữ chỗ. Điều hành sẽ xác minh trước khi báo giá.</p>
