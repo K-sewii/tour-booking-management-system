@@ -21,6 +21,16 @@ function savedDraft(): Draft {
   } catch { return { name: '', startDate: nextWeek(), guests: 2, ids: [], departurePoint: '', transport: '', budget: '', details: {} }; }
 }
 
+type Slots = PlannerCatalog['slots'];
+/** Chọn sẵn suất cho một điểm dừng trong ngày: mỗi hoạt động một suất sớm nhất, bỏ suất trùng giờ với suất đã chọn. */
+function defaultSlotIds(slots: Slots, destinationId: number, date: string): number[] {
+  const chosen: Slots = [];
+  const ordered = slots.filter(item => item.destinationId === destinationId && item.date === date).sort((a, b) => a.startsAt.localeCompare(b.startsAt));
+  for (const slot of ordered)
+    if (!chosen.some(item => item.activityId === slot.activityId) && (!chosen.length || slot.startsAt >= chosen[chosen.length - 1].endsAt)) chosen.push(slot);
+  return chosen.map(slot => slot.id);
+}
+
 export function PlannerPage() {
   const [params] = useSearchParams();
   const { user } = useAuth();
@@ -38,11 +48,18 @@ export function PlannerPage() {
   const tourId = Number(params.get('tourId'));
   const destinationId = Number(params.get('destinationId'));
   const itineraryId = Number(params.get('itineraryId'));
+  const guestsParam = Math.trunc(Number(params.get('guests')));
   useEffect(() => {
     if (itineraryId) api.get<Itinerary>('proxy/itineraries/' + itineraryId).then(found => setDraft({ name: found.name, startDate: found.startDate, guests: found.guests, ids: found.destinationIds, departurePoint: found.departurePoint || '', transport: found.transport || '', budget: found.budget?.toString() || '', details: Object.fromEntries(found.stops.map(stop => [stop.destinationId, { day: stop.day, note: stop.note || '', slotIds: stop.slotIds }])) })).catch(caught => setError(messageFor(caught)));
-    else if (tourId) api.get<{ destinationId: number; day: number; order: number }[]>('proxy/planner/tours/' + tourId).then(stops => setDraft(current => ({ ...current, ids: stops.map(stop => stop.destinationId), details: Object.fromEntries(stops.map(stop => [stop.destinationId, { day: stop.day, note: '', slotIds: [] }])) }))).catch(caught => setError(messageFor(caught)));
+    else if (tourId) Promise.all([api.get<{ destinationId: number; day: number; order: number }[]>('proxy/planner/tours/' + tourId), api.get<PlannerCatalog>('proxy/planner/catalog')])
+      .then(([stops, planned]) => setDraft(current => {
+        // Bản nháp cũ trong tab có thể có ngày đã qua; số khách lấy từ trang tour để hai trang khớp nhau.
+        const startDate = current.startDate < localDate() ? nextWeek() : current.startDate;
+        return { ...current, startDate, guests: guestsParam >= 1 ? guestsParam : current.guests, ids: stops.map(stop => stop.destinationId),
+          details: Object.fromEntries(stops.map(stop => [stop.destinationId, { day: stop.day, note: '', slotIds: defaultSlotIds(planned.slots, stop.destinationId, dateOnDay(startDate, stop.day)) }])) };
+      })).catch(caught => setError(messageFor(caught)));
     else if (destinationId) setDraft(current => ({ ...current, ids: [destinationId] }));
-  }, [tourId, destinationId, itineraryId]);
+  }, [tourId, destinationId, itineraryId, guestsParam]);
   useEffect(() => { sessionStorage.setItem(draftKey, JSON.stringify(draft)); }, [draft]);
   const visible = destinations.data?.items || [];
   const selected = preview.data?.places || [];
