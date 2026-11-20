@@ -29,7 +29,7 @@
 <ol class="timeline">@foreach(var d in Model.Destinations){<li>
 <h3>@d.Name</h3>
 <p>@d.Description</p>
-<a class="text-link" asp-controller="Destinations" asp-action="Details" asp-route-id="@d.Id">Khám phá địa điểm ↗</a></li>}</ol>
+<a class="text-link" asp-controller="Destinations" asp-action="Details" asp-route-id="@d.Id">Khám phá địa điểm</a></li>}</ol>
 <h2 id="notes">Trước khi bạn lên đường</h2>
 <p>Đây là tour mẫu phục vụ trải nghiệm giao diện. Ngày khởi hành, dịch vụ bao gồm, chính sách hủy và giá chính thức sẽ được cập nhật khi chức năng đặt tour hoàn thiện.</p></article>
 <aside class="booking-panel" data-unit-price="@t.ReferencePrice"><small>Giá tham khảo / khách</small>
@@ -40,4 +40,4 @@
 <span>Tạm tính minh họa</span><b id="estimate-value"></b></div>
 <button class="btn full" disabled>Đặt tour · Đang phát triển</button>
 <p class="hint">Chưa giữ chỗ hoặc tạo đơn. Bạn có thể dùng tour này làm ý tưởng cho lịch trình.</p>
-<a class="btn outline full" asp-controller="Planner" asp-action="Index" asp-route-tourId="@t.Id">Tùy chỉnh lịch trình ↗</a></aside></div></div>
+<a class="btn outline full" asp-controller="Planner" asp-action="Index" asp-route-tourId="@t.Id">Tùy chỉnh lịch trình</a></aside></div></div>

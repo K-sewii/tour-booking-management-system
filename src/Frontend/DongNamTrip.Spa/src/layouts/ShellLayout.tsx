@@ -18,7 +18,7 @@ export function ShellLayout({ children }: { children: ReactNode }) {
         <NavLink to="/Tours">Khám phá tour</NavLink><NavLink to="/Destinations">Điểm đến</NavLink>
         <NavLink to="/Planner">Tự tạo chuyến đi</NavLink><NavLink to="/Trips">Chuyến đi của tôi</NavLink>{user && <NavLink to="/Listen">Nghe thuyết minh</NavLink>}
         {!loading && (user ? <><Link className="btn small outline" to="/Account/Profile">Hồ sơ</Link><button className="btn small outline" onClick={() => void signOut()}>Đăng xuất</button></>
-          : <Link className="btn small" to="/Account/Login">Đăng nhập →</Link>)}
+          : <Link className="btn small" to="/Account/Login">Đăng nhập</Link>)}
       </nav>
     </div></header>
     <main id="main">{children}</main>

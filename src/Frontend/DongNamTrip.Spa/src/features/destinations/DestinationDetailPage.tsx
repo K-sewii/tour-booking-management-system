@@ -34,7 +34,7 @@ export function DestinationDetailPage() {
     <div className="detail-layout"><article><h2>Một chút về điểm đến</h2><p>{destination.description}</p>
       <div className="facts"><div><small>Khu vực du lịch</small><b>{destination.region}</b></div><div><small>Thời lượng dự kiến</small><b>{destination.visitMinutes} phút</b></div>
         {hours && <div><small>Giờ mở cửa</small><b>{hours}</b></div>}
-        {map && <div><small>Vị trí</small><b><a href={map} target="_blank" rel="noreferrer">Xem bản đồ ↗</a></b></div>}</div>
+        {map && <div><small>Vị trí</small><b><a href={map} target="_blank" rel="noreferrer">Xem bản đồ</a></b></div>}</div>
       <h2>Hoạt động & suất tổ chức</h2>
       {!destination.activities.length && <div className="notice">Địa điểm này chưa có hoạt động được công bố.</div>}
       {days.length > 1 && <div className="cx-filter"><label htmlFor="slot-day">Xem suất theo ngày</label>
@@ -54,6 +54,6 @@ export function DestinationDetailPage() {
       })}
       {!!destination.activities.length && <p className="cx-note">Phí chỉ mang tính tham khảo; lịch cụ thể được xác nhận khi lập tour.</p>}</article>
       <aside className="booking-panel"><div className="eyebrow">THÊM MỘT ĐIỂM ĐÁNG NHỚ</div><h2>Nơi này có trong chuyến đi của bạn?</h2><p>Lưu vào lịch trình, chọn thêm điểm và sắp xếp theo ý thích.</p>
-        <Link className="btn full" to={`/Planner?destinationId=${id}`}>Thêm vào lịch trình ↗</Link>
+        <Link className="btn full" to={`/Planner?destinationId=${id}`}>Thêm vào lịch trình</Link>
         <Link className="btn outline full" to={`/Listen?destinationId=${id}`}>Nghe thuyết minh ♪</Link></aside></div></div>;
 }
