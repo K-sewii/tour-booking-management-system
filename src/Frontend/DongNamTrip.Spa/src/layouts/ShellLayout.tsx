@@ -1,5 +1,5 @@
 import { useEffect, useState, type ReactNode } from 'react';
-import { Link, NavLink, useLocation, useNavigate } from 'react-router';
+import { Link, NavLink, useLocation, useNavigate, useNavigationType } from 'react-router';
 import { useAuth } from '../auth/AuthContext';
 
 export function ShellLayout({ children }: { children: ReactNode }) {
@@ -7,7 +7,14 @@ export function ShellLayout({ children }: { children: ReactNode }) {
   const location = useLocation();
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
-  useEffect(() => { setOpen(false); window.scrollTo(0, 0); }, [location.pathname, location.search]);
+  const navigationType = useNavigationType();
+  useEffect(() => {
+    setOpen(false);
+    // Quay lại/tiến tới (POP): để trình duyệt tự khôi phục vị trí cuộn. Có #hash: cuộn tới đúng mục thay vì ép lên đầu trang.
+    if (navigationType === 'POP') return;
+    const target = location.hash ? document.getElementById(location.hash.slice(1)) : null;
+    if (target) target.scrollIntoView(); else window.scrollTo(0, 0);
+  }, [location.pathname, location.search]); // eslint-disable-line react-hooks/exhaustive-deps
   async function signOut() { await logout(); navigate('/'); }
   return <>
     <a className="skip" href="#main">Đến nội dung chính</a>
