@@ -57,7 +57,11 @@ export function TourDetailPage() {
   const { user } = useAuth();
   const detail = useLoad('tour-detail-' + id, () => api.get<TourDetail>('proxy/tours/' + id));
   const meta = useMeta();
-  const [guests, setGuests] = useState(2);
+  // Giữ chuỗi người dùng gõ để xóa/gõ nhiều chữ số được; số khách dùng cho tạm tính và đặt tour luôn nằm trong giới hạn.
+  const [guestsText, setGuestsText] = useState('2');
+  const minGuests = meta.data?.guestsMin ?? 1, maxGuests = meta.data?.guestsMax ?? Number.POSITIVE_INFINITY;
+  const typedGuests = Math.trunc(Number(guestsText));
+  const guests = guestsText.trim() !== '' && Number.isFinite(typedGuests) ? Math.min(maxGuests, Math.max(minGuests, typedGuests)) : minGuests;
   const estimate = useLoad('tour-estimate-' + id + '-' + guests, () => api.get<TourEstimate>(`proxy/tours/${id}/estimate?guests=${guests}`));
   const tour = detail.data?.tour;
   const places = detail.data?.places || [];
@@ -73,7 +77,7 @@ export function TourDetailPage() {
       <h2 id="itinerary">Lịch trình gợi ý</h2><ol className="timeline">{places.map(place => <li key={place.id}><h3>{place.name}</h3><p>{place.description}</p><Link className="text-link" to={`/Destinations/Details/${place.id}`}>Khám phá địa điểm</Link></li>)}</ol>
       <h2 id="notes">Trước khi bạn lên đường</h2><p>Giá chính thức, điều kiện hủy và số chỗ còn lại hiển thị theo từng lịch khởi hành ở khung đặt tour. Chỗ chỉ được giữ khi bạn đặt tour; nhân viên xác nhận sau khi nhận khoản cần thu.</p></article>
       <aside className="booking-panel"><small>Giá tham khảo / khách</small><h2>{price(tour.referencePrice)}</h2>
-        <label>Số khách<input id="guest-count" type="number" min={meta.data?.guestsMin} max={meta.data?.guestsMax} value={guests} onChange={event => setGuests(Math.max(meta.data?.guestsMin ?? 1, Math.min(meta.data?.guestsMax ?? 1, Number(event.target.value) || 1)))}/></label>
-        <div className="estimate"><span>Tạm tính minh họa</span><b id="estimate-value">{estimate.data ? price(estimate.data.total) : '…'}</b></div>{tour.referenceOnly ? <p className="reference-notice">Dữ liệu tham khảo — chưa công bố. Không thể đặt tour.</p> : <><BookingPanel tourId={id} guests={guests}/><Link className="btn outline full" to={`/Planner?tourId=${id}`}>Tùy chỉnh lịch trình</Link></>}</aside></div></div>;
+        <label>Số khách<input id="guest-count" type="number" min={meta.data?.guestsMin} max={meta.data?.guestsMax} value={guestsText} onChange={event => setGuestsText(event.target.value)} onBlur={() => setGuestsText(String(guests))}/></label>
+        <div className="estimate"><span>Tạm tính minh họa</span><b id="estimate-value">{estimate.data ? price(estimate.data.total) : '…'}</b></div>{tour.referenceOnly ? <p className="reference-notice">Dữ liệu tham khảo — chưa công bố. Không thể đặt tour.</p> : <><BookingPanel tourId={id} guests={guests}/><Link className="btn outline full" to={`/Planner?tourId=${id}&guests=${guests}`}>Tùy chỉnh lịch trình</Link></>}</aside></div></div>;
 }
 
