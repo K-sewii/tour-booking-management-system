@@ -26,3 +26,18 @@
 .private-request-form label { display: grid; gap: .3rem; }
 .private-request-form textarea { min-height: 5rem; }
 .private-quote { border-top: 1px solid #d6dfd6; margin-top: 1rem; padding-top: 1rem; }
+
+/* Planner: mỗi điểm dừng xuống dòng thay vì ép tên địa điểm thành cột hẹp */
+#selected-places li { flex-wrap: wrap; }
+#selected-places li > span { flex: 1 1 12rem; min-width: 0; overflow-wrap: anywhere; }
+#selected-places li > .stop-options { flex: 1 1 100%; order: 5; }
+#selected-places .stop-options input:not([type="checkbox"]) { width: 100%; }
+
+/* Planner: khung lịch trình dính (sticky) cao hơn màn hình thì cuộn riêng bên trong, không bị cắt mất nút Lưu */
+@media (min-width: 851px) {
+  .itinerary-panel { max-height: calc(100vh - 130px); overflow-y: auto; overscroll-behavior: contain; }
+}
+
+/* Planner: danh sách điểm dừng gọn, cuộn riêng; chi tiết từng điểm thu gọn mặc định */
+#selected-places { max-height: min(46vh, 420px); overflow-y: auto; overscroll-behavior: contain; padding-right: 4px; }
+#selected-places .stop-toggle { margin-left: auto; font-size: 12px; color: var(--green); white-space: nowrap; }
