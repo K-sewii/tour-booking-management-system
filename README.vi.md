@@ -8,23 +8,13 @@
 
 [![Build and smoke test](https://github.com/K-sewii/tour-booking-management-system/actions/workflows/build.yml/badge.svg)](https://github.com/K-sewii/tour-booking-management-system/actions/workflows/build.yml)
 [![Docker images](https://github.com/K-sewii/tour-booking-management-system/actions/workflows/docker.yml/badge.svg)](https://github.com/K-sewii/tour-booking-management-system/actions/workflows/docker.yml)
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/K-sewii/tour-booking-management-system)
 ![Trạng thái](https://img.shields.io/badge/trạng_thái-đang_phát_triển-orange)
 ![License](https://img.shields.io/github/license/K-sewii/tour-booking-management-system)
 ![Last commit](https://img.shields.io/github/last-commit/K-sewii/tour-booking-management-system)
 
-![.NET](https://img.shields.io/badge/.NET-10-512BD4?logo=dotnet&logoColor=white)
-![ASP.NET Core](https://img.shields.io/badge/ASP.NET_Core-Minimal_APIs-512BD4?logo=dotnet&logoColor=white)
-![EF Core](https://img.shields.io/badge/EF_Core-10-512BD4?logo=dotnet&logoColor=white)
-![SQL Server](https://img.shields.io/badge/SQL_Server-2022-CC2927?logo=microsoftsqlserver&logoColor=white)
-![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=black)
-![TypeScript](https://img.shields.io/badge/TypeScript-5.9-3178C6?logo=typescript&logoColor=white)
-![Vite](https://img.shields.io/badge/Vite-8-646CFF?logo=vite&logoColor=white)
-![React Router](https://img.shields.io/badge/React_Router-7-CA4245?logo=reactrouter&logoColor=white)
-![Vitest](https://img.shields.io/badge/Vitest-3-6E9F18?logo=vitest&logoColor=white)
-![Playwright](https://img.shields.io/badge/Playwright-E2E-2EAD33?logo=playwright&logoColor=white)
-![Swagger](https://img.shields.io/badge/Swagger_UI-OpenAPI-85EA2D?logo=swagger&logoColor=black)
-![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?logo=docker&logoColor=white)
-![GitHub Actions](https://img.shields.io/badge/GitHub_Actions-CI-2088FF?logo=githubactions&logoColor=white)
+
+[![Architecture diagram](https://gitdiagram.com/diagram-badge.svg)](https://gitdiagram.com/k-sewii/tour-booking-management-system?utm_source=readme&utm_medium=badge)
 
 </div>
 
@@ -59,7 +49,8 @@ DongNamTrip là dự án học tập. Khách hàng sử dụng Web React SPA; nh
 
 <!-- TODO: thêm ảnh/GIF của Web SPA và WinForms Admin vào docs/images/ rồi nhúng tại đây. -->
 
-_Chưa có ảnh chụp màn hình._
+![Admin Screen](docs\images\AdminScreen.png)
+![Web Screen](docs\images\WebScreen.png)
 
 ## Bắt đầu nhanh
 
