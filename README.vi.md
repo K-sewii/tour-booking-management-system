@@ -8,7 +8,6 @@
 
 [![Build and smoke test](https://github.com/K-sewii/tour-booking-management-system/actions/workflows/build.yml/badge.svg)](https://github.com/K-sewii/tour-booking-management-system/actions/workflows/build.yml)
 [![Docker images](https://github.com/K-sewii/tour-booking-management-system/actions/workflows/docker.yml/badge.svg)](https://github.com/K-sewii/tour-booking-management-system/actions/workflows/docker.yml)
-[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/K-sewii/tour-booking-management-system)
 ![Trạng thái](https://img.shields.io/badge/trạng_thái-đang_phát_triển-orange)
 ![License](https://img.shields.io/github/license/K-sewii/tour-booking-management-system)
 ![Last commit](https://img.shields.io/github/last-commit/K-sewii/tour-booking-management-system)
@@ -49,8 +48,8 @@ DongNamTrip là dự án học tập. Khách hàng sử dụng Web React SPA; nh
 
 <!-- TODO: thêm ảnh/GIF của Web SPA và WinForms Admin vào docs/images/ rồi nhúng tại đây. -->
 
-![Admin Screen](docs\images\AdminScreen.png)
-![Web Screen](docs\images\WebScreen.png)
+![Admin Screen](https://github.com/K-sewii/tour-booking-management-system/blob/main/docs/images/AdminScreen.png)
+![Web Screen](https://github.com/K-sewii/tour-booking-management-system/blob/main/docs/images/WebScreen.png)
 
 ## Bắt đầu nhanh
 
