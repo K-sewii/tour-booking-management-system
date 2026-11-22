@@ -49,8 +49,8 @@ DongNamTrip is a university project. Customers use a React single-page applicati
 ## Screenshots
 
 <!-- TODO: add screenshots or a short GIF of the Web SPA and the WinForms admin under docs/images/ and embed them here. -->
-![Admin Screen](docs\images\AdminScreen.png)
-![Web Screen](docs\images\WebScreen.png)
+![Admin Screen](https://github.com/K-sewii/tour-booking-management-system/blob/main/docs/images/AdminScreen.png)
+![Web Screen](https://github.com/K-sewii/tour-booking-management-system/blob/main/docs/images/WebScreen.png)
 
 ## Quick start
 

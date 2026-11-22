@@ -49,8 +49,8 @@ DongNamTrip là dự án học tập. Khách hàng sử dụng Web React SPA; nh
 
 <!-- TODO: thêm ảnh/GIF của Web SPA và WinForms Admin vào docs/images/ rồi nhúng tại đây. -->
 
-![Admin Screen](docs\images\AdminScreen.png)
-![Web Screen](docs\images\WebScreen.png)
+![Admin Screen](https://github.com/K-sewii/tour-booking-management-system/blob/main/docs/images/AdminScreen.png)
+![Web Screen](https://github.com/K-sewii/tour-booking-management-system/blob/main/docs/images/WebScreen.png)
 
 ## Bắt đầu nhanh
 
