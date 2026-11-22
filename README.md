@@ -58,8 +58,8 @@ DongNamTrip is a university project. Customers use a React single-page applicati
 ## Screenshots
 
 <!-- TODO: add screenshots or a short GIF of the Web SPA and the WinForms admin under docs/images/ and embed them here. -->
-
-_Screenshots are not available yet._
+![Admin Screen](docs\images\AdminScreen.png)
+![Web Screen](docs\images\WebScreen.png)
 
 ## Quick start
 
